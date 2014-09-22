@@ -63,6 +63,10 @@ http_status_codes = {
 class MethodNotAllowed(Exception):
     pass
 
+
+class UnprocessableEntity(Exception):
+    pass
+
 # jsonify dates
 _json_dumps = partial(json.dumps,
                       default=lambda x: x.isoformat() if hasattr(x, 'isoformat') else str(x),
@@ -90,6 +94,9 @@ def api(func):
         except MethodNotAllowed:  #
             traceback.print_exc()
             result['http_status_code'] = 405
+        except UnprocessableEntity:
+            traceback.print_exc()
+            result['http_status_code'] = 422
         except Exception:  # catch-all
             traceback.print_exc()
             result['http_status_code'] = 500

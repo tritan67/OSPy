@@ -12,7 +12,7 @@ __author__ = [
 __version__ = '0.1 pre aplha'
 
 import json
-from plugins.api.utils import api, MethodNotAllowed
+from plugins.api.utils import api, MethodNotAllowed, UnprocessableEntity
 
 import web
 from urls import urls  # Gain access to ospy's URL list
@@ -26,8 +26,6 @@ h.setFormatter(logging.Formatter('%(name)s:%(levelname)s:%(message)s'))
 #h.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
 logger.addHandler(h)
 
-# TODO: read-only keys
-station_keys = ('id', 'name', 'enabled', 'ignore_rain', 'is_master')
 
 # TODO: remove dummy data
 dummy_stations = [
@@ -84,7 +82,24 @@ class Stations(object):
         raise MethodNotAllowed
 
 
+def dummy_start(num):
+    logger.debug('would start %d' % num)
+
+
+def dummy_stop(num):
+    logger.debug('would stop %d' % num)
+
+
 class Station(object):
+    editable_keys = ('name', 'enabled', 'ignore_rain', 'is_master')
+    all_keys = ('id',) + editable_keys
+
+    #
+    actions = {
+        'start': dummy_start,
+        'stop': dummy_stop,
+    }
+
     @api
     def GET(self, station_id):
         logger.debug('GET station:%s' % station_id)
@@ -94,20 +109,12 @@ class Station(object):
     def POST(self, station_id):
         logger.debug('POST station:%s' % station_id)
         station_id = int(station_id)
-        result = dummy_stations[station_id]
 
-        # Handle actions
-        action = web.input().get('do', '').lower()
-        if action == 'start':
-            duration = json.loads(web.data())['duration']
-            logger.debug('START %s %s' % (station_id, duration))
-        elif action == 'stop':
-            logger.debug('STOP %s' % station_id)
-        else:
-            # TODO: human readable errors sent back !
-            logger.debug('POST action "start" | stop "only"')
-            # raise Exception
-
+        try:
+            action_func = Station.actions[web.input().get('do', '').lower()]
+            action_func(station_id)
+        except:
+            raise UnprocessableEntity('POST action "start" | stop "only"')
 
     @api
     def PUT(self, station_id):
@@ -115,8 +122,10 @@ class Station(object):
         station_id = int(station_id)
         s = dummy_stations[station_id]
         update = json.loads(web.data())
+
+        # Only apply values to editable fields
         for k in list(set(update)):  # remove dupes
-            if k in s:
+            if k in Station.editable_keys:
                 s[k] = update[k]
         dummy_stations[station_id] = s
         return s

@@ -199,13 +199,6 @@ Manually start station with id 1. Duration is specified :
 ```
 Example:
 Manually stop station with id 1
-`POST` `/stations/1/?do=start`
-```json
-{
-    "duration" : "00:15:00" 
-}
-```
-
 `POST` `/stations/1/?do=stop`
 
 ## Options
