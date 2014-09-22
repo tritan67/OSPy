@@ -4,7 +4,7 @@ import traceback
 import web
 
 import logging
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger('API')
 
 
 http_status_codes = {
@@ -59,6 +59,10 @@ http_status_codes = {
     507: '507 Insufficient Storage',
 }
 
+
+class MethodNotAllowed(Exception):
+    pass
+
 # jsonify dates
 _json_dumps = partial(json.dumps,
                       default=lambda x: x.isoformat() if hasattr(x, 'isoformat') else str(x),
@@ -79,8 +83,13 @@ def api(func):
             r = func(self, *args, **kwargs)
             if r:
                 result.update(r)
-        except IndexError:
-            result['http_status_code'] = 404  # No such item
+        except IndexError:  # No such item
+            result['http_status_code'] = 404
+        except ValueError:  # json errors
+            result['http_status_code'] = 406
+        except MethodNotAllowed:  #
+            traceback.print_exc()
+            result['http_status_code'] = 405
         except Exception:  # catch-all
             traceback.print_exc()
             result['http_status_code'] = 500
