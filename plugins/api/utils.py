@@ -1,11 +1,11 @@
 import base64
 from functools import wraps, partial
 import json
-import traceback
 import re
+import logging
+
 import web
 
-import logging
 logger = logging.getLogger('API')
 
 
@@ -61,14 +61,6 @@ http_status_codes = {
     507: '507 Insufficient Storage',
 }
 
-
-class MethodNotAllowed(Exception):
-    pass
-
-
-class UnprocessableEntity(Exception):
-    pass
-
 # jsonify dates
 _json_dumps = partial(json.dumps,
                       default=lambda x: x.isoformat() if hasattr(x, 'isoformat') else str(x),
@@ -78,6 +70,7 @@ _json_dumps = partial(json.dumps,
 def api(func):
     """
     api function jsonificator
+    Takes care of IndexError and ValueError so that the decorated code can igrnore those
     """
 
     @wraps(func)
@@ -90,18 +83,11 @@ def api(func):
             if r:
                 result.update(r)
         except IndexError:  # No such item
+            raise web.notfound()
             result['http_status_code'] = 404
         except ValueError:  # json errors
+            raise web.badrequest()
             result['http_status_code'] = 406
-        except MethodNotAllowed:  #
-            traceback.print_exc()
-            result['http_status_code'] = 405
-        except UnprocessableEntity:
-            traceback.print_exc()
-            result['http_status_code'] = 422
-        except Exception:  # catch-all
-            traceback.print_exc()
-            result['http_status_code'] = 500
 
         web.ctx['status'] = http_status_codes[result['http_status_code']]  # update return HTTP status
         del result['http_status_code']  # we dont send that to the client
@@ -139,8 +125,7 @@ def auth(func):
 
         if (username, password) not in dummy_users:
             web.header('WWW-Authenticate', 'Basic realm="OSPy"')
-            web.ctx.status = http_status_codes[401]
-            return ''
+            raise web.unauthorized()
         else:
             return func(self, *args, **kwargs)
     return wrapper

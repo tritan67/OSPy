@@ -11,7 +11,7 @@ __author__ = [
 __version__ = '0.2 pre aplha'
 
 import json
-from plugins.api.utils import api, MethodNotAllowed, UnprocessableEntity, auth
+from plugins.api.utils import api, auth
 
 import web
 from urls import urls  # Gain access to ospy's URL list
@@ -70,15 +70,15 @@ class Stations(object):
 
     @api
     def POST(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
 
     @api
     def PUT(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
 
     @api
     def DELETE(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
 
 
 def dummy_start(num):
@@ -114,7 +114,7 @@ class Station(object):
             action_func = Station.actions[web.input().get('do', '').lower()]
             action_func(station_id)
         except:
-            raise UnprocessableEntity('POST action "start" | stop "only"')
+            raise web.badrequest()
 
     @api
     def PUT(self, station_id):
@@ -133,7 +133,7 @@ class Station(object):
     @api
     def DELETE(self, station_id):
         logger.debug('DELETE station:%s' % station_id)
-        raise MethodNotAllowed
+        raise web.forbidden()
 
 
 class Options(object):
@@ -143,15 +143,15 @@ class Options(object):
 
     @api
     def POST(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
 
     @api
     def PUT(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
 
     @api
     def DELETE(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
 
 
 class Logs(object):
@@ -161,12 +161,12 @@ class Logs(object):
 
     @api
     def POST(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
 
     @api
     def PUT(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
 
     @api
     def DELETE(self):
-        raise MethodNotAllowed
+        raise web.forbidden()
