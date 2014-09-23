@@ -3,16 +3,15 @@ API
 """
 # FIXME: imports
 # TODO: authentication (decorator?)
-import traceback
 
 __author__ = [
     'Teodor Yantcheff',
 ]
 
-__version__ = '0.1 pre aplha'
+__version__ = '0.2 pre aplha'
 
 import json
-from plugins.api.utils import api, MethodNotAllowed, UnprocessableEntity
+from plugins.api.utils import api, MethodNotAllowed, UnprocessableEntity, auth
 
 import web
 from urls import urls  # Gain access to ospy's URL list
@@ -100,6 +99,7 @@ class Station(object):
         'stop': dummy_stop,
     }
 
+    @auth
     @api
     def GET(self, station_id):
         logger.debug('GET station:%s' % station_id)

@@ -1,6 +1,8 @@
+import base64
 from functools import wraps, partial
 import json
 import traceback
+import re
 import web
 
 import logging
@@ -115,4 +117,30 @@ def api(func):
         # Return nothing on empty dictionay
         return ''
 
+    return wrapper
+
+
+dummy_users = (
+    ('admin', 'password'),
+    ('user', 'otherpassword')
+)
+
+
+def auth(func):
+    """
+    Basic auth wrapper
+    """
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        http_auth = re.sub('^Basic ', '', web.ctx.env.get('HTTP_AUTHORIZATION'))
+        username, password = base64.decodestring(http_auth).split(':')
+        logger.debug('auth: u:%s p:%s', username, password)
+
+        if (username, password) not in dummy_users:
+            web.header('WWW-Authenticate', 'Basic realm="OSPy"')
+            web.ctx.status = http_status_codes[401]
+            return ''
+        else:
+            return func(self, *args, **kwargs)
     return wrapper
