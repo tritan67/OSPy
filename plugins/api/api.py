@@ -66,18 +66,25 @@ urls.extend([
 class Stations(object):
     @api
     def GET(self):
+        logger.debug('GET stations')
         return {'stations': dummy_stations}
 
+    @auth
     @api
     def POST(self):
+        logger.debug('POST stations')
         raise web.forbidden()
 
+    @auth
     @api
     def PUT(self):
+        logger.debug('PUT stations')
         raise web.forbidden()
 
+    @auth
     @api
     def DELETE(self):
+        logger.debug('DELETE stations')
         raise web.forbidden()
 
 
@@ -99,12 +106,12 @@ class Station(object):
         'stop': dummy_stop,
     }
 
-    @auth
     @api
     def GET(self, station_id):
         logger.debug('GET station:%s' % station_id)
         return dummy_stations[int(station_id)]
 
+    @auth
     @api
     def POST(self, station_id):
         logger.debug('POST station:%s' % station_id)
@@ -116,6 +123,7 @@ class Station(object):
         except:
             raise web.badrequest()
 
+    @auth
     @api
     def PUT(self, station_id):
         logger.debug('PUT station:%s' % station_id)
@@ -130,6 +138,7 @@ class Station(object):
         dummy_stations[station_id] = s
         return s
 
+    @auth
     @api
     def DELETE(self, station_id):
         logger.debug('DELETE station:%s' % station_id)
@@ -139,34 +148,42 @@ class Station(object):
 class Options(object):
     @api
     def GET(self):
+        logger.debug('GET options')
         return {'options': dummy_options}
 
     @api
     def POST(self):
+        logger.debug('POST options')
         raise web.forbidden()
 
     @api
     def PUT(self):
+        logger.debug('PUT options')
         raise web.forbidden()
 
     @api
     def DELETE(self):
+        logger.debug('DELETE options')
         raise web.forbidden()
 
 
 class Logs(object):
     @api
     def GET(self):
+        logger.debug('GET logs')
         return {'logs': dummy_logs}
 
     @api
     def POST(self):
+        logger.debug('POST logs')
         raise web.forbidden()
 
     @api
     def PUT(self):
+        logger.debug('PUT logs')
         raise web.forbidden()
 
     @api
     def DELETE(self):
+        logger.debug('DELETE logs')
         raise web.forbidden()
