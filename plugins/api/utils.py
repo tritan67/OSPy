@@ -67,7 +67,7 @@ _json_dumps = partial(json.dumps,
                       sort_keys=False)
 
 
-def api(func):
+def does_json(func):
     """
     api function jsonificator
     Takes care of IndexError and ValueError so that the decorated code can igrnore those
@@ -84,10 +84,12 @@ def api(func):
                 result.update(r)
         except IndexError:  # No such item
             raise web.notfound()
-            result['http_status_code'] = 404
+            # FIXME: Make up mind on exceptions
+            # result['http_status_code'] = 404
         except ValueError:  # json errors
             raise web.badrequest()
-            result['http_status_code'] = 406
+            # FIXME: Make up mind on exceptions
+            # result['http_status_code'] = 406
 
         web.ctx['status'] = http_status_codes[result['http_status_code']]  # update return HTTP status
         del result['http_status_code']  # we dont send that to the client
@@ -107,8 +109,9 @@ def api(func):
 
 
 dummy_users = (
+    ('',      'long_password'),  # Since 'admin' is implied
     ('admin', 'password'),
-    ('user', 'otherpassword')
+    ('user',  'otherpassword')
 )
 
 
@@ -119,13 +122,17 @@ def auth(func):
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        http_auth = re.sub('^Basic ', '', web.ctx.env.get('HTTP_AUTHORIZATION'))
-        username, password = base64.decodestring(http_auth).split(':')
-        logger.debug('auth: u:%s p:%s', username, password)
+        try:
+            http_auth = re.sub('^Basic ', '', web.ctx.env.get('HTTP_AUTHORIZATION'))
 
-        if (username, password) not in dummy_users:
+            username, password = base64.decodestring(http_auth).split(':')
+            logger.debug('Auth Attempt with: u:\'%s\' p:\'%s\'', username, password)
+
+            if (username, password) not in dummy_users:  # FIXME: subsitute dummy users for real ones
+                raise  # essentially a goto :P
+        except:
+            # no or worng auth provided
             web.header('WWW-Authenticate', 'Basic realm="OSPy"')
             raise web.unauthorized()
-        else:
-            return func(self, *args, **kwargs)
+        return func(self, *args, **kwargs)
     return wrapper

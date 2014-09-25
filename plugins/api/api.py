@@ -8,10 +8,10 @@ __author__ = [
     'Teodor Yantcheff',
 ]
 
-__version__ = '0.2 pre aplha'
+__version__ = '0.3 pre aplha'
 
 import json
-from plugins.api.utils import api, auth
+from plugins.api.utils import does_json, auth
 
 import web
 from urls import urls  # Gain access to ospy's URL list
@@ -56,33 +56,41 @@ dummy_logs = [{'date': '2014-09-20T01:35.{}'.format(i),
               for i in xrange(1000)]
 pass
 urls.extend([
+    # Stations
     '/stations/?', 'plugins.api.Stations',
     '/stations/(\d+)/?', 'plugins.api.Station',
+    # Programs
+    '/programs/?', 'plugins.api.Programs',
+    '/programs/(\d+)/?', 'plugins.api.Station',
+    # Options
     '/options/?', 'plugins.api.Options',
+    # Logs
     '/logs/?', 'plugins.api.Logs'
+    # System
+    '/system/?', 'plugins.api.System',
 ])
 
 
 class Stations(object):
-    @api
+    @does_json
     def GET(self):
         logger.debug('GET stations')
         return {'stations': dummy_stations}
 
     @auth
-    @api
+    @does_json
     def POST(self):
         logger.debug('POST stations')
         raise web.forbidden()
 
     @auth
-    @api
+    @does_json
     def PUT(self):
         logger.debug('PUT stations')
         raise web.forbidden()
 
     @auth
-    @api
+    @does_json
     def DELETE(self):
         logger.debug('DELETE stations')
         raise web.forbidden()
@@ -106,13 +114,13 @@ class Station(object):
         'stop': dummy_stop,
     }
 
-    @api
+    @does_json
     def GET(self, station_id):
         logger.debug('GET station:%s' % station_id)
         return dummy_stations[int(station_id)]
 
     @auth
-    @api
+    @does_json
     def POST(self, station_id):
         logger.debug('POST station:%s' % station_id)
         station_id = int(station_id)
@@ -124,7 +132,7 @@ class Station(object):
             raise web.badrequest()
 
     @auth
-    @api
+    @does_json
     def PUT(self, station_id):
         logger.debug('PUT station:%s' % station_id)
         station_id = int(station_id)
@@ -139,51 +147,132 @@ class Station(object):
         return s
 
     @auth
-    @api
+    @does_json
     def DELETE(self, station_id):
         logger.debug('DELETE station:%s' % station_id)
         raise web.forbidden()
 
 
+class Programs(object):
+    @does_json
+    def GET(self):
+        logger.debug('GET programs')
+        raise web.forbidden()
+
+    @auth
+    @does_json
+    def POST(self):
+        logger.debug('POST programs')
+        raise web.forbidden()
+
+    @auth
+    @does_json
+    def PUT(self):
+        logger.debug('PUT programs')
+        raise web.forbidden()
+
+    @auth
+    @does_json
+    def DELETE(self):
+        logger.debug('DELETE programs')
+        raise web.forbidden()
+
+
+class Program(object):
+    # editable_keys = ('name', 'enabled',...)
+    # all_keys = ('id',) + editable_keys
+
+    #
+    # actions = {
+    #     'start': dummy_start,
+    #     'stop': dummy_stop,
+    # }
+
+    @does_json
+    def GET(self, program_id):
+        logger.debug('GET programs:%s' % program_id)
+        raise web.badrequest()
+
+    @auth
+    @does_json
+    def POST(self, program_id):
+        logger.debug('POST station:%s' % program_id)
+        raise web.badrequest()
+
+    @auth
+    @does_json
+    def PUT(self, program_id):
+        logger.debug('PUT programs:%s' % program_id)
+        raise web.badrequest()
+
+    @auth
+    @does_json
+    def DELETE(self, program_id):
+        logger.debug('DELETE programs:%s' % program_id)
+        raise web.forbidden()
+
+
 class Options(object):
-    @api
+    @does_json
     def GET(self):
         logger.debug('GET options')
         return {'options': dummy_options}
 
-    @api
+    @does_json
     def POST(self):
         logger.debug('POST options')
         raise web.forbidden()
 
-    @api
+    @does_json
     def PUT(self):
         logger.debug('PUT options')
         raise web.forbidden()
 
-    @api
+    @does_json
     def DELETE(self):
         logger.debug('DELETE options')
         raise web.forbidden()
 
 
 class Logs(object):
-    @api
+    @does_json
     def GET(self):
         logger.debug('GET logs')
         return {'logs': dummy_logs}
 
-    @api
+    @does_json
     def POST(self):
         logger.debug('POST logs')
         raise web.forbidden()
 
-    @api
+    @does_json
     def PUT(self):
         logger.debug('PUT logs')
         raise web.forbidden()
 
-    @api
+    @does_json
+    def DELETE(self):
+        logger.debug('DELETE logs')
+        raise web.forbidden()
+
+
+class System(object):
+    @does_json
+    def GET(self):
+        logger.debug('GET logs')
+        return {'logs': dummy_logs}
+
+    @does_json
+    def POST(self):
+        logger.debug('POST logs')
+        raise web.forbidden()
+
+    @does_json
+    def PUT(self):
+        logger.debug('PUT logs')
+        raise web.forbidden()
+
+    @does_json
     def DELETE(self):
         logger.debug('DELETE logs')
         raise web.forbidden()
