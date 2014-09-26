@@ -121,12 +121,6 @@ def get_cpu_temp(unit=None):
         return '!!'
 
 
-def baseurl():
-    """Return URL app is running under."""
-    result = web.ctx['home']
-    return result
-
-
 def timestr(t):
     return str((t / 60 >> 0) / 10 >> 0) + str((t / 60 >> 0) % 10) + ":" + str((t % 60 >> 0) / 10 >> 0) + str(
         (t % 60 >> 0) % 10)
