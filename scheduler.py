@@ -3,6 +3,7 @@ from stations import stations
 __author__ = 'Rimco'
 
 from options import options
+from options import level_adjustments
 from programs import programs
 from log import log
 
@@ -15,8 +16,8 @@ def predicted_schedule(start_time, end_time):
     The current_active list should contain intervals as returned by this function.
     skip_uids is a list with uids that should not be returned. For example, if they already have been executed."""
 
-    ADJUSTMENT = 1.0  # FIXME: get (weather) level adjustment
-    MAX_USAGE = 1.01 if options.sequential else 1000000  # FIXME
+    adjustment = level_adjustments.total_adjustment()
+    max_usage = 1.01 if options.sequential else 1000000  # FIXME
 
     skip_uids = [entry['uid'] for entry in log.finished_runs()]
     current_active = log.active_runs()
@@ -55,9 +56,9 @@ def predicted_schedule(start_time, end_time):
     for station, schedule in station_schedules.iteritems():
         for interval in schedule:
             time_delta = interval['end'] - interval['start']
-            time_delta = datetime.timedelta(seconds=(time_delta.days * 24 * 3600 + time_delta.seconds) * ADJUSTMENT)
+            time_delta = datetime.timedelta(seconds=(time_delta.days * 24 * 3600 + time_delta.seconds) * adjustment)
             interval['end'] = interval['start'] + time_delta
-            interval['adjustment'] = ADJUSTMENT
+            interval['adjustment'] = adjustment
 
         last_end = datetime.datetime(2000, 1, 1)
         for interval in schedule:
@@ -90,7 +91,7 @@ def predicted_schedule(start_time, end_time):
                 del current_active[0]
 
             # Check if we can add it now
-            if current_usage + interval['usage'] <= MAX_USAGE:
+            if current_usage + interval['usage'] <= max_usage:
                 current_usage += interval['usage']
                 # Add the newly "activated" station to the active list
                 for index in range(len(current_active)):

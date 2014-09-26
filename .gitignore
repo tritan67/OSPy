@@ -1,10 +1,8 @@
-web/
-/sessions/*
-/data/*.json
-/data/snames.txt
+/python
+/web
+/sessions
+
 *.pyc
 *.csv
-/python
 .idea
-/.settings
-/data/*.db
+.settings

@@ -1,4 +1,3 @@
-# import json
 import shelve
 from threading import Timer
 
@@ -148,32 +147,41 @@ class _Options(object):
             "key": "system_enabled",
             "name": "Enable system",
             "default": True,
-            },
+        },
         {
             "key": "manual_mode",
             "name": "Manual operation",
             "default": False,
-            },
+        },
+        {
+            "key": "level_adjustment",
+            "name": "Level adjustment set by the user (fraction)",
+            "default": 1.0,
+        },
+
         {
             "key": "password_hash",
             "name": "Current password hash",
-            "default": "",
-            },
+            "default": "opendoor",
+        },
         {
             "key": "password_salt",
             "name": "Current password salt",
             "default": "",
-            },
+        },
+
         {
             "key": "program_count",
             "name": "The number of programs",
             "default": 0,
-            },
+        },
+
         {
             "key": "logged_runs",
             "name": "The runs that have been logged",
             "default": []
         }
+
     ]
 
     def __init__(self):
@@ -189,6 +197,13 @@ class _Options(object):
             db.close()
         except Exception:
             pass
+
+        if not self.password_salt:  # Password is not hashed yet
+            from helpers import password_salt
+            from helpers import password_hash
+
+            self.password_salt = password_salt()
+            self.password_hash = password_hash(self.password_hash, self.password_salt)
 
     def __str__(self):
         import pprint
@@ -214,14 +229,8 @@ class _Options(object):
             self._write_timer = Timer(1.0, self._write)
             self._write_timer.start()
 
-    """ Makes possible using this class like options[<item>] """
-    __getitem__ = __getattr__
-
-    """ Makes possible using this class like options[<item>] = <value> """
-    __setitem__ = __setattr__
-
     def _write(self):
-        """This function saves the current data to disk. Use a timer to limit the call rate."""
+        ''''This function saves the current data to disk. Use a timer to limit the call rate.'''
         db = shelve.open(OPTIONS_FILE)
         db.update(self._values)
         db.close()
@@ -265,3 +274,13 @@ class _Options(object):
         setattr(self, cls + str(key), values)
 
 options = _Options()
+
+
+class _LevelAdjustments(dict):
+    def __init__(self):
+        super(_LevelAdjustments, self).__init__()
+
+    def total_adjustment(self):
+        return reduce(lambda x, y: x * y, self.values(), options.level_adjustment)
+
+level_adjustments = _LevelAdjustments()
