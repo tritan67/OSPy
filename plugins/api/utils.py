@@ -136,3 +136,23 @@ def auth(func):
             raise web.unauthorized()
         return func(self, *args, **kwargs)
     return wrapper
+
+
+class JSONAppBrowser(web.browser.AppBrowser):
+    """
+    JSON-ified AppBrowser
+    """
+    # TODO: tests
+
+    headers = {'Accept': 'application/json'}
+
+    def json_open(self, url, data=None, headers={}, method='GET'):
+        headers = headers or self.headers
+        url = urllib.basejoin(self.url, url)
+        req = urllib2.Request(url, json.dumps(data), headers)
+        req.get_method = lambda: method  # Fake urllub's get_method
+        return self.do_request(req)
+
+    @property
+    def json_data(self):
+        return json.loads(self.data)
