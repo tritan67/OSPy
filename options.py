@@ -147,7 +147,7 @@ class _Options(object):
             "key": "system_enabled",
             "name": "Enable system",
             "default": True,
-            },
+        },
         {
             "key": "manual_mode",
             "name": "Manual operation",
@@ -163,17 +163,17 @@ class _Options(object):
             "key": "password_hash",
             "name": "Current password hash",
             "default": "opendoor",
-            },
+        },
         {
             "key": "password_salt",
             "name": "Current password salt",
             "default": "",
-            },
+        },
         {
             "key": "program_count",
             "name": "The number of programs",
             "default": 0,
-            },
+        },
         {
             "key": "logged_runs",
             "name": "The runs that have been logged",
@@ -204,6 +204,7 @@ class _Options(object):
 
     def __str__(self):
         import pprint
+
         pp = pprint.PrettyPrinter(indent=2)
         return pp.pformat(self._values)
 
@@ -226,10 +227,10 @@ class _Options(object):
             self._write_timer = Timer(1.0, self._write)
             self._write_timer.start()
 
-    """ Makes possible using this class like options[<item>] """
+    # Makes it possible to use this class like options[<item>]
     __getitem__ = __getattr__
 
-    """ Makes possible using this class like options[<item>] = <value> """
+    # Makes it possible to use this class like options[<item>] = <value>
     __setitem__ = __setattr__
 
     def _write(self):
@@ -276,6 +277,7 @@ class _Options(object):
                 values[attr] = getattr(obj, attr)
         setattr(self, cls + str(key), values)
 
+
 options = _Options()
 
 
@@ -285,5 +287,6 @@ class _LevelAdjustments(dict):
 
     def total_adjustment(self):
         return reduce(lambda x, y: x * y, self.values(), options.level_adjustment)
+
 
 level_adjustments = _LevelAdjustments()
