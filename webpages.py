@@ -4,6 +4,7 @@ import os
 import re
 import time
 import datetime
+from options import options
 import web
 
 import gv
@@ -90,9 +91,7 @@ class view_options(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        errorCode = "none"
-        if 'errorCode' in qdict:
-            errorCode = qdict['errorCode']
+        errorCode = qdict.get('errorCode', 'none')
 
         return template_render.options(errorCode)
 
@@ -126,16 +125,16 @@ class change_options(ProtectedPage):
             pass
 
         if 'oname' in qdict:
-            gv.sd['name'] = qdict['oname']
+            options.name = qdict['oname']
         if 'oloc' in qdict:
-            gv.sd['loc'] = qdict['oloc']
+            options.location = qdict['oloc']
         if 'otz' in qdict:
             gv.sd['tz'] = int(qdict['otz'])
         try:
             if 'otf' in qdict and (qdict['otf'] == 'on' or qdict['otf'] == '1'):
-                gv.sd['tf'] = 1
+                options.time_format = 1
             else:
-                gv.sd['tf'] = 0
+                options.time_format = 0
         except KeyError:
             pass
 
@@ -145,16 +144,16 @@ class change_options(ProtectedPage):
 
         gv.sd['nst'] = gv.sd['nbrd'] * 8
         if 'ohtp' in qdict:
-            gv.sd['htp'] = int(qdict['ohtp'])
+            options.web_port = int(qdict['ohtp'])
         if 'osdt' in qdict:
-            gv.sd['sdt'] = int(qdict['osdt'])
+            options.station_delay = int(qdict['osdt'])
 
         if 'omas' in qdict:
             gv.sd['mas'] = int(qdict['omas'])
         if 'omton' in qdict:
-            gv.sd['mton'] = int(qdict['omton'])
+            options.master_on_delay = int(qdict['omton'])
         if 'omtoff' in qdict:
-            gv.sd['mtoff'] = int(qdict['omtoff'])
+            options.master_off_delay = int(qdict['omtoff'])
         if 'owl' in qdict:
             gv.sd['wl'] = int(qdict['owl'])
 
@@ -164,14 +163,14 @@ class change_options(ProtectedPage):
             gv.sd['urs'] = 0
 
         if 'oseq' in qdict and (qdict['oseq'] == 'on' or qdict['oseq'] == '1'):
-            gv.sd['seq'] = 1
+            options.sequential = 1
         else:
-            gv.sd['seq'] = 0
+            options.sequential = 0
 
         if 'orst' in qdict and (qdict['orst'] == 'on' or qdict['orst'] == '1'):
-            gv.sd['rst'] = 1
+            gv.options.rain_sensor_no = 1
         else:
-            gv.sd['rst'] = 0
+            gv.options.rain_sensor_no = 0
 
         if 'olg' in qdict and (qdict['olg'] == 'on' or qdict['olg'] == '1'):
             gv.sd['lg'] = 1
@@ -187,7 +186,8 @@ class change_options(ProtectedPage):
         raise web.seeother('/')
 
     def update_scount(self, qdict):
-        """Increase or decrease the number of stations displayed when number of expansion boards is changed in options."""
+        """Increase or decrease the number of stations displayed when number of expansion boards is
+        changed in options."""
         if int(qdict['onbrd']) + 1 > gv.sd['nbrd']:  # Lengthen lists
             incr = int(qdict['onbrd']) - (gv.sd['nbrd'] - 1)
             for i in range(incr):
@@ -287,7 +287,7 @@ class get_set_station(ProtectedPage):
                 return status
             else:
                 return 'Station ' + str(sid+1) + ' not found.'
-        elif gv.sd['mm']:
+        elif options.manual_mode:
             if set_to:  # if status is
                 gv.rs[sid][0] = gv.now  # set start time to current time
                 if set_time > 0:  # if an optional duration time is given
@@ -319,7 +319,7 @@ class change_runonce(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        if not gv.sd['en']:   # check operation status
+        if not options.system_enabled:   # check operation status
             return
         gv.rovals = json.loads(qdict['t'])
         gv.rovals.pop()
@@ -503,7 +503,7 @@ class api_status(ProtectedPage):
                     irbit = (gv.sd['ir'][bid] >> s) & 1
                     status = {'station': sid, 'status': 'disabled', 'reason': '', 'master': 0, 'programName': '',
                               'remaining': 0}
-                    if gv.sd['en'] == 1:
+                    if options.system_enabled == 1:
                         if sbit:
                             status['status'] = 'on'
                         if not irbit:

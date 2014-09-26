@@ -13,16 +13,17 @@ $code:
 <head>
 	<meta name="viewport" content="width=640">
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>${content.title + (" - "+gv.sd['name'] if gv.sd['name'] != "OpenSprinkler Pi" else "")}</title>
+	<title>${content.title + (" - "+options.name if options.name != "OpenSprinkler Pi" else "")}</title>
 	<link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
-	<link href="${gv.baseurl}/static/themes/${gv.sd['theme']}/base.css" rel="stylesheet" type="text/css"/>
+	<!--<link href="${gv.baseurl}/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>-->
+	<link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>
 	<style type="text/css">
 		.bluebg {background-color:lightblue;}
 		.opOn, .wlOn, .rsOff {color:green;}
 		.opOff, .wlOff, .rsOn {color:red;}
 		.rdOff {color:black;}
 		.rdOn {color:red;}
-		.rsNA, station_waiting {color:gray;}
+		.rsNA, .station_waiting {color:gray;}
 		.station_disabled {color:gray;}
 
 		#lastRun {color:gray;}
@@ -45,11 +46,12 @@ $code:
 		td.stationNumber, td.stationShow, td.stationIgnore, td.stationMaster {text-align:center}
 		td.stationName {text-align:left; padding-left:1em;}
 	</style>
-	<script src="${gv.baseurl}/static/scripts/jquery-1.8.2.min.js"></script>
+	<!--<script src="${gv.baseurl}/static/scripts/jquery-1.8.2.min.js"></script>-->
+	<script src="/static/scripts/jquery-1.8.2.min.js"></script>
 	<script>
 		// Variables set server-side
 		var devt = ${gv.gmtnow}*1000;
-		var timeFormat = ${gv.sd["tf"]};
+		var timeFormat = ${options.time_format};
 
 		var cputemp = "${gv.cputemp}";
 		var tempunit = "${gv.sd['tu']}";
@@ -59,8 +61,8 @@ $code:
             var lrun = ${gv.lrun};
             var rdst = ${gv.sd['rdst']}*1000;
             var ipas = ${gv.sd['ipas']};
-            var en = ${gv.sd['en']};
-            var mm = ${gv.sd['mm']};
+            var en = ${options.system_enabled};
+            var mm = ${options.manual_mode};
             var rd = ${gv.sd['rd']};
             var wl = ${gv.sd['wl']};
             var wlx = ${plugin_adjustment()};
@@ -69,8 +71,8 @@ $code:
             var plugins = $:{gv.plugin_menu}
             var progs = $:{gv.pd};
             var nprogs = ${len(gv.pd)};
-            var sdt = ${gv.sd['sdt']};
-            var seq = ${gv.sd['seq']};
+            var sdt = ${options.station_delay};
+            var seq = ${options.sequential};
 
             jQuery(document).ready(function(){
                 $if len(gv.plugin_menu) > 0:
@@ -95,9 +97,12 @@ $code:
                 });
             });
 	</script>
-	<script src="${gv.baseurl}/static/scripts/behaviors.js"></script>
-	<script src="${gv.baseurl}/static/scripts/schedule.js"></script>
-	<script src="${gv.baseurl}/static/scripts/intervalSelect.js"></script>
+	<!--<script src="${gv.baseurl}/static/scripts/behaviors.js"></script>-->
+	<!--<script src="${gv.baseurl}/static/scripts/schedule.js"></script>-->
+	<!--<script src="${gv.baseurl}/static/scripts/intervalSelect.js"></script>-->
+    <script src="/static/scripts/behaviors.js"></script>
+	<script src="/static/scripts/schedule.js"></script>
+	<script src="/static/scripts/intervalSelect.js"></script>
 </head>
 <body>
 	<div class="content">
@@ -109,7 +114,7 @@ $code:
 	    </div>
 
 		<div class="header">
-			<div class="title">${gv.sd['name'] if gv.sd['name'] != "OpenSprinkler Pi" else ""}</div>
+			<div class="title">${options.name if options.name != "OpenSprinkler Pi" else ""}</div>
 		</div>
 		
 		<div class="body">

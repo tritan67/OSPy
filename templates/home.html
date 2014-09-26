@@ -3,7 +3,7 @@ $def with ()
 $var title: OpenSprinkler Pi
 $var page: home
 $code:
-	tf = gv.sd["tf"]
+	tf = options.time_format
 	snames = gv.snames
 
 $code:
@@ -115,7 +115,7 @@ $code:
 
     // Initialize behaviors
     jQuery(document).ready(function(){
-        $if gv.sd['mm'] == 0:
+        $if options.manual_mode == 0:
             statusTimer();
 
         jQuery("button#cStartStop").click(function(){
@@ -209,7 +209,7 @@ $code:
     }
 </script>
 <div id="options">
-    <button id="cStartStop" class="toggle ${'on' if gv.sd['en'] else 'off'}"><span class='toggleleft'>System On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>System Off</span></button>
+    <button id="cStartStop" class="toggle ${'on' if options.system_enabled else 'off'}"><span class='toggleleft'>System On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>System Off</span></button>
     <br>
     <button id="cWaterLevel" class="toggle choice ${'on' if gv.sd['wl']==100 else 'off'}"><span class='toggleleft'>Normal</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>${'Water Level' if gv.sd['wl']==100 else str(gv.sd['wl']) + '% Level'}</span></button>${'' if int(plugin_adjustment()) == 100 else ' Plugin adjustments: ' + plugin_adjustment_list() + ('' if gv.sd['wl']==100 and '*' not in plugin_adjustment_list() else ' - Total adjustment: ' + total_adjustment() + '%')}
     <br>
@@ -219,12 +219,12 @@ $code:
     $if gv.sd['urs']:
         <span class="rainsense">${'' if gv.sd['rs'] else 'no'} rain sensed</span>
     <br>
-    <button id="cManual" class="toggle choice ${'off' if gv.sd['mm'] else 'on'}"><span class='toggleleft'>Auto</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Manual</span></button>
+    <button id="cManual" class="toggle choice ${'off' if options.manual_mode else 'on'}"><span class='toggleleft'>Auto</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Manual</span></button>
 </div>
 
 <div id="stationsdiv">
 
-$if gv.sd['mm']:
+$if options.manual_mode:
     <div id="manualmode">
         <table id="stations" class="stationList">
         $# Manual program control formatting

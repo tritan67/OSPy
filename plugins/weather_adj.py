@@ -6,6 +6,7 @@ import time
 import re
 import urllib
 import urllib2
+from options import options
 
 import web
 import gv  # Get access to ospy's settings
@@ -62,10 +63,10 @@ def get_weather_options():
 
 # Resolve location to LID
 def get_wunderground_lid():
-    if re.search("pws:", gv.sd['loc']):
-        lid = gv.sd['loc']
+    if re.search("pws:", options.location):
+        lid = options.location
     else:
-        data = urllib2.urlopen("http://autocomplete.wunderground.com/aq?h=0&query=" + urllib.quote_plus(gv.sd['loc']))
+        data = urllib2.urlopen("http://autocomplete.wunderground.com/aq?h=0&query=" + urllib.quote_plus(options.location))
         data = json.load(data)
         if data is None:
             return ""
@@ -77,7 +78,7 @@ def get_wunderground_lid():
 def get_woeid():
     data = urllib2.urlopen(
         "http://query.yahooapis.com/v1/public/yql?q=select%20woeid%20from%20geo.placefinder%20where%20text=%22" +
-        urllib.quote_plus(gv.sd["loc"]) + "%22").read()
+        urllib.quote_plus(options.location) + "%22").read()
     woeid = re.search("<woeid>(\d+)</woeid>", data)
     if woeid is None:
         return 0
