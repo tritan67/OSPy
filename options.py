@@ -169,19 +169,16 @@ class _Options(object):
             "name": "Current password salt",
             "default": "",
         },
-
         {
             "key": "program_count",
             "name": "The number of programs",
             "default": 0,
         },
-
         {
             "key": "logged_runs",
             "name": "The runs that have been logged",
             "default": []
         }
-
     ]
 
     def __init__(self):
@@ -207,6 +204,7 @@ class _Options(object):
 
     def __str__(self):
         import pprint
+
         pp = pprint.PrettyPrinter(indent=2)
         return pp.pformat(self._values)
 
@@ -229,8 +227,14 @@ class _Options(object):
             self._write_timer = Timer(1.0, self._write)
             self._write_timer.start()
 
+    # Makes it possible to use this class like options[<item>]
+    __getitem__ = __getattr__
+
+    # Makes it possible to use this class like options[<item>] = <value>
+    __setitem__ = __setattr__
+
     def _write(self):
-        ''''This function saves the current data to disk. Use a timer to limit the call rate.'''
+        """This function saves the current data to disk. Use a timer to limit the call rate."""
         db = shelve.open(OPTIONS_FILE)
         db.update(self._values)
         db.close()
@@ -273,6 +277,7 @@ class _Options(object):
                 values[attr] = getattr(obj, attr)
         setattr(self, cls + str(key), values)
 
+
 options = _Options()
 
 
@@ -282,5 +287,6 @@ class _LevelAdjustments(dict):
 
     def total_adjustment(self):
         return reduce(lambda x, y: x * y, self.values(), options.level_adjustment)
+
 
 level_adjustments = _LevelAdjustments()
