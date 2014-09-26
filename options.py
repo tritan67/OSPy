@@ -155,11 +155,10 @@ class _Options(object):
             "default": False,
         },
 
-
         {
             "key": "password_hash",
             "name": "Current password hash",
-            "default": "",
+            "default": "opendoor",
         },
         {
             "key": "password_salt",
@@ -194,6 +193,13 @@ class _Options(object):
             db.close()
         except Exception:
             pass
+
+        if not self.password_salt:  # Password is not hashed yet
+            from helpers import password_salt
+            from helpers import password_hash
+
+            self.password_salt = password_salt()
+            self.password_hash = password_hash(self.password_hash, self.password_salt)
 
     def __str__(self):
         import pprint
