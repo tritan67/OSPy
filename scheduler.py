@@ -4,6 +4,7 @@ __author__ = 'Rimco'
 
 from options import options
 from options import level_adjustments
+from options import rain_blocks
 from programs import programs
 from log import log
 
@@ -18,6 +19,9 @@ def predicted_schedule(start_time, end_time):
 
     adjustment = level_adjustments.total_adjustment()
     max_usage = 1.01 if options.sequential else 1000000  # FIXME
+
+    rain_block_start = datetime.datetime.now()
+    rain_block_end = rain_blocks.block_end()
 
     skip_uids = [entry['uid'] for entry in log.finished_runs()]
     current_active = log.active_runs()
@@ -78,11 +82,11 @@ def predicted_schedule(start_time, end_time):
     # Make list of entries sorted on time (stable sorted on station #)
     all_intervals.sort(key=lambda inter: inter['start'])
 
+    blocked = []
     # Try to add each interval
     for interval in all_intervals:
-        done = False
 
-        while not done:
+        while True:
             # Delete all intervals that have finished
             while current_active:
                 if current_active[0]['end'] > interval['start']:
@@ -92,15 +96,19 @@ def predicted_schedule(start_time, end_time):
 
             # Check if we can add it now
             if current_usage + interval['usage'] <= max_usage:
-                current_usage += interval['usage']
-                # Add the newly "activated" station to the active list
-                for index in range(len(current_active)):
-                    if current_active[index]['end'] > interval['end']:
-                        current_active.insert(index, interval)
-                        break
+                if not stations.get(interval['station']).ignore_rain and \
+                        rain_block_start <= interval['start'] < rain_block_end:
+                    blocked.append(interval)
                 else:
-                    current_active.append(interval)
-                done = True
+                    current_usage += interval['usage']
+                    # Add the newly "activated" station to the active list
+                    for index in range(len(current_active)):
+                        if current_active[index]['end'] > interval['end']:
+                            current_active.insert(index, interval)
+                            break
+                    else:
+                        current_active.append(interval)
+                break
             else:
                 # Shift this interval to next possibility
                 next_option = current_active[0]['end'] + datetime.timedelta(seconds=options.station_delay)
@@ -108,27 +116,31 @@ def predicted_schedule(start_time, end_time):
                 interval['start'] += time_to_next
                 interval['end'] += time_to_next
 
+    for interval in blocked:
+        all_intervals.remove(interval)
+
     all_intervals.sort(key=lambda inter: inter['start'])
 
-    return all_intervals
+    return all_intervals, blocked
 
 
 def combined_schedule(start_time, end_time):
     current_time = datetime.datetime.now()
     if current_time < start_time:
-        result = predicted_schedule(start_time, end_time)
+        result, blocked = predicted_schedule(start_time, end_time)
     elif current_time > end_time:
         result = []
+        blocked = []
         for entry in log.finished_runs():
             if start_time <= entry['start'] <= end_time or start_time <= entry['end'] <= end_time:
                 result.append(entry)
     else:
         result = log.finished_runs()
         result += log.active_runs()
-        predicted = predicted_schedule(start_time, end_time)
+        predicted, blocked = predicted_schedule(start_time, end_time)
         result += [entry for entry in predicted if current_time <= entry['start'] <= end_time]
 
-    return result
+    return result, blocked
 
 
 def check_schedule():
@@ -162,7 +174,7 @@ def check_schedule():
                         break
 
             else:
-                active = combined_schedule(check_start, check_end, current_time)
+                active, blocked = combined_schedule(check_start, check_end)
                 for entry in active:
                     if stations.get(entry['station']).activate_master:
                         if entry['start'] + datetime.timedelta(seconds=options.master_on_delay) \

@@ -1,5 +1,6 @@
 import shelve
 from threading import Timer
+import datetime
 
 __author__ = 'Rimco'
 
@@ -158,6 +159,11 @@ class _Options(object):
             "name": "Level adjustment set by the user (fraction)",
             "default": 1.0,
         },
+        {
+            "key": "rain_block",
+            "name": "Rain block (rain delay) set by the user (datetime)",
+            "default": datetime.datetime(1970, 1, 1),
+        },
 
         {
             "key": "password_hash",
@@ -290,3 +296,14 @@ class _LevelAdjustments(dict):
 
 
 level_adjustments = _LevelAdjustments()
+
+
+class _RainBlocks(dict):
+    def __init__(self):
+        super(_RainBlocks, self).__init__()
+
+    def block_end(self):
+        return max(self.values() + [options.rain_block])
+
+
+rain_blocks = _RainBlocks()
