@@ -164,6 +164,11 @@ class _Options(object):
             "name": "Rain block (rain delay) set by the user (datetime)",
             "default": datetime.datetime(1970, 1, 1),
         },
+        {
+            "key": "temp_unit",
+            "name": "C/F",
+            "default": 'C',
+        },
 
         {
             "key": "password_hash",
@@ -307,3 +312,12 @@ class _RainBlocks(dict):
 
 
 rain_blocks = _RainBlocks()
+
+
+class _Plugins(dict):
+    def __init__(self):
+        super(_Plugins, self).__init__()
+
+    # TODO
+
+plugins = _Plugins()
