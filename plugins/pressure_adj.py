@@ -163,7 +163,7 @@ class settings(ProtectedPage):
     """Load an html page for entering pressure adjustments."""
 
     def GET(self):
-        return template_render.pressure_adj(get_pressure_options())
+        return self.template_render.pressure_adj(get_pressure_options())
 
 
 class settings_json(ProtectedPage):

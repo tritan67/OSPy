@@ -202,7 +202,7 @@ class settings(ProtectedPage):
     """Load an html page for entering email adjustments."""
 
     def GET(self):
-        return template_render.email_adj(get_email_options())
+        return self.template_render.email_adj(get_email_options())
 
 
 class settings_json(ProtectedPage):

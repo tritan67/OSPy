@@ -1,23 +1,37 @@
 # -*- coding: utf-8 -*-
 
-import os
-import re
+import json
 import time
 import datetime
-from options import options
 import web
 
-import gv
 from helpers import *
-from ospy import template_render
+from options import options
+from options import level_adjustments
+from options import rain_blocks
+from options import plugins
+import version
 
 __author__ = 'Rimco'
 
 
 class WebPage(object):
     def __init__(self):
-        gv.baseurl = baseurl()
-        gv.cputemp = get_cpu_temp()
+        template_globals = {
+            'options': options,
+            'level_adjustments': level_adjustments,
+            'rain_blocks': rain_blocks,
+            'plugins': plugins,
+            'version': version,
+            'str': str,
+            'eval': eval,
+            'session': web.config._session,
+            'json': json,
+            'base_url': baseurl(),
+            'cpu_temp': get_cpu_temp(),
+            'now': time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
+        }
+        self.template_render = web.template.render('templates', globals=template_globals, base='base')
 
 
 class ProtectedPage(WebPage):
@@ -30,13 +44,13 @@ class login(WebPage):
     """Login page"""
 
     def GET(self):
-        return template_render.login(signin_form())
+        return self.template_render.login(signin_form())
 
     def POST(self):
         my_signin = signin_form()
 
         if not my_signin.validates():
-            return template_render.login(my_signin)
+            return self.template_render.login(my_signin)
         else:
             web.config._session.user = 'admin'
             raise web.seeother('/')
@@ -54,7 +68,7 @@ class home(ProtectedPage):
     """Open Home page."""
 
     def GET(self):
-        return template_render.home()
+        return self.template_render.home()
 
 
 class change_values(ProtectedPage):
@@ -93,7 +107,7 @@ class view_options(ProtectedPage):
         qdict = web.input()
         errorCode = qdict.get('errorCode', 'none')
 
-        return template_render.options(errorCode)
+        return self.template_render.options(errorCode)
 
 
 class change_options(ProtectedPage):
@@ -225,7 +239,7 @@ class view_stations(ProtectedPage):
     """Open a page to view and edit a run once program."""
 
     def GET(self):
-        return template_render.stations()
+        return self.template_render.stations()
 
 
 class change_stations(ProtectedPage):
@@ -311,7 +325,7 @@ class view_runonce(ProtectedPage):
     """Open a page to view and edit a run once program."""
 
     def GET(self):
-        return template_render.runonce()
+        return self.template_render.runonce()
 
 
 class change_runonce(ProtectedPage):
@@ -345,7 +359,7 @@ class view_programs(ProtectedPage):
     """Open programs page."""
 
     def GET(self):
-        return template_render.programs()
+        return self.template_render.programs()
 
 
 class modify_program(ProtectedPage):
@@ -363,7 +377,7 @@ class modify_program(ProtectedPage):
                 rel_rem = (((mp[1] - 128) + mp[2]) - (dse % mp[2])) % mp[2]
                 mp[1] = rel_rem + 128  # Update from saved value.
             prog = str(mp).replace(' ', '')
-        return template_render.modify(pid, prog)
+        return self.template_render.modify(pid, prog)
 
 
 class change_program(ProtectedPage):
@@ -425,7 +439,7 @@ class view_log(ProtectedPage):
 
     def GET(self):
         records = read_log()
-        return template_render.log(records)
+        return self.template_render.log(records)
 
 
 class clear_log(ProtectedPage):

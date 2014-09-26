@@ -15,6 +15,28 @@ from web.session import sha1
 ##############################
 #### Function Definitions ####
 
+def determine_platform():
+    try:
+        import RPi.GPIO
+        return 'pi'
+    except Exception:
+        pass
+    try:
+        import Adafruit_BBIO.GPIO
+        return 'bo'
+    except Exception:
+        pass
+    return ''
+
+
+def get_rpi_revision():
+    try:
+        import RPi.GPIO as GPIO
+        return GPIO.RPI_REVISION
+    except ImportError:
+        return 0
+
+
 def reboot(wait=1, block=False):
     if block:
         from stations import stations
@@ -76,12 +98,27 @@ def get_ip():
         return "No IP Settings"
 
 
-def get_rpi_revision():
+def get_cpu_temp(unit=None):
+    """Returns the temperature of the CPU if available."""
     try:
-        import RPi.GPIO as GPIO
-        return GPIO.RPI_REVISION
-    except ImportError:
-        return 0
+        platform = determine_platform()
+        if platform == 'bo':
+            res = os.popen('cat /sys/class/hwmon/hwmon0/device/temp1_input').readline()
+            temp = str(int(float(res) / 1000))
+        elif platform == 'pi':
+            res = os.popen('vcgencmd measure_temp').readline()
+            temp = res.replace("temp=", "").replace("'C\n", "")
+        else:
+            temp = str(0)
+
+        if unit == 'F':
+            return str(9.0 / 5.0 * float(temp) + 32)
+        elif unit is not None:
+            return str(float(temp))
+        else:
+            return temp
+    except Exception:
+        return '!!'
 
 
 def baseurl():
@@ -103,6 +140,9 @@ def stop_onrain():
             station.activated = False
 
 
+########################
+#### Login Handling ####
+
 def password_salt():
     return "".join(chr(random.randint(33, 127)) for _ in xrange(64))
 
@@ -111,12 +151,9 @@ def password_hash(password, salt):
     return sha1(password + salt).hexdigest()
 
 
-########################
-#### Login Handling ####
-
-def test_password(pwd):
+def test_password(storage):
     from options import options
-    return options.password_hash == password_hash(pwd, options.password_salt)
+    return options.password_hash == password_hash(storage['password'], options.password_salt)
 
 
 def check_login(redirect=False):

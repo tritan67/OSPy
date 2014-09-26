@@ -153,7 +153,7 @@ class settings(ProtectedPage):
     """Load an html page for entering weather-based irrigation adjustments"""
 
     def GET(self):
-        return template_render.weather_adj(get_weather_options())
+        return self.template_render.weather_adj(get_weather_options())
 
 
 class settings_json(ProtectedPage):

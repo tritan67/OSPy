@@ -285,7 +285,7 @@ class settings(ProtectedPage):
     """Load an html page for entering sms adjustments."""
 
     def GET(self):
-        return template_render.sms_adj(get_sms_options())
+        return self.template_render.sms_adj(get_sms_options())
 
 
 class settings_json(ProtectedPage):

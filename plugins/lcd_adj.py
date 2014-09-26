@@ -211,7 +211,7 @@ class settings(ProtectedPage):
     """Load an html page for entering lcd adjustments."""
 
     def GET(self):
-        return template_render.lcd_adj(get_lcd_options())
+        return self.template_render.lcd_adj(get_lcd_options())
 
 
 class settings_json(ProtectedPage):

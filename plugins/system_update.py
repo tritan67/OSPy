@@ -149,7 +149,7 @@ class status_page(ProtectedPage):
 
     def GET(self):
         checker.started.wait(10)    # Make sure we are initialized
-        return template_render.system_update(checker.status)
+        return self.template_render.system_update(checker.status)
 
 
 class refresh_page(ProtectedPage):
@@ -165,7 +165,7 @@ class update_page(ProtectedPage):
 
     def GET(self):
         perform_update()
-        return template_render.restarting('/UPs')
+        return self.template_render.restarting('/UPs')
 
 
 class restart_page(ProtectedPage):
@@ -173,4 +173,4 @@ class restart_page(ProtectedPage):
 
     def GET(self):
         restart(3)
-        return template_render.restarting('/UPs')
+        return self.template_render.restarting('/UPs')

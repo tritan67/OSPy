@@ -1,21 +1,11 @@
 $def with (content)
-$code:
-	snames = gv.snames
-
-$code:
-    def plugin_adjustment():
-        duration_adjustments = [gv.sd[entry] for entry in gv.sd if entry.startswith('wl_')]
-        result = 100.0
-        for entry in duration_adjustments:
-            result *= entry/100.0
-        return '%.0f' % result
 <html>
 <head>
 	<meta name="viewport" content="width=640">
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<title>${content.title + (" - "+options.name if options.name != "OpenSprinkler Pi" else "")}</title>
 	<link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
-	<!--<link href="${gv.baseurl}/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>-->
+	<!--<link href="${base_url}/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>-->
 	<link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>
 	<style type="text/css">
 		.bluebg {background-color:lightblue;}
@@ -46,36 +36,19 @@ $code:
 		td.stationNumber, td.stationShow, td.stationIgnore, td.stationMaster {text-align:center}
 		td.stationName {text-align:left; padding-left:1em;}
 	</style>
-	<!--<script src="${gv.baseurl}/static/scripts/jquery-1.8.2.min.js"></script>-->
+	<!--<script src="${base_url}/static/scripts/jquery-1.8.2.min.js"></script>-->
 	<script src="/static/scripts/jquery-1.8.2.min.js"></script>
 	<script>
 		// Variables set server-side
-		var devt = ${gv.gmtnow}*1000;
+		var devt = ${now}*1000;
 		var timeFormat = ${options.time_format};
 
-		var cputemp = "${gv.cputemp}";
-		var tempunit = "${gv.sd['tu']}";
+		var cputemp = "${cpu_temp}";
+		var tempunit = "${options.temp_unit}";
 
         $if content.page != 'login':
-            var snames = $:{[s.encode('utf-8') for s in snames]};
-            var lrun = ${gv.lrun};
-            var rdst = ${gv.sd['rdst']}*1000;
-            var ipas = ${gv.sd['ipas']};
-            var en = ${options.system_enabled};
-            var mm = ${options.manual_mode};
-            var rd = ${gv.sd['rd']};
-            var wl = ${gv.sd['wl']};
-            var wlx = ${plugin_adjustment()};
-            var mas = ${gv.sd['mas']};
-            var nbrd = ${gv.sd['nbrd']};
-            var plugins = $:{gv.plugin_menu}
-            var progs = $:{gv.pd};
-            var nprogs = ${len(gv.pd)};
-            var sdt = ${options.station_delay};
-            var seq = ${options.sequential};
-
             jQuery(document).ready(function(){
-                $if len(gv.plugin_menu) > 0:
+                $if len(plugins) > 0:
                     jQuery.each(plugins, function() {
                         jQuery('#pluginMenu').append('<button class="execute" type="button" onclick="window.location.href=\''+this[1]+'\'">'+this[0]+'</button><br/>');
                     });
@@ -97,9 +70,9 @@ $code:
                 });
             });
 	</script>
-	<!--<script src="${gv.baseurl}/static/scripts/behaviors.js"></script>-->
-	<!--<script src="${gv.baseurl}/static/scripts/schedule.js"></script>-->
-	<!--<script src="${gv.baseurl}/static/scripts/intervalSelect.js"></script>-->
+	<!--<script src="${base_url}/static/scripts/behaviors.js"></script>-->
+	<!--<script src="${base_url}/static/scripts/schedule.js"></script>-->
+	<!--<script src="${base_url}/static/scripts/intervalSelect.js"></script>-->
     <script src="/static/scripts/behaviors.js"></script>
 	<script src="/static/scripts/schedule.js"></script>
 	<script src="/static/scripts/intervalSelect.js"></script>
@@ -134,7 +107,7 @@ $code:
                         <button id="bLog" class="log${' here' if content.page=='log' else ''}" title="View Log">Log</button>
                         <button id="bOptions" class="options${' here' if content.page=='options' else ''}" title="Options">Options</button>
                         <button id="bStations" class="stations${' here' if content.page=='stations' else ''}" title="Configure Stations">Stations</button>
-                        $if not(gv.sd['ipas']):
+                        $if not options.no_password:
                             <button id="bLogout" class="logout" title="Logout">Logout</button>
                     </div>
 								
@@ -145,7 +118,7 @@ $code:
 		
 		<div class="footer">
 			<p>CPU Temp: <b><span id="heat" style="cursor:pointer" title="Click to toggle Celsius &lt;&gt; Fahrenheit"></span></b></p>
-			<p><a href="https://github.com/Rimco/OSPy">Software</a> version: <b>${gv.ver_str} (${gv.ver_date})</b></p>
+			<p><a href="https://github.com/Rimco/OSPy">Software</a> version: <b>${version.ver_str} (${version.ver_date})</b></p>
 		</div>
 	</div>
 </body>
