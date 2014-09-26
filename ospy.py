@@ -8,9 +8,12 @@ from calendar import timegm
 
 import web  # the Web.py module. See webpy.org (Enables the Python OpenSprinkler web interface)
 import gv
+# import globals
 
 from helpers import plugin_adjustment, prog_match, schedule_stations, log_run, stop_onrain, check_rain, jsave, station_names
 from urls import urls  # Provides access to URLs for UI pages
+
+from options import options
 
 
 def timing_loop():
@@ -20,7 +23,7 @@ def timing_loop():
     while True:  # infinite loop
         gv.now = timegm(time.localtime())   # Current time based on local time from the Pi. updated once per second.
         gv.gmtnow = time.time()             # Current gmt time (needed for client-side JS code).
-        if gv.sd['en'] and not gv.sd['mm'] and (not gv.sd['bsy'] or not gv.sd['seq']):
+        if options.system_enabled and not options.manual_mode and (not gv.sd['bsy'] or not options.sequential):
             lt = time.gmtime(gv.now)
             if (lt[3] * 60) + lt[4] != last_min:  # only check programs once a minute
                 last_min = (lt[3] * 60) + lt[4]
@@ -39,7 +42,7 @@ def timing_loop():
                                     continue
 
                                 if p[7 + b] & 1 << s:  # if this station is scheduled in this program
-                                    if gv.sd['seq']:  # sequential mode
+                                    if options.sequential:  # sequential mode
                                         gv.rs[sid][2] = duration
                                         gv.rs[sid][3] = i + 1  # store program number for scheduling
                                         gv.ps[sid][0] = i + 1  # store program number for display
@@ -83,8 +86,8 @@ def timing_loop():
                                 gv.ps[sid][1] = gv.rs[sid][2] + 1  # testing display
                                 if gv.sd['mas'] and gv.sd['mo'][b] & 1 << (s - (s / 8) * 80):  # Master settings
                                     masid = gv.sd['mas'] - 1  # master index
-                                    gv.rs[masid][0] = gv.rs[sid][0] + gv.sd['mton']
-                                    gv.rs[masid][1] = gv.rs[sid][1] + gv.sd['mtoff']
+                                    gv.rs[masid][0] = gv.rs[sid][0] + options.master_on_delay
+                                    gv.rs[masid][1] = gv.rs[sid][1] + options.master_off_delay
                                     gv.rs[masid][3] = gv.rs[sid][3]
                             elif gv.sd['mas'] == sid + 1:
                                 gv.sbits[b] |= 1 << sid  # (gv.sd['mas'] - 1)
@@ -120,7 +123,7 @@ def timing_loop():
                     gv.rs.append([0, 0, 0, 0])
                 gv.sd['bsy'] = 0
 
-            if gv.sd['mas'] and (gv.sd['mm'] or not gv.sd['seq']):  # handle master for maual or concurrent mode.
+            if gv.sd['mas'] and (options.manual_mode or not options.sequential):  # handle master for maual or concurrent mode.
                 mval = 0
                 for sid in range(gv.sd['nst']):
                     bid = sid / 8
@@ -145,7 +148,7 @@ def timing_loop():
 class OSPyApp(web.application):
     """Allow program to select HTTP port."""
 
-    def run(self, port=gv.sd['htp'], *middleware):  # get port number from options settings
+    def run(self, port=options.web_port, *middleware):  # get port number from options settings
         func = self.wsgifunc(*middleware)
         return web.httpserver.runsimple(func, ('0.0.0.0', port))
 

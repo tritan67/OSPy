@@ -30,9 +30,9 @@ $code:
 	even = program[1]&0x80 and program[2]==0
 	odd = program[1]&0x80 and program[2]==1
 	recurring = program[3] + program[6]/60*stationsOn < program[4]
-	tf = gv.sd['tf']
+	tf = options.time_format
 	def formatTime(t):
-		if gv.sd['tf']:
+		if options.time_format:
 			return t
 		else:
 			hour = int(t[0:2])

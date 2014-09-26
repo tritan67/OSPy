@@ -84,7 +84,7 @@ class PressureSender(Thread):
             try:
                 datapressure = get_pressure_options()                             # load data from file
                 if datapressure['press'] != 'off':                                # if pressure plugin is enabled
-                    if (gv.sd['mas'] != 0) and not (gv.sd['mm']):                   # if is use master station and not manual control
+                    if (gv.sd['mas'] != 0) and not (options.manual_mode):                   # if is use master station and not manual control
                         if gv.srvals[gv.sd['mas']] != 0:                              # if master station is ON
                             if GPIO.input(pin_pressure) == 0:                           # if sensor is open
                                 self._sleep(int(datapressure['time']))                   # wait to activated pressure sensor

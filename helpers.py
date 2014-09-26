@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
 from threading import Thread
+from options import options
+from stations import stations
 
 __author__ = 'Rimco'
 
@@ -16,7 +18,6 @@ from web import form
 import gv
 from web.session import sha1
 
-from stations import stations
 
 try:
     import json
@@ -66,14 +67,11 @@ def restart(wait=1, block=False):
 
 def uptime():
     """Returns UpTime for RPi"""
-    string = 'Error 1: uptime'
-
+    result = 'Error 1: uptime'
     with open("/proc/uptime") as f:
         total_sec = float(f.read().split()[0])
-        string = str(datetime.timedelta(seconds=total_sec)).split('.')[0]
-
-    return string
-
+        result = str(datetime.timedelta(seconds=total_sec)).split('.')[0]
+    return result
 
 def get_ip():
     """Returns the IP adress if available."""
@@ -105,12 +103,12 @@ def baseurl():
 
 def check_rain():
     try:
-        if gv.sd['rst'] == 0:
+        if gv.options.rain_sensor_no == 0:
             if GPIO.input(pin_rain_sense):  # Rain detected
                 gv.sd['rs'] = 1
             else:
                 gv.sd['rs'] = 0
-        elif gv.sd['rst'] == 1:
+        elif gv.options.rain_sensor_no == 1:
             if not GPIO.input(pin_rain_sense):
                 gv.sd['rs'] = 1
             else:
@@ -121,7 +119,7 @@ def check_rain():
 
 def clear_mm():
     """Clear manual mode settings."""
-    if gv.sd['mm']:
+    if options.manual_mode:
         gv.sbits = [0] * (gv.sd['nbrd'] + 1)
         gv.ps = []
         for i in range(gv.sd['nst']):
@@ -227,7 +225,7 @@ def schedule_stations(stations):
     else:
         rain = False
     accumulate_time = gv.now
-    if gv.sd['seq']:  # sequential mode, stations run one after another
+    if options.sequential:  # sequential mode, stations run one after another
         for b in range(len(stations)):
             for s in range(8):
                 sid = b * 8 + s  # station index
@@ -236,7 +234,7 @@ def schedule_stations(stations):
                         gv.rs[sid][0] = accumulate_time  # start at accumulated time
                         accumulate_time += gv.rs[sid][2]  # add duration
                         gv.rs[sid][1] = accumulate_time  # set new stop time
-                        accumulate_time += gv.sd['sdt']  # add station delay
+                        accumulate_time += options.station_delay  # add station delay
                     else:
                         gv.sbits[b] &= ~1 << s
                         gv.ps[s] = [0, 0]

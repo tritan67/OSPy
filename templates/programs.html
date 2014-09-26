@@ -32,7 +32,7 @@ $code:
 		return output
 
 	def formatTime(t):
-		if gv.sd['tf']:
+		if options.time_format:
 			return t
 		else:
 			hour = int(t[0:2])

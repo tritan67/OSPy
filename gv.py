@@ -28,7 +28,6 @@ except Exception:
 # Edit this default dictionary definition to add or remove "key": "value" pairs or change defaults.
 # note old passwords stored in the "pwd" option will be lost - reverts to default password.
 from calendar import timegm
-import json
 import time
 
 platform = ''  # must be done before the following import because gpio_pins will try to set it
@@ -39,10 +38,10 @@ now = timegm(time.localtime())
 gmtnow = time.time()
 plugin_menu = []  # Empty list of lists for plugin links (e.g. ['name', 'URL'])
 
-srvals = [0] * (sd['nst'])  # Shift Register values
-rovals = [0] * sd['nbrd'] * 7  # Run Once durations
-snames = station_names()  # Load station names from file
-pd = load_programs()  # Load program data from file
+# srvals = [0] * (sd['nst'])  # Shift Register values
+# rovals = [0] * sd['nbrd'] * 7  # Run Once durations
+# snames = station_names()  # Load station names from file
+# pd = load_programs()  # Load program data from file
 
 ps = []  # Program schedule (used for UI display)
 for i in range(sd['nst']):

@@ -1,4 +1,4 @@
-import json
+# import json
 import shelve
 from threading import Timer
 
@@ -148,37 +148,32 @@ class _Options(object):
             "key": "system_enabled",
             "name": "Enable system",
             "default": True,
-        },
+            },
         {
             "key": "manual_mode",
             "name": "Manual operation",
             "default": False,
-        },
-
-
+            },
         {
             "key": "password_hash",
             "name": "Current password hash",
             "default": "",
-        },
+            },
         {
             "key": "password_salt",
             "name": "Current password salt",
             "default": "",
-        },
-
+            },
         {
             "key": "program_count",
             "name": "The number of programs",
             "default": 0,
-        },
-
+            },
         {
             "key": "logged_runs",
             "name": "The runs that have been logged",
             "default": []
         }
-
     ]
 
     def __init__(self):
@@ -219,8 +214,14 @@ class _Options(object):
             self._write_timer = Timer(1.0, self._write)
             self._write_timer.start()
 
+    """ Makes possible using this class like options[<item>] """
+    __getitem__ = __getattr__
+
+    """ Makes possible using this class like options[<item>] = <value> """
+    __setitem__ = __setattr__
+
     def _write(self):
-        ''''This function saves the current data to disk. Use a timer to limit the call rate.'''
+        """This function saves the current data to disk. Use a timer to limit the call rate."""
         db = shelve.open(OPTIONS_FILE)
         db.update(self._values)
         db.close()
