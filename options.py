@@ -1,4 +1,3 @@
-import json
 import shelve
 from threading import Timer
 
@@ -154,6 +153,11 @@ class _Options(object):
             "name": "Manual operation",
             "default": False,
         },
+        {
+            "key": "level_adjustment",
+            "name": "Level adjustment set by the user (fraction)",
+            "default": 1.0,
+        },
 
         {
             "key": "password_hash",
@@ -270,3 +274,13 @@ class _Options(object):
         setattr(self, cls + str(key), values)
 
 options = _Options()
+
+
+class _LevelAdjustments(dict):
+    def __init__(self):
+        super(_LevelAdjustments, self).__init__()
+
+    def total_adjustment(self):
+        return reduce(lambda x, y: x * y, self.values(), options.level_adjustment)
+
+level_adjustments = _LevelAdjustments()
