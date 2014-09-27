@@ -422,12 +422,11 @@ class api_status_page(ProtectedPage):
                             active = log.active_runs()
                             for interval in active:
                                 if interval['station'] == station.index:
-                                    status['programName'] = "%d. %s" % (interval['program'] + 1,
-                                                                        programs.get(interval['program']).name)
+                                    status['programName'] = interval['program_name']
 
                                     status['status'] = 'on'
                                     status['reason'] = 'program'
-                                    status['remaining'] = (interval['end'] - datetime.datetime.now()).total_seconds()
+                                    status['remaining'] = max(0, (interval['end'] - datetime.datetime.now()).total_seconds())
 
                 else:
                     status['reason'] = 'system_off'
@@ -442,26 +441,29 @@ class api_log_page(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        thedate = qdict['date']
-        # date parameter filters the log values returned; "yyyy-mm-dd" format
-        theday = datetime.date(*map(int, thedate.split('-')))
-        prevday = theday - datetime.timedelta(days=1)
-        prevdate = prevday.strftime('%Y-%m-%d')
-
-        records = read_log()
         data = []
+        if 'date' in qdict:
+            # date parameter filters the log values returned; "yyyy-mm-dd" format
+            check_end = datetime.datetime.combine(
+                datetime.datetime.strptime(qdict['date'], "%Y-%m-%d").date(),
+                datetime.time.max)
+            check_start = check_end - datetime.timedelta(days=2)
 
-        for r in records:
-            event = json.loads(r)
+            events = log.finished_runs() + log.active_runs()
 
-            # return any records starting on this date
-            if 'date' not in qdict or event['date'] == thedate:
-                data.append(event)
-                # also return any records starting the day before and completing after midnight
-            if event['date'] == prevdate:
-                if int(event['start'].split(":")[0]) * 60 + int(event['start'].split(":")[1]) + int(
-                        event['duration'].split(":")[0]) > 24 * 60:
-                    data.append(event)
+            for interval in events:
+                # return only records that are visible on this day:
+                if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:
+                    duration = (interval['end'] - interval['start']).total_seconds()
+                    hours, remainder = divmod(duration, 3600)
+                    minutes, seconds = divmod(remainder, 60)
+
+                    data.append({
+                        'station': interval['station'],
+                        'date': interval['start'].strftime("%Y-%m-%d"),
+                        'start': interval['start'].strftime("%H:%M:%S"),
+                        'duration': "%02d:%02d" % (hours, minutes),
+                    })
 
         web.header('Content-Type', 'application/json')
         return json.dumps(data)
@@ -471,12 +473,22 @@ class water_log_page(ProtectedPage):
     """Simple Log API"""
 
     def GET(self):
-        records = read_log()
+        events = log.finished_runs() + log.active_runs()
+
         data = "Date, Start Time, Zone, Duration, Program\n"
-        for r in records:
-            event = json.loads(r)
-            data += event["date"] + ", " + event["start"] + ", " + str(event["station"]) + ", " + event[
-                "duration"] + ", " + event["program"] + "\n"
+        for interval in events:
+            # return only records that are visible on this day:
+            duration = (interval['end'] - interval['start']).total_seconds()
+            hours, remainder = divmod(duration, 3600)
+            minutes, seconds = divmod(remainder, 60)
+
+            data += ', '.join([
+                interval['start'].strftime("%Y-%m-%d"),
+                interval['start'].strftime("%H:%M:%S"),
+                str(interval['station']),
+                "%02d:%02d" % (hours, minutes),
+                interval['program_name']
+            ]) + '\n'
 
         web.header('Content-Type', 'text/csv')
         return data

@@ -127,7 +127,7 @@ class _BaseStations(object):
             index = [index]
         for i in index:
             if i < len(self._state):
-                self._state[i] = True
+                self._state[i] = False
 
     def active(self, index=None):
         if index is None:

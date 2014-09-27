@@ -292,6 +292,7 @@ class _Options(object):
     def _write(self):
         """This function saves the current data to disk. Use a timer to limit the call rate."""
         db = shelve.open(OPTIONS_FILE)
+        db.clear()
         db.update(self._values)
         db.close()
 
