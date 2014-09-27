@@ -15,6 +15,7 @@ from options import level_adjustments
 from options import options
 from options import plugins
 from options import rain_blocks
+from programs import programs
 from stations import stations
 import version
 
@@ -393,54 +394,45 @@ class api_status_page(ProtectedPage):
 
     def GET(self):
         statuslist = []
-        for bid in range(0, gv.sd['nbrd']):
-            for s in range(0, 8):
-                if (gv.sd['show'][bid] >> s) & 1 == 1:
-                    sid = bid * 8 + s
-                    sn = sid + 1
-                    sbit = (gv.sbits[bid] >> s) & 1
-                    irbit = (gv.sd['ir'][bid] >> s) & 1
-                    status = {'station': sid, 'status': 'disabled', 'reason': '', 'master': 0, 'programName': '',
-                              'remaining': 0}
-                    if options.system_enabled == 1:
-                        if sbit:
-                            status['status'] = 'on'
-                        if not irbit:
-                            if rain_blocks != 0:
-                                status['reason'] = 'rain_delay'
-                            if options.rain_sensor_enabled != 0 and inputs.rain_input != 0:
-                                status['reason'] = 'rain_sensed'
-                        if sn == gv.sd['mas']:
-                            status['master'] = 1
-                            status['reason'] = 'master'
-                        else:
-                            rem = gv.ps[sid][1]
-                            if rem > 65536:
-                                rem = 0
-
-                            id_nr = gv.ps[sid][0]
-                            pname = 'P' + str(id_nr)
-                            if id_nr == 255 or id_nr == 99:
-                                pname = 'Manual Mode'
-                            if id_nr == 254 or id_nr == 98:
-                                pname = 'Run-once Program'
-
-                            if sbit:
-                                status['status'] = 'on'
-                                status['reason'] = 'program'
-                                status['programName'] = pname
-                                status['remaining'] = rem
-                            else:
-                                if gv.ps[sid][0] == 0:
-                                    status['status'] = 'off'
-                                else:
-                                    status['status'] = 'waiting'
-                                    status['reason'] = 'program'
-                                    status['programName'] = pname
-                                    status['remaining'] = rem
+        for station in stations.get():
+            if station.enabled:
+                status = {
+                    'station': station.index,
+                    'status': 'off',
+                    'reason': '',
+                    'master': 0,
+                    'programName': '',
+                    'remaining': 0}
+                if options.system_enabled == 1:
+                    if station.active:
+                        status['status'] = 'on'
+                    if not station.ignore_rain:
+                        if rain_blocks.seconds_left():
+                            status['reason'] = 'rain_delay'
+                        if inputs.rain_sensed():
+                            status['reason'] = 'rain_sensed'
+                    if station.is_master:
+                        status['master'] = 1
+                        status['reason'] = 'master'
                     else:
-                        status['reason'] = 'system_off'
-                    statuslist.append(status)
+
+                        if options.manual_mode:
+                            status['programName'] = 'Manual Mode'
+                        else:
+                            active = log.active_runs()
+                            for interval in active:
+                                if interval['station'] == station.index:
+                                    status['programName'] = "%d. %s" % (interval['program'] + 1,
+                                                                        programs.get(interval['program']).name)
+
+                                    status['status'] = 'on'
+                                    status['reason'] = 'program'
+                                    status['remaining'] = (interval['end'] - datetime.datetime.now()).total_seconds()
+
+                else:
+                    status['reason'] = 'system_off'
+                statuslist.append(status)
+
         web.header('Content-Type', 'application/json')
         return json.dumps(statuslist)
 
