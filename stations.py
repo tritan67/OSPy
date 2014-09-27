@@ -59,7 +59,7 @@ class _Station(object):
 
 class _BaseStations(object):
     def __init__(self, count):
-        self.master = None
+        self._master = None
         self._stations = []
         self._state = [False] * count
         for i in range(count):
@@ -67,6 +67,21 @@ class _BaseStations(object):
         self.clear()
 
         options.add_callback('output_count', self._resize_cb)
+
+    @property
+    def master(self):
+        return self._master
+
+    @master.setter
+    def master(self, value):
+        old = self._master
+        self._master = value
+
+        #Ensure the change gets saved:
+        if old is not None:
+            options.save(self.get(old), old)
+        if self._master is not None:
+            options.save(self.get(self._master), self._master)
 
     def _activate(self):
         """This function should be used to update real outputs according to self._state."""

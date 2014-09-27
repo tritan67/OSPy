@@ -137,6 +137,13 @@ class options_page(ProtectedPage):
                     if isinstance(option['default'], bool):
                         options[key] = False
 
+        if 'master' in qdict:
+            m = int(qdict['master'])
+            if m < 0:
+                stations.master = None
+            elif m < stations.count():
+                stations.master = m
+
         if 'old_password' in qdict and qdict['old_password'] != "":
             try:
                 if test_password(qdict['old_password']):

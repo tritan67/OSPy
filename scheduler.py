@@ -153,11 +153,15 @@ class _Scheduler(Thread):
     def __init__(self):
         super(_Scheduler, self).__init__()
         self.daemon = True
-        options.add_callback('manual_mode', self._manual_cb)
+        options.add_callback('system_enabled', self._option_cb)
+        options.add_callback('manual_mode', self._option_cb)
 
-    def _manual_cb(self, key, old, new):
-        # Ensure all stations are deactivated if manual mode is changed
-        stations.clear()
+    def _option_cb(self, key, old, new):
+        # Clear if:
+        #   - Manual mode changed
+        #   - System was disabled
+        if key == 'manual_mode' or not new:
+            stations.clear()
 
     def run(self):
         while True:
@@ -166,25 +170,26 @@ class _Scheduler(Thread):
 
     @staticmethod
     def _check_schedule():
-        if options.system_enabled and not options.manual_mode:
+        if options.system_enabled:
             current_time = datetime.datetime.now()
-
-            active = log.active_runs()
-            for entry in active:
-                if entry['end'] <= current_time or (rain_blocks.block_end() > datetime.datetime.now() and
-                                                    not stations.get(entry['station']).ignore_rain):
-                    log.finish_run(entry)
-                    stations.deactivate(entry['station'])
-
             check_start = current_time - datetime.timedelta(days=1)
             check_end = current_time + datetime.timedelta(days=1)
-            schedule, blocked = predicted_schedule(check_start, check_end)
-            #logging.debug("Schedule: %s", str(schedule))
-            #logging.debug("Blocked: %s", str(blocked))
-            for entry in schedule:
-                if entry['start'] <= current_time < entry['end']:
-                    log.start_run(entry)
-                    stations.activate(entry['station'])
+
+            if not options.manual_mode:
+                active = log.active_runs()
+                for entry in active:
+                    if entry['end'] <= current_time or (rain_blocks.block_end() > datetime.datetime.now() and
+                                                        not stations.get(entry['station']).ignore_rain):
+                        log.finish_run(entry)
+                        stations.deactivate(entry['station'])
+
+                schedule, blocked = predicted_schedule(check_start, check_end)
+                #logging.debug("Schedule: %s", str(schedule))
+                #logging.debug("Blocked: %s", str(blocked))
+                for entry in schedule:
+                    if entry['start'] <= current_time < entry['end']:
+                        log.start_run(entry)
+                        stations.activate(entry['station'])
 
             if stations.master is not None:
                 master_on = False
@@ -199,7 +204,12 @@ class _Scheduler(Thread):
                             break
 
                 else:
-                    active, blocked = combined_schedule(check_start, check_end)
+                    # In manual mode we cannot predict, we only know what is currently running and the history
+                    if options.manual_mode:
+                        active = log.finished_runs() + log.active_runs()
+                    else:
+                        active, blocked = combined_schedule(check_start, check_end)
+
                     for entry in active:
                         if stations.get(entry['station']).activate_master:
                             if entry['start'] + datetime.timedelta(seconds=options.master_on_delay) \

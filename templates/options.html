@@ -72,13 +72,13 @@ $var page: options
                 if name == 'master_on_delay':
                     output += "<div class='option' title='Specify which output should be used as master station.'><span class='label'>Master station:</span>\n"
                     output += "<select name='master'>\n"
-                    if value is None:
+                    if stations.master is None:
                         output += "<option value='-1' selected='selected'>None</option>"
                     else:
                         output += "<option value='-1'>None</option>"
-                    for index, station in enumerate(stations.get()):
-                        sel = " selected='selected'" if value == stations.master else ""
-                        output += "<option value='" + e + "'" + sel + ">" + station.name + " (Output " + str(index+1) + ")</option>"
+                    for station in stations.get():
+                        sel = " selected='selected'" if station.index == stations.master else ""
+                        output += "<option value='" + str(station.index) + "'" + sel + ">" + station.name + " (Output " + str(station.index+1) + ")</option>"
                     output += "</select>\n"
                     output += "<span class='tooltip'>Specify which output should be used as master station.</span>\n"
                     output += "</div>\n"
