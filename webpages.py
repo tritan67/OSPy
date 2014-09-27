@@ -29,6 +29,7 @@ class WebPage(object):
             'eval': eval,
             # 'session': web.config._session,
             'json': json,
+            'datetime': datetime,
             'cpu_temp': get_cpu_temp(),
             'now': time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
         }

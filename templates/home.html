@@ -225,6 +225,7 @@ $code:
 $if options.manual_mode:
     <div id="manualmode">
         <table id="stations" class="stationList">
+        <!-- FIXME -->
         $# Manual program control formatting
         $for bid in range(0, gv.sd['nbrd']):
             $for s in range(0,8):
@@ -253,7 +254,6 @@ $if options.manual_mode:
                     </tr>
         </table>
     </div>
-
 $else:
     <div id="programmode">
         <table id="stations" class="stationList">
@@ -269,59 +269,44 @@ $else:
                 </td>
             </tr>
             <tr><td colspan="2">
-                <td class="scheduleTick">${'00:00' if options.time_format else '12 AM'}</td>
-                <td class="scheduleTick">${'01:00' if options.time_format else '1 AM'}</td>
-                <td class="scheduleTick">${'02:00' if options.time_format else '2 AM'}</td>
-                <td class="scheduleTick">${'03:00' if options.time_format else '3 AM'}</td>
-                <td class="scheduleTick">${'04:00' if options.time_format else '4 AM'}</td>
-                <td class="scheduleTick">${'05:00' if options.time_format else '5 AM'}</td>
-                <td class="scheduleTick">${'06:00' if options.time_format else '6 AM'}</td>
-                <td class="scheduleTick">${'07:00' if options.time_format else '7 AM'}</td>
-                <td class="scheduleTick">${'08:00' if options.time_format else '8 AM'}</td>
-                <td class="scheduleTick">${'09:00' if options.time_format else '9 AM'}</td>
-                <td class="scheduleTick">${'10:00' if options.time_format else '10 AM'}</td>
-                <td class="scheduleTick">${'11:00' if options.time_format else '11 AM'}</td>
-                <td class="scheduleTick">${'12:00' if options.time_format else '12 PM'}</td>
-                <td class="scheduleTick">${'13:00' if options.time_format else '1 PM'}</td>
-                <td class="scheduleTick">${'14:00' if options.time_format else '2 PM'}</td>
-                <td class="scheduleTick">${'15:00' if options.time_format else '3 PM'}</td>
-                <td class="scheduleTick">${'16:00' if options.time_format else '4 PM'}</td>
-                <td class="scheduleTick">${'17:00' if options.time_format else '5 PM'}</td>
-                <td class="scheduleTick">${'18:00' if options.time_format else '6 PM'}</td>
-                <td class="scheduleTick">${'19:00' if options.time_format else '7 PM'}</td>
-                <td class="scheduleTick">${'20:00' if options.time_format else '8 PM'}</td>
-                <td class="scheduleTick">${'21:00' if options.time_format else '9 PM'}</td>
-                <td class="scheduleTick">${'22:00' if options.time_format else '10 PM'}</td>
-                <td class="scheduleTick">${'23:00' if options.time_format else '11 PM'}</td>
+                <!-- FIXME -->
+                $for hour in xrange(0, 24):
+                    $ t = datetime.time(hour=hour, minute=0)
+                    $if options.time_format:
+                        <td class="scheduleTick">$t.strftime("%H:%M")</td>
+                    $else:
+                        <td class="scheduleTick">$t.strftime("%I %p")</td>
+                <!--<td class="scheduleTick">${'00:00' if options.time_format else '12 AM'}</td>-->
+                <!--<td class="scheduleTick">${'01:00' if options.time_format else '1 AM'}</td>-->
+                <!--<td class="scheduleTick">${'02:00' if options.time_format else '2 AM'}</td>-->
+                <!--<td class="scheduleTick">${'03:00' if options.time_format else '3 AM'}</td>-->
+                <!--<td class="scheduleTick">${'04:00' if options.time_format else '4 AM'}</td>-->
+                <!--<td class="scheduleTick">${'05:00' if options.time_format else '5 AM'}</td>-->
+                <!--<td class="scheduleTick">${'06:00' if options.time_format else '6 AM'}</td>-->
+                <!--<td class="scheduleTick">${'07:00' if options.time_format else '7 AM'}</td>-->
+                <!--<td class="scheduleTick">${'08:00' if options.time_format else '8 AM'}</td>-->
+                <!--<td class="scheduleTick">${'09:00' if options.time_format else '9 AM'}</td>-->
+                <!--<td class="scheduleTick">${'10:00' if options.time_format else '10 AM'}</td>-->
+                <!--<td class="scheduleTick">${'11:00' if options.time_format else '11 AM'}</td>-->
+                <!--<td class="scheduleTick">${'12:00' if options.time_format else '12 PM'}</td>-->
+                <!--<td class="scheduleTick">${'13:00' if options.time_format else '1 PM'}</td>-->
+                <!--<td class="scheduleTick">${'14:00' if options.time_format else '2 PM'}</td>-->
+                <!--<td class="scheduleTick">${'15:00' if options.time_format else '3 PM'}</td>-->
+                <!--<td class="scheduleTick">${'16:00' if options.time_format else '4 PM'}</td>-->
+                <!--<td class="scheduleTick">${'17:00' if options.time_format else '5 PM'}</td>-->
+                <!--<td class="scheduleTick">${'18:00' if options.time_format else '6 PM'}</td>-->
+                <!--<td class="scheduleTick">${'19:00' if options.time_format else '7 PM'}</td>-->
+                <!--<td class="scheduleTick">${'20:00' if options.time_format else '8 PM'}</td>-->
+                <!--<td class="scheduleTick">${'21:00' if options.time_format else '9 PM'}</td>-->
+                <!--<td class="scheduleTick">${'22:00' if options.time_format else '10 PM'}</td>-->
+                <!--<td class="scheduleTick">${'23:00' if options.time_format else '11 PM'}</td>-->
             </tr>
             $for station in stations:
                 <tr class="stationSchedule $loop.parity" id='schedule$loop.index' data="$loop.index0">
                     <td class='station_name'>$station.name</td>
                     <td id='status$loop.index0' class="stationStatus">loading...</td>
-                    <td class="scheduleTick" data="0"></td>
-                    <td class="scheduleTick" data="1"></td>
-                    <td class="scheduleTick" data="2"></td>
-                    <td class="scheduleTick" data="3"></td>
-                    <td class="scheduleTick" data="4"></td>
-                    <td class="scheduleTick" data="5"></td>
-                    <td class="scheduleTick" data="6"></td>
-                    <td class="scheduleTick" data="7"></td>
-                    <td class="scheduleTick" data="8"></td>
-                    <td class="scheduleTick" data="9"></td>
-                    <td class="scheduleTick" data="10"></td>
-                    <td class="scheduleTick" data="11"></td>
-                    <td class="scheduleTick" data="12"></td>
-                    <td class="scheduleTick" data="13"></td>
-                    <td class="scheduleTick" data="14"></td>
-                    <td class="scheduleTick" data="15"></td>
-                    <td class="scheduleTick" data="16"></td>
-                    <td class="scheduleTick" data="17"></td>
-                    <td class="scheduleTick" data="18"></td>
-                    <td class="scheduleTick" data="19"></td>
-                    <td class="scheduleTick" data="20"></td>
-                    <td class="scheduleTick" data="21"></td>
-                    <td class="scheduleTick" data="22"></td>
-                    <td class="scheduleTick" data="23"></td>
+                    $for tick in xrange(0,24):
+                        <td class="scheduleTick" data="$tick"></td>
                 </tr>
             <tr>
                 <td colspan="2" style="text-align:right">
@@ -337,6 +322,7 @@ $else:
 </div>
 
 <div id="controls">
+    <!--FIXME all actions need to POST-->
     <form name="hf" action="cv" method="get">
         <input type="hidden" name="en">
         <input type="hidden" name="mm">
