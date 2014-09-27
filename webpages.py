@@ -83,7 +83,6 @@ class home_page(ProtectedPage):
 
     def POST(self):
         qdict = web.input()
-        print qdict
         if 'stop_all' in qdict and qdict['stop_all'] == '1':
             log.finish_run(None)
             stations.clear()
