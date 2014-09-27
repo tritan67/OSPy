@@ -119,19 +119,21 @@ class _BaseStations(object):
         if not isinstance(index, list):
             index = [index]
         for i in index:
-            self._state[i] = True
+            if i < len(self._state):
+                self._state[i] = True
 
     def deactivate(self, index):
         if not isinstance(index, list):
             index = [index]
         for i in index:
-            self._state[i] = True
+            if i < len(self._state):
+                self._state[i] = True
 
     def active(self, index=None):
         if index is None:
             result = self._state[:]
         else:
-            result = self._state[index]
+            result = self._state[index] if index < len(self._state) else False
         return result
 
     def clear(self):

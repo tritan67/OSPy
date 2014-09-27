@@ -121,42 +121,7 @@ class options_page(ProtectedPage):
 
         save_to_options(qdict)
 
-        raise web.seeother('/options') # FIXME: restore to / when home is fixed
-
-    def update_scount(self, qdict):
-        """Increase or decrease the number of stations displayed when number of expansion boards is
-        changed in options."""
-        if int(qdict['onbrd']) + 1 > gv.sd['nbrd']:  # Lengthen lists
-            incr = int(qdict['onbrd']) - (gv.sd['nbrd'] - 1)
-            for i in range(incr):
-                gv.sd['mo'].append(0)
-                gv.sd['ir'].append(0)
-                gv.sd['show'].append(255)
-            ln = len(gv.snames)
-            for i in range(incr*8):
-                gv.snames.append("S"+('%d' % (i+1+ln)))
-            for i in range(incr * 8):
-                gv.srvals.append(0)
-                gv.ps.append([0, 0])
-                gv.rs.append([0, 0, 0, 0])
-            for i in range(incr):
-                gv.sbits.append(0)
-        elif int(qdict['onbrd']) + 1 < gv.sd['nbrd']:  # Shorten lists
-            onbrd = int(qdict['onbrd'])
-            decr = gv.sd['nbrd'] - (onbrd + 1)
-            gv.sd['mo'] = gv.sd['mo'][:(onbrd + 1)]
-            gv.sd['ir'] = gv.sd['ir'][:(onbrd + 1)]
-            gv.sd['show'] = gv.sd['show'][:(onbrd + 1)]
-            # unused variables
-            # nlst = gv.snames
-            # nlst = nlst[:8+(onbrd*8)]
-            newlen = gv.sd['nst'] - decr * 8
-            gv.srvals = gv.srvals[:newlen]
-            gv.ps = gv.ps[:newlen]
-            gv.rs = gv.rs[:newlen]
-            gv.snames = gv.snames[:newlen]
-            gv.sbits = gv.sbits[:onbrd + 1]
-        jsave(gv.snames, 'snames')
+        raise web.seeother('/')
 
 
 class view_stations_page(ProtectedPage):

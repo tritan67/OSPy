@@ -197,11 +197,6 @@ class _Options(object):
             "default": "",
         },
         {
-            "key": "program_count",
-            "name": "The number of programs",
-            "default": 0,
-        },
-        {
             "key": "logged_runs",
             "name": "The runs that have been logged",
             "default": []
@@ -279,11 +274,20 @@ class _Options(object):
             self._write_timer = Timer(1.0, self._write)
             self._write_timer.start()
 
+    def __delattr__(self, item):
+        if item.startswith('_'):
+            super(_Options, self).__delattr__(item)
+        else:
+            del self._values[item]
+
     # Makes it possible to use this class like options[<item>]
     __getitem__ = __getattr__
 
     # Makes it possible to use this class like options[<item>] = <value>
     __setitem__ = __setattr__
+
+    # Makes it possible to use this class like del options[<item>]
+    __delitem__ = __delattr__
 
     def _write(self):
         """This function saves the current data to disk. Use a timer to limit the call rate."""
@@ -312,23 +316,36 @@ class _Options(object):
         return self.OPTIONS[option]
 
     def load(self, obj, key=""):
-        cls = 'Cls' + type(obj).__name__
+        cls = 'Cls' + (obj if isinstance(obj, type) else type(obj)).__name__ + str(key)
+
         try:
-            values = getattr(self, cls + str(key))
+            values = getattr(self, cls)
+            print 'load', cls, values
             for name, value in values.iteritems():
                 setattr(obj, name, value)
         except KeyError:
             pass
 
     def save(self, obj, key=""):
-        cls = 'Cls' + type(obj).__name__
+        cls = 'Cls' + (obj if isinstance(obj, type) else type(obj)).__name__ + str(key)
+
         values = {}
         exclude = obj.SAVE_EXCLUDE if hasattr(obj, 'SAVE_EXCLUDE') else []
         for attr in [att for att in dir(obj) if not att.startswith('_') and att not in exclude]:
             if not hasattr(getattr(obj, attr), '__call__'):
                 values[attr] = getattr(obj, attr)
-        setattr(self, cls + str(key), values)
 
+        print 'save', cls, values
+        setattr(self, cls, values)
+
+    def erase(self, obj, key=""):
+        cls = 'Cls' + (obj if isinstance(obj, type) else type(obj)).__name__ + str(key)
+        if hasattr(self, cls):
+            delattr(self, cls)
+
+    def available(self, obj, key=""):
+        cls = 'Cls' + (obj if isinstance(obj, type) else type(obj)).__name__ + str(key)
+        return hasattr(self, cls)
 
 options = _Options()
 
