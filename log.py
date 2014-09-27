@@ -132,7 +132,7 @@ class _Log(logging.Handler):
         return self._log.keys()
 
     def events(self, event_type):
-        return [evt['data'] for evt in self._log.setdefault(event_type, [])]
+        return [evt['data'] for evt in self._log.get(event_type, [])]
 
     def emit(self, record):
         if not hasattr(record, 'event_type'):

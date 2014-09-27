@@ -13,21 +13,29 @@ from options import level_adjustments
 from options import options
 from options import plugins
 from options import rain_blocks
+from stations import stations
 import version
 
 
 class WebPage(object):
     def __init__(self):
         template_globals = {
-            'options': options,
-            'level_adjustments': level_adjustments,
-            'rain_blocks': rain_blocks,
-            'plugins': plugins,
-            'version': version,
             'str': str,
+            'bool': bool,
+            'int': int,
             'eval': eval,
-            'session': web.config._session,
             'json': json,
+            'isinstance': isinstance,
+
+            'level_adjustments': level_adjustments,
+            'options': options,
+            'plugins': plugins,
+            'rain_blocks': rain_blocks,
+            'stations': stations,
+
+            'version': version,
+
+            'session': web.config._session,
             'cpu_temp': get_cpu_temp(),
             'now': time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
         }
@@ -40,7 +48,7 @@ class ProtectedPage(WebPage):
         WebPage.__init__(self)
 
 
-class login(WebPage):
+class login_page(WebPage):
     """Login page"""
 
     def GET(self):
@@ -56,22 +64,20 @@ class login(WebPage):
             raise web.seeother('/')
 
 
-class logout(WebPage):
+class logout_page(WebPage):
     def GET(self):
         web.config._session.user = 'anonymous'
         raise web.seeother('/')
 
 
-###########################
-#### Class Definitions ####
-class home(ProtectedPage):
+class home_page(ProtectedPage):
     """Open Home page."""
 
     def GET(self):
         return self.template_render.home()
 
 
-class change_values(ProtectedPage):
+class change_values_page(ProtectedPage):
     """Save controller values, return browser to home page."""
 
     def GET(self):
@@ -100,7 +106,7 @@ class change_values(ProtectedPage):
         raise web.seeother('/')  # Send browser back to home page
 
 
-class view_options(ProtectedPage):
+class options_page(ProtectedPage):
     """Open the options page for viewing and editing."""
 
     def GET(self):
@@ -109,95 +115,44 @@ class view_options(ProtectedPage):
 
         return self.template_render.options(errorCode)
 
-
-class change_options(ProtectedPage):
-    """Save changes to options made on the options page."""
-
-    def GET(self):
+    def POST(self):
         qdict = web.input()
-        if 'opw' in qdict and qdict['opw'] != "":
-            try:
-                if password_hash(qdict['opw'], gv.sd['salt']) == gv.sd['password']:
-                    if qdict['npw'] == "":
-                        raise web.seeother('/vo?errorCode=pw_blank')
-                    elif qdict['cpw'] != '' and qdict['cpw'] == qdict['npw']:
-                        gv.sd['salt'] = password_salt()  # Make a new salt
-                        gv.sd['password'] = password_hash(qdict['npw'], gv.sd['salt'])
+
+        for option in options.OPTIONS:
+            key = option['key']
+            if 'category' in option:
+                if key in qdict:
+                    value = qdict[key]
+                    if isinstance(option['default'], bool):
+                        options[key] = True if value and value != "off" else False
+                    elif isinstance(option['default'], int):
+                        if 'min' in option and int(qdict[key]) < option['min']:
+                            continue
+                        if 'max' in option and int(qdict[key]) > option['max']:
+                            continue
+                        options[key] = int(qdict[key])
                     else:
-                        raise web.seeother('/vo?errorCode=pw_mismatch')
+                        options[key] = qdict[key]
                 else:
-                    raise web.seeother('/vo?errorCode=pw_wrong')
+                    if isinstance(option['default'], bool):
+                        options[key] = False
+
+        if 'old_password' in qdict and qdict['old_password'] != "":
+            try:
+                if test_password(qdict['old_password']):
+                    if qdict['new_password'] == "":
+                        raise web.seeother('/options?errorCode=pw_blank')
+                    elif qdict['new_password'] == qdict['check_password']:
+                        options.password_salt = password_salt()  # Make a new salt
+                        options.password_hash = password_hash(qdict['new_password'], options.password_salt)
+                    else:
+                        raise web.seeother('/options?errorCode=pw_mismatch')
+                else:
+                    raise web.seeother('/options?errorCode=pw_wrong')
             except KeyError:
                 pass
 
-        try:
-            if 'oipas' in qdict and (qdict['oipas'] == 'on' or qdict['oipas'] == '1'):
-                gv.sd['ipas'] = 1
-            else:
-                gv.sd['ipas'] = 0
-        except KeyError:
-            pass
-
-        if 'oname' in qdict:
-            options.name = qdict['oname']
-        if 'oloc' in qdict:
-            options.location = qdict['oloc']
-        if 'otz' in qdict:
-            gv.sd['tz'] = int(qdict['otz'])
-        try:
-            if 'otf' in qdict and (qdict['otf'] == 'on' or qdict['otf'] == '1'):
-                options.time_format = 1
-            else:
-                options.time_format = 0
-        except KeyError:
-            pass
-
-        if int(qdict['onbrd']) + 1 != gv.sd['nbrd']:
-            self.update_scount(qdict)
-        gv.sd['nbrd'] = int(qdict['onbrd']) + 1
-
-        gv.sd['nst'] = gv.sd['nbrd'] * 8
-        if 'ohtp' in qdict:
-            options.web_port = int(qdict['ohtp'])
-        if 'osdt' in qdict:
-            options.station_delay = int(qdict['osdt'])
-
-        if 'omas' in qdict:
-            gv.sd['mas'] = int(qdict['omas'])
-        if 'omton' in qdict:
-            options.master_on_delay = int(qdict['omton'])
-        if 'omtoff' in qdict:
-            options.master_off_delay = int(qdict['omtoff'])
-        if 'owl' in qdict:
-            gv.sd['wl'] = int(qdict['owl'])
-
-        if 'ours' in qdict and (qdict['ours'] == 'on' or qdict['ours'] == '1'):
-            gv.sd['urs'] = 1
-        else:
-            gv.sd['urs'] = 0
-
-        if 'oseq' in qdict and (qdict['oseq'] == 'on' or qdict['oseq'] == '1'):
-            options.sequential = 1
-        else:
-            options.sequential = 0
-
-        if 'orst' in qdict and (qdict['orst'] == 'on' or qdict['orst'] == '1'):
-            gv.options.rain_sensor_no = 1
-        else:
-            gv.options.rain_sensor_no = 0
-
-        if 'olg' in qdict and (qdict['olg'] == 'on' or qdict['olg'] == '1'):
-            gv.sd['lg'] = 1
-        else:
-            gv.sd['lg'] = 0
-
-        if 'olr' in qdict:
-            gv.sd['lr'] = int(qdict['olr'])
-
-        jsave(gv.sd, 'sd')
-        if 'rbt' in qdict and qdict['rbt'] == '1':
-            reboot()
-        raise web.seeother('/')
+        raise web.seeother('/options') # FIXME: restore to / when home is fixed
 
     def update_scount(self, qdict):
         """Increase or decrease the number of stations displayed when number of expansion boards is
@@ -235,14 +190,14 @@ class change_options(ProtectedPage):
         jsave(gv.snames, 'snames')
 
 
-class view_stations(ProtectedPage):
+class view_stations_page(ProtectedPage):
     """Open a page to view and edit a run once program."""
 
     def GET(self):
         return self.template_render.stations()
 
 
-class change_stations(ProtectedPage):
+class change_stations_page(ProtectedPage):
     """Save changes to station names, ignore rain and master associations."""
 
     def GET(self):
@@ -280,7 +235,7 @@ class change_stations(ProtectedPage):
         raise web.seeother('/')
 
 
-class get_set_station(ProtectedPage):
+class get_set_station_page(ProtectedPage):
     """Return a page containing a number representing the state of a station or all stations if 0 is entered as station number."""
 
     def GET(self):
@@ -321,14 +276,14 @@ class get_set_station(ProtectedPage):
             return 'Manual mode not active.'
 
 
-class view_runonce(ProtectedPage):
+class view_runonce_page(ProtectedPage):
     """Open a page to view and edit a run once program."""
 
     def GET(self):
         return self.template_render.runonce()
 
 
-class change_runonce(ProtectedPage):
+class change_runonce_page(ProtectedPage):
     """Start a Run Once program. This will override any running program."""
 
     def GET(self):
@@ -355,14 +310,14 @@ class change_runonce(ProtectedPage):
         raise web.seeother('/')
 
 
-class view_programs(ProtectedPage):
+class view_programs_page(ProtectedPage):
     """Open programs page."""
 
     def GET(self):
         return self.template_render.programs()
 
 
-class modify_program(ProtectedPage):
+class modify_program_page(ProtectedPage):
     """Open page to allow program modification."""
 
     def GET(self):
@@ -380,7 +335,7 @@ class modify_program(ProtectedPage):
         return self.template_render.modify(pid, prog)
 
 
-class change_program(ProtectedPage):
+class change_program_page(ProtectedPage):
     """Add a program or modify an existing one."""
 
     def GET(self):
@@ -409,7 +364,7 @@ class change_program(ProtectedPage):
         raise web.seeother('/vp')
 
 
-class delete_program(ProtectedPage):
+class delete_program_page(ProtectedPage):
     """Delete one or all existing program(s)."""
 
     def GET(self):
@@ -424,7 +379,7 @@ class delete_program(ProtectedPage):
         raise web.seeother('/vp')
 
 
-class enable_program(ProtectedPage):
+class enable_program_page(ProtectedPage):
     """Activate or deactivate an existing program(s)."""
 
     def GET(self):
@@ -434,7 +389,7 @@ class enable_program(ProtectedPage):
         raise web.seeother('/vp')
 
 
-class view_log(ProtectedPage):
+class view_log_page(ProtectedPage):
     """View Log"""
 
     def GET(self):
@@ -442,7 +397,7 @@ class view_log(ProtectedPage):
         return self.template_render.log(records)
 
 
-class clear_log(ProtectedPage):
+class clear_log_page(ProtectedPage):
     """Delete all log records"""
 
     def GET(self):
@@ -452,7 +407,7 @@ class clear_log(ProtectedPage):
         raise web.seeother('/vl')
 
 
-class run_now(ProtectedPage):
+class run_now_page(ProtectedPage):
     """Run a scheduled program now. This will override any running programs."""
 
     def GET(self):
@@ -477,7 +432,7 @@ class run_now(ProtectedPage):
         raise web.seeother('/')
 
 
-class show_revision(ProtectedPage):
+class show_revision_page(ProtectedPage):
     """Show revision info to the user. Use: [URL of Pi]/rev."""
 
     def GET(self):
@@ -490,7 +445,7 @@ class show_revision(ProtectedPage):
         return revpg
 
 
-class toggle_temp(ProtectedPage):
+class toggle_temp_page(ProtectedPage):
     """Change units of Raspi's CPU temperature display on home page."""
 
     def GET(self):
@@ -503,7 +458,7 @@ class toggle_temp(ProtectedPage):
         raise web.seeother('/')
 
 
-class api_status(ProtectedPage):
+class api_status_page(ProtectedPage):
     """Simple Status API"""
 
     def GET(self):
@@ -560,7 +515,7 @@ class api_status(ProtectedPage):
         return json.dumps(statuslist)
 
 
-class api_log(ProtectedPage):
+class api_log_page(ProtectedPage):
     """Simple Log API"""
 
     def GET(self):
@@ -590,7 +545,7 @@ class api_log(ProtectedPage):
         return json.dumps(data)
 
 
-class water_log(ProtectedPage):
+class water_log_page(ProtectedPage):
     """Simple Log API"""
 
     def GET(self):

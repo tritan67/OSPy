@@ -147,9 +147,9 @@ def password_hash(password, salt):
     return sha1(password + salt).hexdigest()
 
 
-def test_password(storage):
+def test_password(password):
     from options import options
-    return options.password_hash == password_hash(storage['password'], options.password_salt)
+    return options.password_hash == password_hash(password, options.password_salt)
 
 
 def check_login(redirect=False):
@@ -182,7 +182,7 @@ signin_form = form.Form(
     validators=[
         form.Validator(
             "Incorrect password, please try again",
-            test_password
+            lambda x: test_password(x["password"])
         )
     ]
 )

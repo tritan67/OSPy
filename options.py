@@ -50,7 +50,9 @@ class _Options(object):
             "name": "HTTP port",
             "default": 8080,
             "help": "HTTP port (effective after reboot.)",
-            "category": "System"
+            "category": "System",
+            "min": 1,
+            "max": 65535
         },
 
         #######################################################################
@@ -77,31 +79,39 @@ class _Options(object):
             "name": "Number of outputs",
             "default": 8,
             "help": "The number of outputs available (8 + 8*extensions)",
-            "category": "Station Handling"
+            "category": "Station Handling",
+            "min": 8,
+            "max": 1000
         },
         {
             "key": "station_delay",
             "name": "Station delay",
             "default": 0,
-            "help": "Station delay time (in seconds), between 0 and 240.",
-            "category": "Station Handling"
+            "help": "Station delay time (in seconds), between 0 and 3600.",
+            "category": "Station Handling",
+            "min": 0,
+            "max": 3600
         },
 
         #######################################################################
         # Configure Master ####################################################
         {
             "key": "master_on_delay",
-            "name": "Master on adjust",
+            "name": "Master on delay",
             "default": 0,
-            "help": "Master on delay (in seconds), between +0 and +60.",
-            "category": "Configure Master"
+            "help": "Master on delay (in seconds), between -1800 and +1800.",
+            "category": "Configure Master",
+            "min": -1800,
+            "max": +1800
         },
         {
             "key": "master_off_delay",
-            "name": "Master off adjust",
+            "name": "Master off delay",
             "default": 0,
-            "help": "Master off delay (in seconds), between -60 and +60.",
-            "category": "Configure Master"
+            "help": "Master off delay (in seconds), between -1800 and +1800.",
+            "category": "Configure Master",
+            "min": -1800,
+            "max": +1800
         },
 
         #######################################################################
@@ -125,7 +135,7 @@ class _Options(object):
         # Logging #############################################################
         {
             "key": "run_log",
-            "name": "Enable run logging",
+            "name": "Enable run log",
             "default": False,
             "help": "Log all runs - note that repetitive writing to an SD card can shorten its lifespan.",
             "category": "Logging"
@@ -135,11 +145,13 @@ class _Options(object):
             "name": "Max run entries",
             "default": 100,
             "help": "Number of run entries to save to disk, 0=no limit.",
-            "category": "Logging"
+            "category": "Logging",
+            "min": 0,
+            "max": 1000
         },
         {
             "key": "debug_log",
-            "name": "Enable debug logging",
+            "name": "Enable debug log",
             "default": False,
             "help": "Log all internal events (for debugging purposes).",
             "category": "Logging"

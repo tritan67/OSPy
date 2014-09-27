@@ -50,7 +50,7 @@ jQuery(document).ready(function(){
 		window.location = "/";
 	});
 	jQuery("button#bOptions").click(function(){
-		window.location = "/vo";
+		window.location = "/options";
 	});
 	jQuery("button#bStations").click(function(){
 		window.location = "/vs";
