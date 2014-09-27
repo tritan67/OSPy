@@ -3,45 +3,45 @@ $def with ()
 $var title: OpenSprinkler Pi Programs
 $var page: programs
 $code:
-	snames = gv.snames
-	nprogs = len(gv.pd)
-	
-	def two_digits(n):
-		return '%02d' % int(n)
-	
-	def pdays(days, dayInterval):
-		output = ""
-		if (days&0x80) and (dayInterval>1): # this is an interval program
-			days = days&0x7f
-			dse = int(gv.now/86400) # days since epoc
-			daysRemaining = ((days + dayInterval)-(dse % dayInterval)) % dayInterval
-			output += "Every " + str(dayInterval) + " days"
-			if daysRemaining:
-				output += ", starting in " + str(daysRemaining) + " days."
-		else: # this is a weekly program 
-			if days == 127:
-				output += "Every Weekday"
-			else:
-				for d in range(0,7):
-					if days & (1<<d):
-						output += " " + ["Mon","Tue","Wed","Thur","Fri","Sat","Sun"][d]
-		if (days&0x80) and (dayInterval==0):
-			output += " (Even days only)"
-		if (days&0x80) and (dayInterval==1):
-			output += " (Odd days only)"
-		return output
+    snames = gv.snames
+    nprogs = len(gv.pd)
 
-	def formatTime(t):
-		if options.time_format:
-			return t
-		else:
-			hour = int(t[0:2])
-			newhour = hour
-			if hour == 0:
-				newhour = 12
-			if hour > 12:
-				newhour = hour-12
-			return str(newhour)  + t[2:] + (" am" if hour<12 else " pm")
+    def two_digits(n):
+        return '%02d' % int(n)
+
+    def pdays(days, dayInterval):
+        output = ""
+        if (days&0x80) and (dayInterval>1): # this is an interval program
+            days = days&0x7f
+            dse = int(gv.now/86400) # days since epoc
+            daysRemaining = ((days + dayInterval)-(dse % dayInterval)) % dayInterval
+            output += "Every " + str(dayInterval) + " days"
+            if daysRemaining:
+                output += ", starting in " + str(daysRemaining) + " days."
+        else: # this is a weekly program
+            if days == 127:
+                output += "Every Weekday"
+            else:
+                for d in range(0,7):
+                    if days & (1<<d):
+                        output += " " + ["Mon","Tue","Wed","Thur","Fri","Sat","Sun"][d]
+        if (days&0x80) and (dayInterval==0):
+            output += " (Even days only)"
+        if (days&0x80) and (dayInterval==1):
+            output += " (Odd days only)"
+        return output
+
+    def formatTime(t):
+        if options.time_format:
+            return t
+        else:
+            hour = int(t[0:2])
+            newhour = hour
+            if hour == 0:
+                newhour = 12
+            if hour > 12:
+                newhour = hour-12
+            return str(newhour)  + t[2:] + (" am" if hour<12 else " pm")
 
 <script>
     // Initialize behaviors
@@ -81,12 +81,12 @@ $code:
         });
 
             jQuery("button.cDisable").click(function(){
-        		var pid = jQuery(this).attr("data");
-        		var enable = jQuery(this).hasClass("off");
-        		jQuery("form#ep input[name='pid']").val(pid);
-        		jQuery("form#ep input[name='enable']").val(enable ? 1 : 0);
-        		jQuery("form#ep").submit();
-        	});        
+                var pid = jQuery(this).attr("data");
+                var enable = jQuery(this).hasClass("off");
+                jQuery("form#ep input[name='pid']").val(pid);
+                jQuery("form#ep input[name='enable']").val(enable ? 1 : 0);
+                jQuery("form#ep").submit();
+            });
         
     });
 
@@ -100,9 +100,9 @@ $code:
 <form name="mf" id="mf" action="mp" method="get">
     <input type="hidden" name="pid">
 </form>
-	 <form name="ep" id="ep" action="ep" method="get">
-	 <input type="hidden" name="pid">
-	 <input type="hidden" name="enable">
+     <form name="ep" id="ep" action="ep" method="get">
+     <input type="hidden" name="pid">
+     <input type="hidden" name="enable">
 </form>
 <div id="controls">
     <button id="nAdd" class="add" data="-1">Add a New Program</button>
@@ -113,14 +113,14 @@ $code:
     $for pid in range(0,nprogs):
         $ prog = gv.pd[pid]
         <div id="p${pid}" class="controlBlock program ${'disabled' if prog[0] == 0 else ''}">
-		 <p>
-			 <button class="cDisable toggle ${'off' if prog[0] == 0 else 'on'}" data="${pid}">
-				 <span class='toggleleft'>On</span>
-				 <span class='togglesep'>&nbsp;</span>
-				 <span class='toggleright'>Off</span>
-			 </button>
-		 	Program ${pid+1}: <span class="val">${pdays(prog[1], prog[2])}</span></b>
-		 </p>
+         <p>
+             <button class="cDisable toggle ${'off' if prog[0] == 0 else 'on'}" data="${pid}">
+                 <span class='toggleleft'>On</span>
+                 <span class='togglesep'>&nbsp;</span>
+                 <span class='toggleright'>Off</span>
+             </button>
+             Program ${pid+1}: <span class="val">${pdays(prog[1], prog[2])}</span></b>
+         </p>
             $ start = prog[3]
             $ end = prog[4]
             $ interval = prog[5]

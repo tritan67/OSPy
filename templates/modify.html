@@ -4,44 +4,44 @@ $var title: OpenSprinkler Pi Modify Program
 $var page: programs
 
 $code:
-	def two_digits(n):
-		return '%02d' % int(n)
-	
-	snames = gv.snames
-	if pid < 0:
-		program = [1, 127, 4, 360, 1080, 240, 900] # does not include station bytes(program[7+]. #dk
-		for brd in range(gv.sd['nbrd']): #dk
-			program.extend([0]) # add bytes per number of boards. #dk
-	else:
-		program = eval(prog)
-		full_len = 7 + gv.sd['nbrd'] #dk
-		if len(program) < full_len: #dk
-		    for brd in range(full_len - len(program)): #dk
-		        program.extend([0]) # add bytes per number of boards. #dk
-	weekly = not((program[1]&0x80) and (program[2]>1))
-	stationsShown = 0
-	stationsOn = 0
-	for bid in range(0, gv.sd['nbrd']):
-		boardShow = gv.sd['show'][bid]
-		for s in range(0,8):
-			stationsShown += (boardShow>>s) & 1
-			if program[bid+7]&(1<<s):
-				stationsOn = stationsOn + 1		 			
-	even = program[1]&0x80 and program[2]==0
-	odd = program[1]&0x80 and program[2]==1
-	recurring = program[3] + program[6]/60*stationsOn < program[4]
-	tf = options.time_format
-	def formatTime(t):
-		if options.time_format:
-			return t
-		else:
-			hour = int(t[0:2])
-			newhour = hour
-			if hour == 0:
-				newhour = 12
-			if hour > 12:
-				newhour = hour-12
-			return str(newhour)  + t[2:] + (" am" if hour<12 else " pm")
+    def two_digits(n):
+        return '%02d' % int(n)
+
+    snames = gv.snames
+    if pid < 0:
+        program = [1, 127, 4, 360, 1080, 240, 900] # does not include station bytes(program[7+]. #dk
+        for brd in range(gv.sd['nbrd']): #dk
+            program.extend([0]) # add bytes per number of boards. #dk
+    else:
+        program = eval(prog)
+        full_len = 7 + gv.sd['nbrd'] #dk
+        if len(program) < full_len: #dk
+            for brd in range(full_len - len(program)): #dk
+                program.extend([0]) # add bytes per number of boards. #dk
+    weekly = not((program[1]&0x80) and (program[2]>1))
+    stationsShown = 0
+    stationsOn = 0
+    for bid in range(0, gv.sd['nbrd']):
+        boardShow = gv.sd['show'][bid]
+        for s in range(0,8):
+            stationsShown += (boardShow>>s) & 1
+            if program[bid+7]&(1<<s):
+                stationsOn = stationsOn + 1
+    even = program[1]&0x80 and program[2]==0
+    odd = program[1]&0x80 and program[2]==1
+    recurring = program[3] + program[6]/60*stationsOn < program[4]
+    tf = options.time_format
+    def formatTime(t):
+        if options.time_format:
+            return t
+        else:
+            hour = int(t[0:2])
+            newhour = hour
+            if hour == 0:
+                newhour = 12
+            if hour > 12:
+                newhour = hour-12
+            return str(newhour)  + t[2:] + (" am" if hour<12 else " pm")
 
 <script>
     var prog = ${prog};

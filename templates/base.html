@@ -1,48 +1,50 @@
 $def with (content)
 <html>
 <head>
-	<meta name="viewport" content="width=640">
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>${content.title + (" - "+options.name if options.name != "OpenSprinkler Pi" else "")}</title>
-	<link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
-	<link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>
-	<style type="text/css">
-		.bluebg {background-color:lightblue;}
-		.opOn, .wlOn, .rsOff {color:green;}
-		.opOff, .wlOff, .rsOn {color:red;}
-		.rdOff {color:black;}
-		.rdOn {color:red;}
-		.rsNA, .station_waiting {color:gray;}
-		.station_disabled {color:gray;}
+    <meta name="viewport" content="width=640">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>${content.title + (" - "+options.name if options.name != "OpenSprinkler Pi" else "")}</title>
+    <link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
+    <link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>
+    <style type="text/css">
+        .bluebg {background-color:lightblue;}
+        .opOn, .wlOn, .rsOff {color:green;}
+        .opOff, .wlOff, .rsOn {color:red;}
+        .rdOff {color:black;}
+        .rdOn {color:red;}
+        .rsNA, .station_waiting {color:gray;}
+        .station_disabled {color:gray;}
 
-		#lastRun {color:gray;}
-		#stations {width:100%;}
-		#pluginMenu{display: none; z-index: 99}
-		.program {line-height:22px}
-		.strike {text-decoration:line-through;}
+        #lastRun {color:gray;}
+        #stations {width:100%;}
+        #pluginMenu{display: none; z-index: 99}
+        .program {line-height:22px}
+        .strike {text-decoration:line-through;}
 
-		.progstation_on {background-color:#9AFA9A; color:black; font-size:10pt}
-	    .progstation_off {background-color:white; color:lightgray; font-size:10pt}
-	    button.cDisable.toggle {float:right; width:130px; margin:0px; padding:0px; background-color:transparent}
-	    button.cDisable.toggle span.toggleleft {width: 30px;}
-	    button.cDisable.toggle span.toggleright {width: 30px;}
+        .progstation_on {background-color:#9AFA9A; color:black; font-size:10pt}
+        .progstation_off {background-color:white; color:lightgray; font-size:10pt}
+        button.cDisable.toggle {float:right; width:130px; margin:0px; padding:0px; background-color:transparent}
+        button.cDisable.toggle span.toggleleft {width: 30px;}
+        button.cDisable.toggle span.toggleright {width: 30px;}
 
-		button#tooltip {height:24px;}
-		.tooltip {background-color:#FFF2B8; display:none; font-size:10pt; margin-left:4px;}
-		.label {font-weight:bold; float:left; width:160px; text-align:right; padding-right:4px;}
-		.option {margin: 6px 0px; clear:both;}
+        button#tooltip {height:24px;}
+        .tooltip {background-color:#FFF2B8; display:none; font-size:10pt; margin-left:4px;}
+        .label {font-weight:bold; float:left; width:160px; text-align:right; padding-right:4px;}
+        .option {margin: 6px 0px; clear:both;}
 
-		td.stationNumber, td.stationShow, td.stationIgnore, td.stationMaster {text-align:center}
-		td.stationName {text-align:left; padding-left:1em;}
-	</style>
-	<script src="/static/scripts/jquery-1.8.2.min.js"></script>
-	<script>
-		// Variables set server-side
-		var devt = ${now}*1000;
-		var timeFormat = ${str(options.time_format).lower()};
+        td.stationNumber, td.stationShow, td.stationIgnore, td.stationMaster {text-align:center}
+        td.stationName {text-align:left; padding-left:1em;}
+    </style>
+    <script src="/static/scripts/jquery-1.8.2.min.js"></script>
+    <script>
+        // Server provides local timestamp, adjust it such that JS dates will also use the server's local time
+        var device_time = ${now} * 1000 + (new Date()).getTimezoneOffset() * 60 * 1000;
+        var to_device_time = (new Date()).getTimezoneOffset() * 60 * 1000 + (${now} * 1000 - (new Date).getTime());
 
-		var cputemp = "${cpu_temp}";
-		var tempunit = "${options.temp_unit}";
+        var timeFormat = ${str(options.time_format).lower()};
+
+        var cputemp = "${cpu_temp}";
+        var tempunit = "${options.temp_unit}";
 
         $if content.page != 'login':
             jQuery(document).ready(function(){
@@ -67,31 +69,31 @@ $def with (content)
                     jQuery("#pluginMenu").slideUp();
                 });
             });
-	</script>
+    </script>
     <script src="/static/scripts/behaviors.js"></script>
-	<script src="/static/scripts/schedule.js"></script>
-	<script src="/static/scripts/intervalSelect.js"></script>
+    <script src="/static/scripts/schedule.js"></script>
+    <script src="/static/scripts/intervalSelect.js"></script>
 </head>
 <body>
-	<div class="content">
-		<form name="tt" action="ttu" method="get">
-			<input type="hidden" name="tunit">
-		</form>
+    <div class="content">
+        <form name="tt" action="ttu" method="get">
+            <input type="hidden" name="tunit">
+        </form>
 
-		<div id="pluginMenu">
-	    </div>
+        <div id="pluginMenu">
+        </div>
 
-		<div class="header">
-			<div class="title">${options.name if options.name != "OpenSprinkler Pi" else ""}</div>
-		</div>
-		
-		<div class="body">
-			<div id="status">
-				<p id="deviceTime"><span class="hour"></span><span class="sep">:</span><span class="minute"></span><span class="second"></span><span class="ampm"></span></p>
-				<p id="deviceDate"></p>
-			</div>
-	
-			<div class="panel">
+        <div class="header">
+            <div class="title">${options.name if options.name != "OpenSprinkler Pi" else ""}</div>
+        </div>
+
+        <div class="body">
+            <div id="status">
+                <p id="deviceTime"><span class="hour"></span><span class="sep">:</span><span class="minute"></span><span class="second"></span><span class="ampm"></span></p>
+                <p id="deviceDate"></p>
+            </div>
+
+            <div class="panel">
 
                 $if content.page != 'login':
                     <div id="nav">
@@ -105,16 +107,16 @@ $def with (content)
                         $if not options.no_password:
                             <button id="bLogout" class="logout" title="Logout">Logout</button>
                     </div>
-								
+
                 $:content
 
-			</div>
-		</div>
-		
-		<div class="footer">
-			<p>CPU Temp: <b><span id="heat" style="cursor:pointer" title="Click to toggle Celsius &lt;&gt; Fahrenheit"></span></b></p>
-			<p><a href="https://github.com/Rimco/OSPy">Software</a> version: <b>${version.ver_str} (${version.ver_date})</b></p>
-		</div>
-	</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>CPU Temp: <b><span id="heat" style="cursor:pointer" title="Click to toggle Celsius &lt;&gt; Fahrenheit"></span></b></p>
+            <p><a href="https://github.com/Rimco/OSPy">Software</a> version: <b>${version.ver_str} (${version.ver_date})</b></p>
+        </div>
+    </div>
 </body>
 </html>

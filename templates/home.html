@@ -5,8 +5,8 @@ $var page: home
 
 $# For some reason the functions below do not work in a single $code block
 $code:
-	def two_digits(n):
-		return '%02d' % int(n)
+    def two_digits(n):
+        return '%02d' % int(n)
 
 $code:
     def plugin_adjustment():
@@ -88,9 +88,8 @@ $code:
                 .removeClass()
                 .addClass(classes);
         }
-        setTimeout(statusTimer,updateInterval);
+        setTimeout(statusTimer, updateInterval);
         if (updateInterval > 1000) {
-
             displayProgram();
         }
     }

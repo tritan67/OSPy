@@ -40,7 +40,7 @@ def predicted_schedule(start_time, end_time):
 
     # Aggregate per station:
     station_schedules = {}
-    for p_index, program in enumerate(programs.get()):
+    for program in programs.get():
         if not program.enabled:
             continue
 
@@ -52,10 +52,13 @@ def predicted_schedule(start_time, end_time):
 
             for interval in program_intervals:
                 new_schedule = {
-                    'program': p_index,
+                    'active': None,
+                    'program': program.index,
+                    'program_name': program.name, # Save it because programs can be reordered
+                    'manual': program.manual,
                     'start': interval['start'],
                     'end': interval['end'],
-                    'uid': '%s-%d-%d' % (str(interval['start']), p_index, station),
+                    'uid': '%s-%d-%d' % (str(interval['start']), program.index, station),
                     'usage': 1.0  # FIXME
                 }
                 if new_schedule['uid'] not in skip_uids:
@@ -156,11 +159,16 @@ class _Scheduler(Thread):
         options.add_callback('system_enabled', self._option_cb)
         options.add_callback('manual_mode', self._option_cb)
 
+        # If manual mode is active, finish all stale runs:
+        if options.manual_mode:
+            log.finish_run(None)
+
     def _option_cb(self, key, old, new):
         # Clear if:
         #   - Manual mode changed
         #   - System was disabled
         if key == 'manual_mode' or not new:
+            log.finish_run(None)
             stations.clear()
 
     def run(self):

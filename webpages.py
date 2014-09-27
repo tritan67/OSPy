@@ -15,8 +15,8 @@ from options import level_adjustments
 from options import options
 from options import plugins
 from options import rain_blocks
-from programs import programs
 from stations import stations
+import scheduler
 import version
 
 
@@ -121,6 +121,28 @@ class options_page(ProtectedPage):
         qdict = web.input()
 
         save_to_options(qdict)
+
+        if 'master' in qdict:
+            m = int(qdict['master'])
+            if m < 0:
+                stations.master = None
+            elif m < stations.count():
+                stations.master = m
+
+        if 'old_password' in qdict and qdict['old_password'] != "":
+            try:
+                if test_password(qdict['old_password']):
+                    if qdict['new_password'] == "":
+                        raise web.seeother('/options?errorCode=pw_blank')
+                    elif qdict['new_password'] == qdict['check_password']:
+                        options.password_salt = password_salt()  # Make a new salt
+                        options.password_hash = password_hash(qdict['new_password'], options.password_salt)
+                    else:
+                        raise web.seeother('/options?errorCode=pw_mismatch')
+                else:
+                    raise web.seeother('/options?errorCode=pw_wrong')
+            except KeyError:
+                pass
 
         raise web.seeother('/')
 
@@ -422,12 +444,11 @@ class api_status_page(ProtectedPage):
                             active = log.active_runs()
                             for interval in active:
                                 if interval['station'] == station.index:
-                                    status['programName'] = "%d. %s" % (interval['program'] + 1,
-                                                                        programs.get(interval['program']).name)
+                                    status['programName'] = interval['program_name']
 
                                     status['status'] = 'on'
                                     status['reason'] = 'program'
-                                    status['remaining'] = (interval['end'] - datetime.datetime.now()).total_seconds()
+                                    status['remaining'] = max(0, (interval['end'] - datetime.datetime.now()).total_seconds())
 
                 else:
                     status['reason'] = 'system_off'
@@ -442,26 +463,32 @@ class api_log_page(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        thedate = qdict['date']
-        # date parameter filters the log values returned; "yyyy-mm-dd" format
-        theday = datetime.date(*map(int, thedate.split('-')))
-        prevday = theday - datetime.timedelta(days=1)
-        prevdate = prevday.strftime('%Y-%m-%d')
-
-        records = read_log()
         data = []
+        if 'date' in qdict:
+            # date parameter filters the log values returned; "yyyy-mm-dd" format
+            date = datetime.datetime.strptime(qdict['date'], "%Y-%m-%d").date()
+            check_end = datetime.datetime.combine(date, datetime.time.max)
+            check_start = datetime.datetime.combine(date, datetime.time.min)
+            log_start = check_start - datetime.timedelta(days=1)
 
-        for r in records:
-            event = json.loads(r)
+            events, blocked = scheduler.combined_schedule(log_start, check_end)
 
-            # return any records starting on this date
-            if 'date' not in qdict or event['date'] == thedate:
-                data.append(event)
-                # also return any records starting the day before and completing after midnight
-            if event['date'] == prevdate:
-                if int(event['start'].split(":")[0]) * 60 + int(event['start'].split(":")[1]) + int(
-                        event['duration'].split(":")[0]) > 24 * 60:
-                    data.append(event)
+            for interval in events:
+                # return only records that are visible on this day:
+                if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:
+                    duration = (interval['end'] - interval['start']).total_seconds()
+                    minutes, seconds = divmod(duration, 60)
+
+                    data.append({
+                        'program': interval['program'],
+                        'program_name': interval['program_name'],
+                        'active': interval['active'],
+                        'manual': interval.get('manual', False),
+                        'station': interval['station'],
+                        'date': interval['start'].strftime("%Y-%m-%d"),
+                        'start': interval['start'].strftime("%H:%M:%S"),
+                        'duration': "%02d:%02d" % (minutes, seconds),
+                    })
 
         web.header('Content-Type', 'application/json')
         return json.dumps(data)
@@ -471,12 +498,21 @@ class water_log_page(ProtectedPage):
     """Simple Log API"""
 
     def GET(self):
-        records = read_log()
+        events = log.finished_runs() + log.active_runs()
+
         data = "Date, Start Time, Zone, Duration, Program\n"
-        for r in records:
-            event = json.loads(r)
-            data += event["date"] + ", " + event["start"] + ", " + str(event["station"]) + ", " + event[
-                "duration"] + ", " + event["program"] + "\n"
+        for interval in events:
+            # return only records that are visible on this day:
+            duration = (interval['end'] - interval['start']).total_seconds()
+            minutes, seconds = divmod(duration, 60)
+
+            data += ', '.join([
+                interval['start'].strftime("%Y-%m-%d"),
+                interval['start'].strftime("%H:%M:%S"),
+                str(interval['station']),
+                "%02d:%02d" % (minutes, seconds),
+                interval['program_name']
+            ]) + '\n'
 
         web.header('Content-Type', 'text/csv')
         return data
