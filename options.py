@@ -1,6 +1,6 @@
 import shelve
 from threading import Timer
-import datetime
+from datetime import datetime
 
 __author__ = 'Rimco'
 
@@ -157,12 +157,12 @@ class _Options(object):
         {
             "key": "level_adjustment",
             "name": "Level adjustment set by the user (fraction)",
-            "default": 1.0,
+            "default": 100,
         },
         {
             "key": "rain_block",
             "name": "Rain block (rain delay) set by the user (datetime)",
-            "default": datetime.datetime(1970, 1, 1),
+            "default": datetime(1970, 1, 1),
         },
         {
             "key": "temp_unit",

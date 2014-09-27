@@ -7,6 +7,7 @@ import web
 
 from helpers import *
 from options import options
+from stations import stations
 from options import level_adjustments
 from options import rain_blocks
 from options import plugins
@@ -23,9 +24,10 @@ class WebPage(object):
             'rain_blocks': rain_blocks,
             'plugins': plugins,
             'version': version,
+            'stations': stations,
             'str': str,
             'eval': eval,
-            'session': web.config._session,
+            # 'session': web.config._session,
             'json': json,
             'cpu_temp': get_cpu_temp(),
             'now': time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
@@ -85,17 +87,19 @@ class change_values(ProtectedPage):
         if 'mm' in qdict and qdict['mm'] == '0':
             clear_mm()
         if 'rd' in qdict and qdict['rd'] != '0' and qdict['rd'] != '':
-            gv.sd['rd'] = float(qdict['rd'])
-            gv.sd['rdst'] = gv.now + gv.sd['rd'] * 3600 + 1  # +1 adds a smidge just so after a round trip the display hasn't already counted down by a minute.
+            rain_blocks = float(qdict['rd'])
+            # rd.sd['rdst'] = gv.now + rain_blocks * 3600 + 1  # +1 adds a smidge just so after a round trip the display hasn't already counted down by a minute.
             stop_onrain()
         elif 'rd' in qdict and qdict['rd'] == '0':
-            gv.sd['rdst'] = 0
+            pass
+            # gv.sd['rdst'] = 0
         for key in qdict.keys():
             try:
-                gv.sd[key] = int(qdict[key])
+                options[key] = int(qdict[key])
+                # gv.sd[key] = int(qdict[key])
             except Exception:
                 pass
-        jsave(gv.sd, 'sd')
+        # jsave(gv.sd, 'sd')
         raise web.seeother('/')  # Send browser back to home page
 
 
@@ -168,12 +172,12 @@ class change_options(ProtectedPage):
         if 'omtoff' in qdict:
             options.master_off_delay = int(qdict['omtoff'])
         if 'owl' in qdict:
-            gv.sd['wl'] = int(qdict['owl'])
+            options.level_adjustment = int(qdict['owl'])
 
         if 'ours' in qdict and (qdict['ours'] == 'on' or qdict['ours'] == '1'):
-            gv.sd['urs'] = 1
+            options.rain_sensor_enabled = 1
         else:
-            gv.sd['urs'] = 0
+            options.rain_sensor_enabled = 0
 
         if 'oseq' in qdict and (qdict['oseq'] == 'on' or qdict['oseq'] == '1'):
             options.sequential = 1
@@ -468,7 +472,7 @@ class run_now(ProtectedPage):
                 if sid + 1 == gv.sd['mas']:  # skip if this is master valve
                     continue
                 if p[7 + b] & 1 << s:  # if this station is scheduled in this program
-                    gv.rs[sid][2] = p[6] * gv.sd['wl'] / 100 * extra_adjustment  # duration scaled by water level
+                    gv.rs[sid][2] = p[6] * options.level_adjustment / 100 * extra_adjustment  # duration scaled by water level
                     gv.rs[sid][3] = pid + 1  # store program number in schedule
                     gv.ps[sid][0] = pid + 1  # store program number for display
                     gv.ps[sid][1] = gv.rs[sid][2]  # duration
@@ -520,9 +524,9 @@ class api_status(ProtectedPage):
                         if sbit:
                             status['status'] = 'on'
                         if not irbit:
-                            if gv.sd['rd'] != 0:
+                            if rain_blocks != 0:
                                 status['reason'] = 'rain_delay'
-                            if gv.sd['urs'] != 0 and gv.sd['rs'] != 0:
+                            if options.rain_sensor_enabled != 0 and inputs.rain_input != 0:
                                 status['reason'] = 'rain_sensed'
                         if sn == gv.sd['mas']:
                             status['master'] = 1

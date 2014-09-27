@@ -37,8 +37,8 @@ def weather_to_delay(run_loop=False):
             delay = code_to_delay(weather["code"])
             if delay > 0:
                 print("Rain detected: " + weather["text"] + ". Adding delay of " + str(delay))
-                gv.sd['rd'] = float(delay)
-                gv.sd['rdst'] = gv.now + gv.sd['rd'] * 3600 + 1  # +1 adds a smidge just so after a round trip the display hasn't already counted down by a minute.
+                rain_blocks = float(delay)
+                # gv.sd['rdst'] = gv.now + rain_blocks * 3600 + 1  # +1 adds a smidge just so after a round trip the display hasn't already counted down by a minute.
                 stop_onrain()
             elif delay == 0:
                 print("No rain detected: " + weather["text"] + ". No action.")

@@ -100,6 +100,9 @@ class _BaseStations(object):
         for i in range(len(self._state)):
             self._state[i] = False
 
+    def __getitem__(self, index):
+        return self._stations[index]
+
 
 class _DummyStations(_BaseStations):
     def resize(self, count):
