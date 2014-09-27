@@ -133,12 +133,22 @@ class _Programs(object):
     def __init__(self):
         self._programs = []
 
-        for i in range(options.program_count):
+        i = 0
+        while options.available(_Program, i):
             self._programs.append(_Program(self, i))
+            i += 1
+
+        options.add_callback('output_count', self._option_cb)
+
+    def _option_cb(self, key, old, new):
+        # Remove all stations that do not exist anymore
+        for program in self._programs:
+            program.stations = [station for station in program.stations if 0 <= station < new]
 
     def add_program(self):
-        self._programs.append(_Program(self, len(self._programs)))
-        options.program_count = len(self._programs)
+        program = _Program(self, len(self._programs))
+        self._programs.append(program)
+        options.save(program, program.index)
 
     def remove_program(self, index):
         if 0 <= index < len(self._programs):
@@ -147,10 +157,10 @@ class _Programs(object):
         for i in range(index, len(self._programs)):
             options.save(self._programs[i], i)  # Save programs using new indices
 
-        options.program_count = len(self._programs)
+        options.erase(_Program, len(self._programs))  # Remove info in last index
 
     def count(self):
-        return options.program_count
+        return len(self._programs)
 
     def get(self, index=None):
         if index is None:
