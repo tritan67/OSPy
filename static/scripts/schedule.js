@@ -31,7 +31,6 @@ function fromClock(clock) {
 }
 
 function displaySchedule(schedule) {
-    console.log('x')
     if (displayScheduleTimeout != null) {
         clearTimeout(displayScheduleTimeout);
     }
@@ -52,7 +51,6 @@ function displaySchedule(schedule) {
                     if (0 <= relativeStart && relativeStart < 60 ||
                         0.05 < relativeEnd && relativeEnd <= 60 ||
                         relativeStart < 0 && relativeEnd >= 60) {
-                        console.log(schedule[s].station, relativeStart, relativeEnd)
                         var barStart = Math.max(0,relativeStart)/60;
                         var barWidth = Math.max(0.05,Math.min(relativeEnd, 60)/60 - barStart);
                         var programClass;
