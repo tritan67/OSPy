@@ -138,7 +138,6 @@ def stop_onrain():
 
 def save_to_options(qdict):
     from options import options
-    from stations import stations
 
     for option in options.OPTIONS:
         key = option['key']
@@ -158,28 +157,6 @@ def save_to_options(qdict):
             else:
                 if isinstance(option['default'], bool):
                     options[key] = False
-
-    if 'master' in qdict:
-        m = int(qdict['master'])
-        if m < 0:
-            stations.master = None
-        elif m < stations.count():
-            stations.master = m
-
-    if 'old_password' in qdict and qdict['old_password'] != "":
-        try:
-            if test_password(qdict['old_password']):
-                if qdict['new_password'] == "":
-                    raise web.seeother('/options?errorCode=pw_blank')
-                elif qdict['new_password'] == qdict['check_password']:
-                    options.password_salt = password_salt()  # Make a new salt
-                    options.password_hash = password_hash(qdict['new_password'], options.password_salt)
-                else:
-                    raise web.seeother('/options?errorCode=pw_mismatch')
-            else:
-                raise web.seeother('/options?errorCode=pw_wrong')
-        except KeyError:
-            pass
 
 
 ########################

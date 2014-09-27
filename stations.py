@@ -95,8 +95,11 @@ class _BaseStations(object):
             self._stations.append(_Station(self, len(self._stations)))
             self._state.append(False)
 
-        # Make sure we turn them off before they become unreachable
         if count < len(self._stations):
+            if self.master >= count:
+                self.master = None
+
+            # Make sure we turn them off before they become unreachable
             for index in range(count, len(self._stations)):
                 self._state[index] = False
             self._activate()

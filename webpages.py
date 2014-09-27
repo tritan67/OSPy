@@ -15,8 +15,8 @@ from options import level_adjustments
 from options import options
 from options import plugins
 from options import rain_blocks
-from programs import programs
 from stations import stations
+import scheduler
 import version
 
 
@@ -121,6 +121,28 @@ class options_page(ProtectedPage):
         qdict = web.input()
 
         save_to_options(qdict)
+
+        if 'master' in qdict:
+            m = int(qdict['master'])
+            if m < 0:
+                stations.master = None
+            elif m < stations.count():
+                stations.master = m
+
+        if 'old_password' in qdict and qdict['old_password'] != "":
+            try:
+                if test_password(qdict['old_password']):
+                    if qdict['new_password'] == "":
+                        raise web.seeother('/options?errorCode=pw_blank')
+                    elif qdict['new_password'] == qdict['check_password']:
+                        options.password_salt = password_salt()  # Make a new salt
+                        options.password_hash = password_hash(qdict['new_password'], options.password_salt)
+                    else:
+                        raise web.seeother('/options?errorCode=pw_mismatch')
+                else:
+                    raise web.seeother('/options?errorCode=pw_wrong')
+            except KeyError:
+                pass
 
         raise web.seeother('/')
 
@@ -444,25 +466,28 @@ class api_log_page(ProtectedPage):
         data = []
         if 'date' in qdict:
             # date parameter filters the log values returned; "yyyy-mm-dd" format
-            check_end = datetime.datetime.combine(
-                datetime.datetime.strptime(qdict['date'], "%Y-%m-%d").date(),
-                datetime.time.max)
-            check_start = check_end - datetime.timedelta(days=2)
+            date = datetime.datetime.strptime(qdict['date'], "%Y-%m-%d").date()
+            check_end = datetime.datetime.combine(date, datetime.time.max)
+            check_start = datetime.datetime.combine(date, datetime.time.min)
+            log_start = check_start - datetime.timedelta(days=1)
 
-            events = log.finished_runs() + log.active_runs()
+            events, blocked = scheduler.combined_schedule(log_start, check_end)
 
             for interval in events:
                 # return only records that are visible on this day:
                 if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:
                     duration = (interval['end'] - interval['start']).total_seconds()
-                    hours, remainder = divmod(duration, 3600)
-                    minutes, seconds = divmod(remainder, 60)
+                    minutes, seconds = divmod(duration, 60)
 
                     data.append({
+                        'program': interval['program'],
+                        'program_name': interval['program_name'],
+                        'active': interval['active'],
+                        'manual': interval.get('manual', False),
                         'station': interval['station'],
                         'date': interval['start'].strftime("%Y-%m-%d"),
                         'start': interval['start'].strftime("%H:%M:%S"),
-                        'duration': "%02d:%02d" % (hours, minutes),
+                        'duration': "%02d:%02d" % (minutes, seconds),
                     })
 
         web.header('Content-Type', 'application/json')
@@ -479,14 +504,13 @@ class water_log_page(ProtectedPage):
         for interval in events:
             # return only records that are visible on this day:
             duration = (interval['end'] - interval['start']).total_seconds()
-            hours, remainder = divmod(duration, 3600)
-            minutes, seconds = divmod(remainder, 60)
+            minutes, seconds = divmod(duration, 60)
 
             data += ', '.join([
                 interval['start'].strftime("%Y-%m-%d"),
                 interval['start'].strftime("%H:%M:%S"),
                 str(interval['station']),
-                "%02d:%02d" % (hours, minutes),
+                "%02d:%02d" % (minutes, seconds),
                 interval['program_name']
             ]) + '\n'
 

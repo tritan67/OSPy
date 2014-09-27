@@ -52,8 +52,10 @@ def predicted_schedule(start_time, end_time):
 
             for interval in program_intervals:
                 new_schedule = {
+                    'active': None,
                     'program': program.index,
                     'program_name': program.name, # Save it because programs can be reordered
+                    'manual': program.manual,
                     'start': interval['start'],
                     'end': interval['end'],
                     'uid': '%s-%d-%d' % (str(interval['start']), program.index, station),
