@@ -17,7 +17,7 @@ class _Station(object):
         self.activate_master = False
 
         self.name = "Station %02d" % (index+1)
-        self.enabled = False
+        self.enabled = True
         self.ignore_rain = False
 
         options.load(self, index)
