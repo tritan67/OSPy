@@ -159,7 +159,7 @@ $code:
         });
 
         jQuery("button#pStopAll").click(function(){
-            window.location="/cv?rsn=1";
+            window.location="/?stop_all=1";
         });
 
         jQuery("button#pPrev").click(function() {
@@ -225,7 +225,7 @@ $if options.manual_mode:
                         $else:
                             <td class="master station_off">Off (Master)</td>
                     $else:
-                        <td class="station_running">
+                        <td class="station_running" colspan="3">
                             $ rem = 0 # FIXME
                             <button class='toggle manual narrow ${'on' if station.active else 'off'}' id='${station.index}'><span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button>
                                 ${'in' if station.active else 'for'}
@@ -233,6 +233,11 @@ $if options.manual_mode:
                             <input type='text' id='ss${station.index}' size='2' maxlength='2' value='${two_digits(rem%60)}'/> (mm:ss)
                         </td>
                 </tr>
+        <tr>
+            <td colspan="4">
+                <button id="pStopAll" class="execute delete">Stop All Stations</button>
+            </td>
+        </tr>
         </table>
     </div>
 $else:
@@ -265,11 +270,10 @@ $else:
                         <td class="scheduleTick" data="$tick"></td>
                 </tr>
             <tr>
-                <td colspan="2" style="text-align:right">
+                <td colspan="2">
                     <button id="pStopAll" class="execute delete">Stop All Stations</button>
                 </td>
                 <td colspan="24" id="legend" style="text-align:center">
-                    <span class='program1'>Program 1</span>
                 </td>
             </tr>
         </table>

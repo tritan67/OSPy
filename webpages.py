@@ -79,15 +79,16 @@ class home_page(ProtectedPage):
     """Open Home page."""
 
     def GET(self):
-        return self.template_render.home()
-
-    def POST(self):
         qdict = web.input()
         if 'stop_all' in qdict and qdict['stop_all'] == '1':
             log.finish_run(None)
             stations.clear()
             raise web.seeother('/')
 
+        return self.template_render.home()
+
+    def POST(self):
+        qdict = web.input()
         if 'system_enabled' in qdict and qdict['system_enabled'] != '':
             options.system_enabled = True if qdict['system_enabled'] == '1' else False
         if 'manual_mode' in qdict and qdict['manual_mode'] != '':
@@ -212,12 +213,31 @@ class get_set_station_page(ProtectedPage):
                 return 'Station ' + str(sid+1) + ' not found.'
         elif options.manual_mode:
             if set_to:  # if status is on
+                start = datetime.datetime.now()
+                new_schedule = {
+                    'active': True,
+                    'program': -1,
+                    'station': sid,
+                    'program_name': "Manual mode",
+                    'manual': True,
+                    'start': start,
+                    'end': start + datetime.timedelta(days=3650),
+                    'uid': '%s-%d-%d' % (str(start), -1, sid),
+                    'usage': 1.0  # FIXME
+                }
                 if set_time > 0:  # if an optional duration time is given
-                    stations.activate(sid) # FIXME: ensure it is stopped, add logging
-                else:
-                    stations.activate(sid)
+                    new_schedule['end'] = datetime.datetime.now() + datetime.timedelta(seconds=set_time)
+
+                log.start_run(new_schedule)
+                stations.activate(new_schedule['station'])
+
             else:  # If status is off
                 stations.deactivate(sid)
+                active = log.active_runs()
+                for interval in active:
+                    if interval['station'] == sid:
+                        log.finish_run(interval)
+
             raise web.seeother('/')
         else:
             return 'Manual mode not active.'

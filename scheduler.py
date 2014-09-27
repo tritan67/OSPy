@@ -19,9 +19,7 @@ from stations import stations
 
 def predicted_schedule(start_time, end_time):
     """Determines all schedules for the given time range.
-    To calculate what should currently be active, a start time of some time (a day) ago should be used.
-    The current_active list should contain intervals as returned by this function.
-    skip_uids is a list with uids that should not be returned. For example, if they already have been executed."""
+    To calculate what should currently be active, a start time of some time (a day) ago should be used."""
 
     adjustment = level_adjustments.total_adjustment()
     max_usage = 1.01 if options.sequential else 1000000  # FIXME
@@ -183,14 +181,15 @@ class _Scheduler(Thread):
             check_start = current_time - datetime.timedelta(days=1)
             check_end = current_time + datetime.timedelta(days=1)
 
-            if not options.manual_mode:
-                active = log.active_runs()
-                for entry in active:
-                    if entry['end'] <= current_time or (rain_blocks.block_end() > datetime.datetime.now() and
-                                                        not stations.get(entry['station']).ignore_rain):
-                        log.finish_run(entry)
-                        stations.deactivate(entry['station'])
+            active = log.active_runs()
+            for entry in active:
+                if entry['end'] <= current_time or (not options.manual_mode and
+                                                    rain_blocks.block_end() > datetime.datetime.now() and
+                                                    not stations.get(entry['station']).ignore_rain):
+                    log.finish_run(entry)
+                    stations.deactivate(entry['station'])
 
+            if not options.manual_mode:
                 schedule, blocked = predicted_schedule(check_start, check_end)
                 #logging.debug("Schedule: %s", str(schedule))
                 #logging.debug("Blocked: %s", str(blocked))
