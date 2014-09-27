@@ -320,7 +320,6 @@ class _Options(object):
 
         try:
             values = getattr(self, cls)
-            print 'load', cls, values
             for name, value in values.iteritems():
                 setattr(obj, name, value)
         except KeyError:
@@ -335,7 +334,6 @@ class _Options(object):
             if not hasattr(getattr(obj, attr), '__call__'):
                 values[attr] = getattr(obj, attr)
 
-        print 'save', cls, values
         setattr(self, cls, values)
 
     def erase(self, obj, key=""):
