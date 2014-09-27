@@ -1,7 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 __author__ = 'Rimco'
-from options import options
 
+# System imports
 import datetime
+
+# Local imports
+from options import options
 
 
 class _Program(object):

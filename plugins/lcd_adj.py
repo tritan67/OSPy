@@ -58,7 +58,7 @@ class LCDSender(Thread):
 
     def run(self):
         time.sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-        print "LCD plugin is active"
+        logging.debug("LCD plugin is active")
         text_shift = 0
 
         while True:

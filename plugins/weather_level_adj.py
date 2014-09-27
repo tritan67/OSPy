@@ -80,7 +80,7 @@ class WeatherLevelChecker(Thread):
                         del gv.sd['wl_weather']
                 else:
 
-                    print "Checking weather status..."
+                    logging.debug("Checking weather status...")
                     remove_data(['history_', 'conditions_', 'forecast10day_'])
 
                     history = history_info()

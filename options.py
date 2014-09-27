@@ -1,8 +1,12 @@
-import shelve
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+__author__ = 'Rimco'
+
+# System imports
 from threading import Timer
 import datetime
-
-__author__ = 'Rimco'
+import logging
+import shelve
 
 OPTIONS_FILE = './data/options.db'
 
@@ -195,6 +199,7 @@ class _Options(object):
     def __init__(self):
         self._values = {}
         self._write_timer = None
+        self._callbacks = {}
 
         for info in self.OPTIONS:
             self._values[info["key"]] = info["default"]
@@ -212,6 +217,21 @@ class _Options(object):
 
             self.password_salt = password_salt()
             self.password_hash = password_hash(self.password_hash, self.password_salt)
+
+    def add_callback(self, key, function):
+        if key not in self._callbacks:
+            self._callbacks[key] = {
+                'last_value': getattr(self, key),
+                'functions': []
+            }
+
+        if function not in self._callbacks[key]['functions']:
+            self._callbacks[key]['functions'].append(function)
+
+    def remove_callback(self, key, function):
+        if key in self._callbacks:
+            if function in self._callbacks[key]['functions']:
+                self._callbacks[key]['functions'].remove(function)
 
     def __str__(self):
         import pprint
@@ -231,6 +251,15 @@ class _Options(object):
             super(_Options, self).__setattr__(key, value)
         else:
             self._values[key] = value
+
+            if key in self._callbacks:
+                if value != self._callbacks[key]['last_value']:
+                    for cb in self._callbacks[key]['functions']:
+                        try:
+                            cb(key, self._callbacks[key]['last_value'], value)
+                        except Exception as err:
+                            logging.warning(str(err))
+                    self._callbacks[key]['last_value'] = value
 
             # Only write after 1 second without any more changes
             if self._write_timer is not None:
@@ -299,7 +328,6 @@ class _LevelAdjustments(dict):
     def total_adjustment(self):
         return reduce(lambda x, y: x * y, self.values(), options.level_adjustment)
 
-
 level_adjustments = _LevelAdjustments()
 
 
@@ -309,7 +337,6 @@ class _RainBlocks(dict):
 
     def block_end(self):
         return max(self.values() + [options.rain_block])
-
 
 rain_blocks = _RainBlocks()
 

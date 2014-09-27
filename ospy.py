@@ -1,14 +1,14 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+__author__ = 'Rimco'
 
-import web  # the Web.py module. See webpy.org (Enables the Python OpenSprinkler web interface)
-from urls import urls  # Provides access to URLs for UI pages
-
+# Local imports
+from log import hook_logging
 from options import options
+from scheduler import scheduler
+from urls import urls
+import web
 
-##############################
-#### web.py setup         ####
-##############################
 
 class OSPyApp(web.application):
     """Allow program to select HTTP port."""
@@ -17,22 +17,27 @@ class OSPyApp(web.application):
         func = self.wsgifunc(*middleware)
         return web.httpserver.runsimple(func, ('0.0.0.0', port))
 
-
-app = OSPyApp(urls, globals())
-web.config.debug = False  # Improves page load speed
-if web.config.get('_session') is None:
-    web.config._session = web.session.Session(app, web.session.DiskStore('sessions'),
-                                              initializer={'user': 'anonymous'})
-
 if __name__ == '__main__':
+    hook_logging()
+
+    ##############################
+    #### web.py setup         ####
+    ##############################
+    app = OSPyApp(urls, globals())
+    web.config.debug = False  # Improves page load speed
+    if web.config.get('_session') is None:
+        web.config._session = web.session.Session(app, web.session.DiskStore('sessions'),
+                                                  initializer={'user': 'anonymous'})
+    app.notfound = lambda: web.seeother('/')
 
     #########################################################
     #### Code to import all webpages and plugin webpages ####
+    #########################################################
     #import plugins
     #
-    #print 'plugins loaded:'
+    #logging.debug("plugins loaded:")
     #for name in plugins.__all__:
     #    print ' ', name
 
-    app.notfound = lambda: web.seeother('/')
+    scheduler.start()
     app.run()

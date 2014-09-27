@@ -1,10 +1,14 @@
-import datetime
-from options import options
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+__author__ = 'Rimco'
 
+# System imports
+import datetime
 import logging
 import time
 
-__author__ = 'Rimco'
+# Local imports
+from options import options
 
 EVENT_FILE = './data/events.log'
 EVENT_FORMAT = "%(asctime)s [%(levelname)s %(event_type)s] %(filename)s:%(lineno)d: %(message)s"
@@ -30,7 +34,7 @@ class _Log(logging.Handler):
     def level(self, value):
         pass  # Override level using options
 
-    def _save_log(self, msg):
+    def _save_log(self, msg, level, event_type):
         result = []
         for entry in self._log['Run']:
             result.append(entry)
@@ -38,6 +42,11 @@ class _Log(logging.Handler):
                 break
         options.logged_runs = result
 
+        # Print if it we are debugging, if it is general information or if it is important
+        if options.debug_log or (event_type == 'Event' and level >= logging.INFO) or level >= logging.WARNING:
+            print msg
+
+        # Save it if we are debugging
         if options.debug_log:
             with open(EVENT_FILE, 'a') as fh:
                 fh.write(msg + '\n')
@@ -70,7 +79,7 @@ class _Log(logging.Handler):
         fmt_dict['start'] = fmt_dict['start'].strftime("%Y-%m-%d %H:%M:%S")
         fmt_dict['end'] = fmt_dict['end'].strftime("%Y-%m-%d %H:%M:%S")
 
-        self._save_log(RUN_START_FORMAT % fmt_dict)
+        self._save_log(RUN_START_FORMAT % fmt_dict, logging.DEBUG, 'Run')
         self._prune('Run')
 
     def finish_run(self, interval):
@@ -93,15 +102,12 @@ class _Log(logging.Handler):
                 fmt_dict['start'] = fmt_dict['start'].strftime("%Y-%m-%d %H:%M:%S")
                 fmt_dict['end'] = fmt_dict['end'].strftime("%Y-%m-%d %H:%M:%S")
 
-                self._save_log(RUN_FINISH_FORMAT % fmt_dict)
+                self._save_log(RUN_FINISH_FORMAT % fmt_dict, logging.DEBUG, 'Run')
                 if uid is not None:
                     break
 
     def active_runs(self):
-        result = [run['data'].copy() for run in self._log['Run'] if run['data']['active']]
-        for entry in result:
-            entry['end'] = datetime.datetime.now()
-        return result
+        return [run['data'].copy() for run in self._log['Run'] if run['data']['active']]
 
     def finished_runs(self):
         return [run['data'].copy() for run in self._log['Run'] if not run['data']['active']]
@@ -116,7 +122,7 @@ class _Log(logging.Handler):
                 'level': level,
                 'data': message
             })
-            self._save_log(message)
+            self._save_log(message, level, event_type)
             self._prune(event_type)
 
     def clear(self, event_type):
@@ -138,6 +144,9 @@ class _Log(logging.Handler):
 log = _Log()
 log.setFormatter(logging.Formatter(EVENT_FORMAT))
 
-_logger = logging.getLogger()
-_logger.setLevel(logging.DEBUG)
-_logger.addHandler(log)
+
+def hook_logging():
+    _logger = logging.getLogger()
+    _logger.setLevel(logging.DEBUG)
+    _logger.propagate = False
+    _logger.handlers = [log]

@@ -61,7 +61,7 @@ class SMS(Thread):
 
     def run(self):
         time.sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-        print "SMS plugin is active"
+        logging.debug("SMS plugin is active")
 
         while True:
             try:
@@ -128,9 +128,9 @@ def sms_check(self):
     sm.ReadConfig()
     try:
         sm.Init()
-        print "Checking SMS..."
+        logging.debug("Checking SMS...")
     except:
-        print "Error: SMS modem fault"
+        logging.debug("Error: SMS modem fault")
 
     status = sm.GetSMSStatus()
     remain = status['SIMUsed'] + status['PhoneUsed'] + status['TemplatesUsed']

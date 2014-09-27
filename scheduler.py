@@ -1,14 +1,20 @@
-from stations import stations
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 __author__ = 'Rimco'
 
-from options import options
+# System imports
+from threading import Thread
+import datetime
+import logging
+import time
+
+# Local imports
+from log import log
 from options import level_adjustments
+from options import options
 from options import rain_blocks
 from programs import programs
-from log import log
-
-import datetime
+from stations import stations
 
 
 def predicted_schedule(start_time, end_time):
@@ -143,47 +149,94 @@ def combined_schedule(start_time, end_time):
     return result, blocked
 
 
-def check_schedule():
-    if options.system_enabled and not options.manual_mode:
-        current_time = datetime.datetime.now()
+class _Scheduler(Thread):
+    def __init__(self):
+        super(_Scheduler, self).__init__()
+        self.daemon = True
+        options.add_callback('manual_mode', self._manual_cb)
 
-        active = log.active_runs()
-        for entry in active:
-            if entry['end'] <= current_time:
-                log.finish_run(entry)
-                stations.deactivate(entry['station'])
+    def _manual_cb(self, key, old, new):
+        # Ensure all stations are deactivated if manual mode is changed
+        stations.clear()
 
-        check_start = current_time - datetime.timedelta(days=1)
-        check_end = current_time + datetime.timedelta(days=1)
-        schedule = predicted_schedule(check_start, check_end)
-        for entry in schedule:
-            if entry['start'] <= current_time < entry['end']:
-                log.start_run(entry)
-                stations.activate(entry['station'])
+    def run(self):
+        while True:
+            self._check_schedule()
+            time.sleep(5)
 
-        if stations.master is not None:
-            master_on = False
+    @staticmethod
+    def _check_schedule():
+        if options.system_enabled and not options.manual_mode:
+            current_time = datetime.datetime.now()
 
-            # It's easy if we don't have to use delays:
-            if options.master_on_delay == options.master_off_delay == 0:
-                active = log.active_runs()
+            active = log.active_runs()
+            for entry in active:
+                if entry['end'] <= current_time or (rain_blocks.block_end() > datetime.datetime.now() and
+                                                    not stations.get(entry['station']).ignore_rain):
+                    log.finish_run(entry)
+                    stations.deactivate(entry['station'])
 
-                for entry in active:
-                    if stations.get(entry['station']).activate_master:
-                        master_on = True
-                        break
+            check_start = current_time - datetime.timedelta(days=1)
+            check_end = current_time + datetime.timedelta(days=1)
+            schedule, blocked = predicted_schedule(check_start, check_end)
+            #logging.debug("Schedule: %s", str(schedule))
+            #logging.debug("Blocked: %s", str(blocked))
+            for entry in schedule:
+                if entry['start'] <= current_time < entry['end']:
+                    log.start_run(entry)
+                    stations.activate(entry['station'])
 
-            else:
-                active, blocked = combined_schedule(check_start, check_end)
-                for entry in active:
-                    if stations.get(entry['station']).activate_master:
-                        if entry['start'] + datetime.timedelta(seconds=options.master_on_delay) \
-                                <= current_time < \
-                                entry['end'] + datetime.timedelta(seconds=options.master_off_delay):
+            if stations.master is not None:
+                master_on = False
+
+                # It's easy if we don't have to use delays:
+                if options.master_on_delay == options.master_off_delay == 0:
+                    active = log.active_runs()
+
+                    for entry in active:
+                        if stations.get(entry['station']).activate_master:
                             master_on = True
                             break
 
-            master_station = stations.get(stations.master)
+                else:
+                    active, blocked = combined_schedule(check_start, check_end)
+                    for entry in active:
+                        if stations.get(entry['station']).activate_master:
+                            if entry['start'] + datetime.timedelta(seconds=options.master_on_delay) \
+                                    <= current_time < \
+                                    entry['end'] + datetime.timedelta(seconds=options.master_off_delay):
+                                master_on = True
+                                break
 
-            if master_on != master_station.active:
-                master_station.active = master_on
+                master_station = stations.get(stations.master)
+
+                if master_on != master_station.active:
+                    master_station.active = master_on
+
+scheduler = _Scheduler()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

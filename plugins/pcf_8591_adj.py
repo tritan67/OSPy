@@ -64,7 +64,7 @@ class PCFSender(Thread):
 
     def run(self):
         time.sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-        print "PCF8591 plugin is active"
+        logging.debug("PCF8591 plugin is active")
         last_time = gv.now
 
         while True:

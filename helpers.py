@@ -1,19 +1,21 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 __author__ = 'Rimco'
 
+# System imports
+from threading import Thread
+import datetime
+import logging
 import os
 import random
-import time
 import subprocess
-import datetime
-from threading import Thread
+import time
 
-import web
+# Local imports
 from web import form
 from web.session import sha1
+import web
 
-##############################
-#### Function Definitions ####
 
 def determine_platform():
     try:
@@ -42,7 +44,7 @@ def reboot(wait=1, block=False):
         from stations import stations
         stations.clear()
         time.sleep(wait)
-        print 'Rebooting...'
+        logging.info("Rebooting...")
         subprocess.Popen(['reboot'])
     else:
         t = Thread(target=reboot, args=(wait, True))
@@ -54,7 +56,7 @@ def poweroff(wait=1, block=False):
         from stations import stations
         stations.clear()
         time.sleep(wait)
-        print 'Powering off...'
+        logging.info("Powering off...")
         subprocess.Popen(['poweroff'])
     else:
         t = Thread(target=poweroff, args=(wait, True))
@@ -66,7 +68,7 @@ def restart(wait=1, block=False):
         from stations import stations
         stations.clear()
         time.sleep(wait)
-        print 'Restarting...'
+        logging.info("Restarting...")
         subprocess.Popen('service ospy restart'.split())
     else:
         t = Thread(target=restart, args=(wait, True))

@@ -1,18 +1,19 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# System imports
+import datetime
 import json
 import time
-import datetime
 import web
 
+# Local imports
 from helpers import *
-from options import options
 from options import level_adjustments
-from options import rain_blocks
+from options import options
 from options import plugins
+from options import rain_blocks
 import version
-
-__author__ = 'Rimco'
 
 
 class WebPage(object):

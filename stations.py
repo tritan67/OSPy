@@ -1,5 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 __author__ = 'Rimco'
 
+# System imports
+import logging
+
+# Local imports
 from options import options
 
 
@@ -60,18 +66,29 @@ class _BaseStations(object):
             self._stations.append(_Station(self, i))
         self.clear()
 
+        options.add_callback('output_count', self._resize_cb)
+
+    def _activate(self):
+        """This function should be used to update real outputs according to self._state."""
+        pass
+
+    def _resize_cb(self, key, old, new):
+        self.resize(new)
+
     def resize(self, count):
         while len(self._stations) < count:
             self._stations.append(_Station(self, len(self._stations)))
             self._state.append(False)
 
         # Make sure we turn them off before they become unreachable
-        if len(self._stations) > count:
-            self.clear()
+        if count < len(self._stations):
+            for index in range(count, len(self._stations)):
+                self._state[index] = False
+            self._activate()
 
-        while len(self._stations) > count:
-            del self._stations[-1]
-            del self._state[-1]
+            while len(self._stations) > count:
+                del self._stations[-1]
+                del self._state[-1]
 
     def count(self):
         return len(self._stations)
@@ -84,10 +101,16 @@ class _BaseStations(object):
         return result
 
     def activate(self, index):
-        self._state[index] = True
+        if not isinstance(index, list):
+            index = [index]
+        for i in index:
+            self._state[i] = True
 
     def deactivate(self, index):
-        self._state[index] = False
+        if not isinstance(index, list):
+            index = [index]
+        for i in index:
+            self._state[i] = True
 
     def active(self, index=None):
         if index is None:
@@ -102,21 +125,25 @@ class _BaseStations(object):
 
 
 class _DummyStations(_BaseStations):
+    def _activate(self):
+        super(_DummyStations, self)._activate()
+        logging.debug("Activated outputs")
+
     def resize(self, count):
         super(_DummyStations, self).resize(count)
-        print "Output count =", count
+        logging.debug("Resized to %d", count)
 
     def activate(self, index):
         super(_DummyStations, self).activate(index)
-        print "Activated output", index
+        logging.debug("Activated output %d", index)
 
     def deactivate(self, index):
         super(_DummyStations, self).deactivate(index)
-        print "Deactivated output", index
+        logging.debug("Deactivated output %d", index)
 
     def clear(self):
         super(_DummyStations, self).clear()
-        print "Cleared all outputs"
+        logging.debug("Cleared all outputs")
 
 
 class _ShiftStations(_BaseStations):
