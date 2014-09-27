@@ -26,6 +26,7 @@ class WebPage(object):
             'bool': bool,
             'int': int,
             'eval': eval,
+            'round': round,
             'datetime': datetime,
             'json': json,
             'isinstance': isinstance,
@@ -39,7 +40,6 @@ class WebPage(object):
 
             'version': version,
 
-            'session': web.config._session,
             'cpu_temp': get_cpu_temp(),
             'now': time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
         }
