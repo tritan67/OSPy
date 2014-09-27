@@ -350,6 +350,9 @@ class _RainBlocks(dict):
     def block_end(self):
         return max(self.values() + [options.rain_block])
 
+    def seconds_left(self):
+        return max(0, (self.block_end() - datetime.now()).total_seconds())
+
 rain_blocks = _RainBlocks()
 
 

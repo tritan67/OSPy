@@ -9,6 +9,7 @@ import web
 
 # Local imports
 from helpers import *
+from inputs import inputs
 from log import log
 from options import level_adjustments
 from options import options
@@ -29,6 +30,7 @@ class WebPage(object):
             'json': json,
             'isinstance': isinstance,
 
+            'inputs': inputs,
             'level_adjustments': level_adjustments,
             'options': options,
             'plugins': plugins,
@@ -417,11 +419,7 @@ class toggle_temp_page(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        if qdict['tunit'] == "C":
-            gv.sd['tu'] = "F"
-        else:
-            gv.sd['tu'] = "C"
-        jsave(gv.sd, 'sd')
+        options.temp_unit = "F" if qdict['tunit'] == "C" else "C"
         raise web.seeother('/')
 
 

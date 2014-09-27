@@ -39,7 +39,7 @@ $def with (content)
 	<script>
 		// Variables set server-side
 		var devt = ${now}*1000;
-		var timeFormat = ${options.time_format};
+		var timeFormat = ${str(options.time_format).lower()};
 
 		var cputemp = "${cpu_temp}";
 		var tempunit = "${options.temp_unit}";

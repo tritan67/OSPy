@@ -3,12 +3,18 @@
 __author__ = 'Rimco'
 
 
-class _DummyInputs(object):
+class _RainSensorMixIn(object):
+    def rain_sensed(self):
+        from options import options
+        return options.rain_sensor_enabled and (options.rain_sensor_no == self.rain_input)
+
+
+class _DummyInputs(_RainSensorMixIn):
     def __init__(self):
         self.rain_input = False
 
 
-class _IOInputs(object):
+class _IOInputs(_RainSensorMixIn):
     def __init__(self):
         self._mapping = {}
 
@@ -19,7 +25,7 @@ class _IOInputs(object):
             return self._io.input(self._mapping[item])
 
 
-class _RPiInputs(_IOInputs):
+class _RPiInputs(_IOInputs, _RainSensorMixIn):
     def __init__(self):
         import RPi.GPIO as GPIO  # RPi hardware
 
@@ -34,7 +40,7 @@ class _RPiInputs(_IOInputs):
         }
 
 
-class _BBBInputs(_IOInputs):
+class _BBBInputs(_IOInputs, _RainSensorMixIn):
     def __init__(self):
         import Adafruit_BBIO.GPIO as GPIO  # Beagle Bone Black hardware
 
