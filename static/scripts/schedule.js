@@ -1,7 +1,6 @@
 // Global vars
 var displayScheduleDate = new Date(device_time); // dk
 var displayScheduleTimeout;
-var sid,t;
 
 
 function toXSDate(d) {
@@ -34,7 +33,7 @@ function displaySchedule(schedule) {
     if (displayScheduleTimeout != null) {
         clearTimeout(displayScheduleTimeout);
     }
-    var now = new Date();
+    var now = new Date((new Date()).getTime() + to_device_time);
     var nowMark = now.getHours()*60 + now.getMinutes();
     var isToday = toXSDate(displayScheduleDate) == toXSDate(now);
     var programClassesUsed = {};
