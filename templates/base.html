@@ -47,6 +47,11 @@ $def with (content)
         var tempunit = "${options.temp_unit}";
 
         $if content.page != 'login':
+            var system_enabled = ${str(options.system_enabled).lower()};
+            var manual_mode = ${str(options.manual_mode).lower()};
+            var level_adjustment = ${options.level_adjustment};
+            var rain_block = ${max(0, (options.rain_block - datetime.datetime.now()).total_seconds())};
+
             jQuery(document).ready(function(){
                 $if len(plugins) > 0:
                     jQuery.each(plugins, function() {

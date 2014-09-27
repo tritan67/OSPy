@@ -107,35 +107,35 @@ $code:
             statusTimer();
 
         jQuery("button#cStartStop").click(function(){
-            jQuery("form[name='hf'] input[name='en']").val(1-en);
+            jQuery("form[name='hf'] input[name='system_enabled']").val(system_enabled ? 0 : 1);
             jQuery("form[name='hf']").submit();
         });
 
         jQuery("button#cManual").click(function(){
-            jQuery("form[name='hf'] input[name='mm']").val(1-mm);
+            jQuery("form[name='hf'] input[name='manual_mode']").val(manual_mode ? 0 : 1);
             jQuery("form[name='hf']").submit();
         });
 
         jQuery("button#cRainDelay").click(function(){
-            if (rd != 0) {
+            if (rain_block != 0) {
                 var h = 0;
             } else {
-                var h = prompt("Enter hours to delay","0");
+                var h = prompt("Enter hours to delay", "0");
             }
             if (h != null){
-                jQuery("form[name='hf'] input[name='rd']").val(h);
+                jQuery("form[name='hf'] input[name='rain_block']").val(h);
                 jQuery("form[name='hf']").submit();
             }
         });
 
         jQuery("button#cWaterLevel").click(function(){
-            if (wl != 100) {
+            if (level_adjustment != 1.0) {
                 var w = 100;
             } else {
-                var w = prompt("Enter percentage adjustment",wl);
+                var w = prompt("Enter percentage adjustment", level_adjustment*100);
             }
             if (w != null){
-                jQuery("form[name='hf'] input[name='wl']").val(w);
+                jQuery("form[name='hf'] input[name='level_adjustment']").val(w);
                 jQuery("form[name='hf']").submit();
             }
         });
@@ -214,33 +214,25 @@ $code:
 $if options.manual_mode:
     <div id="manualmode">
         <table id="stations" class="stationList">
-        <!-- FIXME -->
         $# Manual program control formatting
-        $for bid in range(0, gv.sd['nbrd']):
-            $for s in range(0,8):
-                $ sid = bid*8 + s;
-                $ sn = sid + 1
-                $ sbit = (gv.sbits[bid]>>s)&1
-                $ show = (gv.sd['show'][bid]>>s)&1
-                $if show == 1:
-                    <tr>
-                        <td class='station_name'>${snames[sid]}</td>
-                        $if sn == gv.sd['mas']:
-                            $if sbit:
-                                <td class="master station_on">On (Master)</td>
-                            $else:
-                                <td class="master station_off">Off (Master)</td>
+        $for station in stations:
+            $if station.enabled:
+                <tr>
+                    <td class='station_name'>${station.name}</td>
+                    $if station.is_master:
+                        $if station.active:
+                            <td class="master station_on">On (Master)</td>
                         $else:
-                            $ rem = gv.ps[sid][1]
-                            $if rem > 65536:
-                                $ rem = 0
-                            <td class="station_running">
-                                <button class='toggle manual narrow ${'on' if sbit else 'off'}' id='${sid}'><span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button>
-                                    ${'in' if sbit else 'for'}
-                                <input type='text' id='mm${sid}' size='2' maxlength='3' value='${two_digits(rem/60)}'/>:
-                                <input type='text' id='ss${sid}' size='2' maxlength='2' value='${two_digits(rem%60)}'/> (mm:ss)
-                            </td>
-                    </tr>
+                            <td class="master station_off">Off (Master)</td>
+                    $else:
+                        <td class="station_running">
+                            $ rem = 0 # FIXME
+                            <button class='toggle manual narrow ${'on' if station.active else 'off'}' id='${station.index}'><span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button>
+                                ${'in' if station.active else 'for'}
+                            <input type='text' id='mm${station.index}' size='2' maxlength='3' value='${two_digits(rem/60)}'/>:
+                            <input type='text' id='ss${station.index}' size='2' maxlength='2' value='${two_digits(rem%60)}'/> (mm:ss)
+                        </td>
+                </tr>
         </table>
     </div>
 $else:
@@ -286,13 +278,11 @@ $else:
 </div>
 
 <div id="controls">
-    <!--FIXME all actions need to POST-->
-    <form name="hf" action="cv" method="get">
-        <input type="hidden" name="en">
-        <input type="hidden" name="mm">
-        <input type="hidden" name="rd">
-        <input type="hidden" name="wl">
-        <input type="hidden" name="rbt" value="0">
+    <form name="hf" action="/" method="post">
+        <input type="hidden" name="system_enabled">
+        <input type="hidden" name="manual_mode">
+        <input type="hidden" name="rain_block">
+        <input type="hidden" name="level_adjustment">
     </form>
 </div>
 

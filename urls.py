@@ -5,7 +5,6 @@
 
 urls = [
     '/',  'webpages.home_page',
-    '/cv', 'webpages.change_values_page',
     '/options', 'webpages.options_page',
     '/vs', 'webpages.view_stations_page',
     '/cs', 'webpages.change_stations_page',
