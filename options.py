@@ -3,8 +3,8 @@
 __author__ = 'Rimco'
 
 # System imports
+from datetime import datetime
 from threading import Timer
-import datetime
 import logging
 import shelve
 
@@ -178,7 +178,7 @@ class _Options(object):
         {
             "key": "rain_block",
             "name": "Rain block (rain delay) set by the user (datetime)",
-            "default": datetime.datetime(1970, 1, 1),
+            "default": datetime(1970, 1, 1),
         },
         {
             "key": "temp_unit",

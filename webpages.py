@@ -9,6 +9,7 @@ import web
 
 # Local imports
 from helpers import *
+from log import log
 from options import level_adjustments
 from options import options
 from options import plugins
@@ -24,6 +25,7 @@ class WebPage(object):
             'bool': bool,
             'int': int,
             'eval': eval,
+            'datetime': datetime,
             'json': json,
             'isinstance': isinstance,
 
@@ -83,26 +85,23 @@ class change_values_page(ProtectedPage):
     def GET(self):
         qdict = web.input()
         if 'rsn' in qdict and qdict['rsn'] == '1':
-            stop_stations()
-            raise web.seeother('/')
-        if 'en' in qdict and qdict['en'] == '':
-            qdict['en'] = '1'  # default
-        elif 'en' in qdict and qdict['en'] == '0':
+            log.finish_run(None)
             stations.clear()
-        if 'mm' in qdict and qdict['mm'] == '0':
-            clear_mm()
-        if 'rd' in qdict and qdict['rd'] != '0' and qdict['rd'] != '':
-            gv.sd['rd'] = float(qdict['rd'])
-            gv.sd['rdst'] = gv.now + gv.sd['rd'] * 3600 + 1  # +1 adds a smidge just so after a round trip the display hasn't already counted down by a minute.
-            stop_onrain()
-        elif 'rd' in qdict and qdict['rd'] == '0':
-            gv.sd['rdst'] = 0
-        for key in qdict.keys():
-            try:
-                gv.sd[key] = int(qdict[key])
-            except Exception:
-                pass
-        jsave(gv.sd, 'sd')
+            raise web.seeother('/')
+
+        if 'en' in qdict:
+            options.system_enabled = True if qdict['en'] == '1' else False
+        if 'mm' in qdict:
+            options.manual_mode = True if qdict['mm'] == '1' else False
+
+        if 'rd' in qdict:
+            if qdict['rd'] != '0' and qdict['rd'] != '':
+                options.rain_block = datetime.datetime.now() + datetime.timedelta(hours=float(qdict['rd']))
+            elif qdict['rd'] == '0':
+                options.rain_block = datetime.datetime.now()
+
+        save_to_options(qdict)
+
         raise web.seeother('/')  # Send browser back to home page
 
 
@@ -118,46 +117,7 @@ class options_page(ProtectedPage):
     def POST(self):
         qdict = web.input()
 
-        for option in options.OPTIONS:
-            key = option['key']
-            if 'category' in option:
-                if key in qdict:
-                    value = qdict[key]
-                    if isinstance(option['default'], bool):
-                        options[key] = True if value and value != "off" else False
-                    elif isinstance(option['default'], int):
-                        if 'min' in option and int(qdict[key]) < option['min']:
-                            continue
-                        if 'max' in option and int(qdict[key]) > option['max']:
-                            continue
-                        options[key] = int(qdict[key])
-                    else:
-                        options[key] = qdict[key]
-                else:
-                    if isinstance(option['default'], bool):
-                        options[key] = False
-
-        if 'master' in qdict:
-            m = int(qdict['master'])
-            if m < 0:
-                stations.master = None
-            elif m < stations.count():
-                stations.master = m
-
-        if 'old_password' in qdict and qdict['old_password'] != "":
-            try:
-                if test_password(qdict['old_password']):
-                    if qdict['new_password'] == "":
-                        raise web.seeother('/options?errorCode=pw_blank')
-                    elif qdict['new_password'] == qdict['check_password']:
-                        options.password_salt = password_salt()  # Make a new salt
-                        options.password_hash = password_hash(qdict['new_password'], options.password_salt)
-                    else:
-                        raise web.seeother('/options?errorCode=pw_mismatch')
-                else:
-                    raise web.seeother('/options?errorCode=pw_wrong')
-            except KeyError:
-                pass
+        save_to_options(qdict)
 
         raise web.seeother('/options') # FIXME: restore to / when home is fixed
 
@@ -431,7 +391,7 @@ class run_now_page(ProtectedPage):
                 if sid + 1 == gv.sd['mas']:  # skip if this is master valve
                     continue
                 if p[7 + b] & 1 << s:  # if this station is scheduled in this program
-                    gv.rs[sid][2] = p[6] * gv.sd['wl'] / 100 * extra_adjustment  # duration scaled by water level
+                    gv.rs[sid][2] = p[6] * options.level_adjustment / 100 * extra_adjustment  # duration scaled by water level
                     gv.rs[sid][3] = pid + 1  # store program number in schedule
                     gv.ps[sid][0] = pid + 1  # store program number for display
                     gv.ps[sid][1] = gv.rs[sid][2]  # duration
@@ -483,9 +443,9 @@ class api_status_page(ProtectedPage):
                         if sbit:
                             status['status'] = 'on'
                         if not irbit:
-                            if gv.sd['rd'] != 0:
+                            if rain_blocks != 0:
                                 status['reason'] = 'rain_delay'
-                            if gv.sd['urs'] != 0 and gv.sd['rs'] != 0:
+                            if options.rain_sensor_enabled != 0 and inputs.rain_input != 0:
                                 status['reason'] = 'rain_sensed'
                         if sn == gv.sd['mas']:
                             status['master'] = 1

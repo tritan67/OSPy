@@ -4,8 +4,10 @@ import datetime
 import string
 
 from helpers import get_cpu_temp, check_login
+from inputs import inputs
+from options import options, rain_blocks
+from stations import stations
 import web
-import gv  # Gain access to ospy's settings
 from urls import urls  # Gain access to ospy's URL list
 from webpages import ProtectedPage, WebPage
 
@@ -41,9 +43,9 @@ class options(WebPage):  # /jo
                 "mas": gv.sd['mas'],
                 "mton": options.master_on_delay,
                 "mtof": options.master_off_delay,
-                "urs": gv.sd['urs'],
+                "urs": options.rain_sensor_enabled,
                 "rso": gv.options.rain_sensor_no,
-                "wl": gv.sd['wl'],
+                "wl": options.level_adjustment,
                 "ipas": gv.sd['ipas'],
                 "reset": gv.sd['rbt'],
                 "lg": gv.sd['lg']
@@ -65,10 +67,10 @@ class cur_settings(ProtectedPage):  # /jc
             "devt": gv.now,
             "nbrd": gv.sd['nbrd'],
             "en": options.system_enabled,
-            "rd": gv.sd['rd'],
-            "rs": gv.sd['rs'],
+            "rd": rain_blocks,
+            "rs": inputs.rain_input,
             "mm": options.manual_mode,
-            "rdst": gv.sd['rdst'],
+            "rdst": rain_blocks.block_end(),
             "loc": options.location,
             "sbits": gv.sbits,
             "ps": gv.ps,
@@ -130,7 +132,7 @@ class station_info(ProtectedPage):  # /jn
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jpinfo = {
-            "snames": gv.snames,
+            "snames": [s.name for s in stations]
             "ignore_rain": gv.sd['ir'],
             "masop": gv.sd['mo'],
             "stn_dis": disable,
