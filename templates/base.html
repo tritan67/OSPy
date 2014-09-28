@@ -3,7 +3,7 @@ $def with (content)
 <head>
     <meta name="viewport" content="width=640">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>${content.title + (" - "+options.name if options.name != "OpenSprinkler Pi" else "")}</title>
+    <title>${options.name + " - " + content.title}</title>
     <link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
     <link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>
     <style type="text/css">

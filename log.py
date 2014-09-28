@@ -56,7 +56,7 @@ class _Log(logging.Handler):
             return  # We cannot prune
 
         current_time = datetime.datetime.now()
-        while len(self._log[event_type]) > options.run_entries and \
+        while len(self._log[event_type]) > (options.run_entries if event_type == 'Run' else 0) and \
                 current_time - self._log[event_type][0]['time'] > datetime.timedelta(days=2):
             del self._log[event_type][0]
 
@@ -125,8 +125,14 @@ class _Log(logging.Handler):
             self._save_log(message, level, event_type)
             self._prune(event_type)
 
+    def clear_runs(self):
+        current_time = datetime.datetime.now()
+        while len(self._log['Run']) > 0 and current_time - self._log['Run'][0]['time'] > datetime.timedelta(days=2):
+            del self._log['Run'][0]
+
     def clear(self, event_type):
-        self._log[event_type] = []
+        if event_type != 'Run':
+            self._log[event_type] = []
 
     def event_types(self):
         return self._log.keys()

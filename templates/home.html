@@ -1,6 +1,6 @@
 $def with ()
 
-$var title: OpenSprinkler Pi
+$var title: Home
 $var page: home
 
 $# For some reason the functions below do not work in a single $code block
@@ -282,12 +282,13 @@ $else:
                         <td class="scheduleTick">${t.strftime("%I %p").lstrip('0')}</td>
             </tr>
             $for station in stations:
-                <tr class="stationSchedule ${loop.parity}" id='schedule${loop.index}' data="${loop.index0}">
-                    <td class='station_name'>${station.name}</td>
-                    <td id='status${loop.index0}' class="stationStatus">loading...</td>
-                    $for tick in xrange(0,24):
-                        <td class="scheduleTick" data="$tick"></td>
-                </tr>
+                $if station.enabled or station.is_master:
+                    <tr class="stationSchedule ${loop.parity}" id='schedule${loop.index}' data="${loop.index0}">
+                        <td class='station_name'>${station.name}</td>
+                        <td id='status${loop.index0}' class="stationStatus">loading...</td>
+                        $for tick in xrange(0,24):
+                            <td class="scheduleTick" data="$tick"></td>
+                    </tr>
             <tr>
                 <td colspan="2">
                     <button id="pStopAll" class="execute delete">Stop All Stations</button>

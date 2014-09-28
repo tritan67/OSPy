@@ -1,16 +1,8 @@
 $def with (records)
 
-$var title: OpenSprinkler Pi Log
+$var title: Log
 $var page: log
 $code:
-    snames = gv.snames
-    if gv.sd['lg'] == 1:
-        log_state = "Enabled"
-        log_option = "checked"
-    else:
-        log_state = "Disabled"
-        log_option = ""
-
     def formatTime(t):
         if options.time_format:
             return t
@@ -28,10 +20,10 @@ $code:
     // Initialize behaviors
     jQuery(document).ready(function(){
         jQuery("button#nRefresh").click(function(){
-            window.location="/vl";
+            window.location="/log";
         });
         jQuery("button#nDeleteAll").click(function(){
-            jQuery("form#df").submit();
+            jQuery("form#clearForm").submit();
         });
     });
 
@@ -39,7 +31,9 @@ $code:
 
 <div id="options">
     <div class="title">Log $log_state</div>
-    <form method="get" action="cl" name="df" id="df"></form>
+    <form method="post" action="/log" name="clearForm" id="clearForm">
+        <input type="hidden" name="clear" value="1"/>
+    </form>
 </div>
 
 <div id="log">

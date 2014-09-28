@@ -38,6 +38,7 @@ class WebPage(object):
             'plugins': plugins,
             'rain_blocks': rain_blocks,
             'stations': stations,
+            'log': log,
 
             'version': version,
 
@@ -335,18 +336,13 @@ class view_log_page(ProtectedPage):
     """View Log"""
 
     def GET(self):
-        records = read_log()
-        return self.template_render.log(records)
+        return self.template_render.log()
 
-
-class clear_log_page(ProtectedPage):
-    """Delete all log records"""
-
-    def GET(self):
+    def POST(self):
         qdict = web.input()
-        with open('./data/log.json', 'w') as f:
-            f.write('')
-        raise web.seeother('/vl')
+        if 'clear' in qdict:
+            log.clear_runs()
+        raise web.seeother('/log')
 
 
 class run_now_page(ProtectedPage):

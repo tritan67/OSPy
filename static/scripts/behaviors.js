@@ -60,7 +60,7 @@ jQuery(document).ready(function(){
         window.location = "/vr";
     });
     jQuery("button#bLog").click(function(){
-        window.location = "/vl";
+        window.location = "/log";
     });
     jQuery("button#bLogout").click(function(){
         window.location = "/logout";
