@@ -402,7 +402,7 @@ class api_status_page(ProtectedPage):
     def GET(self):
         statuslist = []
         for station in stations.get():
-            if station.enabled:
+            if station.enabled or station.is_master:
                 status = {
                     'station': station.index,
                     'status': 'on' if station.active else 'off',

@@ -222,7 +222,7 @@ $if options.manual_mode:
         <table id="stations" class="stationList">
         $# Manual program control formatting
         $for station in stations:
-            $if station.enabled:
+            $if station.enabled or station.is_master:
                 <tr>
                     <td class='station_name'>${station.name}</td>
                     $if station.is_master:
