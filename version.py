@@ -4,6 +4,7 @@ __author__ = 'Rimco'
 
 # System imports
 import subprocess
+import logging
 
 ##############################
 #### Revision information ####
