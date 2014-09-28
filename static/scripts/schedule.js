@@ -98,7 +98,11 @@ function displayProgram() {
             if (log[l].date != visibleDate) {
                 log[l].start -= 24*60;
             }
-            log[l].label = toClock(log[l].start, timeFormat) + " for " + toClock(log[l].duration, 1);
+            if (log[l].blocked) {
+                log[l].label = toClock(log[l].start, timeFormat) + " (blocked by " + log[l].blocked + ")";
+            } else {
+                log[l].label = toClock(log[l].start, timeFormat) + " for " + toClock(log[l].duration, 1);
+            }
         }
         displaySchedule(log);
     })

@@ -220,6 +220,7 @@ class get_set_station_page(ProtectedPage):
                     'station': sid,
                     'program_name': "Manual mode",
                     'manual': True,
+                    'blocked': False,
                     'start': start,
                     'end': start + datetime.timedelta(days=3650),
                     'uid': '%s-%d-%d' % (str(start), -1, sid),
@@ -481,19 +482,16 @@ class api_log_page(ProtectedPage):
             check_start = datetime.datetime.combine(date, datetime.time.min)
             log_start = check_start - datetime.timedelta(days=1)
 
-            events, blocked = scheduler.combined_schedule(log_start, check_end)
+            events = scheduler.combined_schedule(log_start, check_end)
             for interval in events:
+                # Return only records that are visible on this day:
                 if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:
-                    data.append(self._convert(interval, False))
-            for interval in blocked:
-                if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:
-                    data.append(self._convert(interval, True))
+                    data.append(self._convert(interval))
 
         web.header('Content-Type', 'application/json')
         return json.dumps(data)
 
-    def _convert(self, interval, blocked):
-        # return only records that are visible on this day:
+    def _convert(self, interval):
             duration = (interval['end'] - interval['start']).total_seconds()
             minutes, seconds = divmod(duration, 60)
             return {
@@ -501,11 +499,11 @@ class api_log_page(ProtectedPage):
                 'program_name': interval['program_name'],
                 'active': interval['active'],
                 'manual': interval.get('manual', False),
+                'blocked': interval.get('blocked', False),
                 'station': interval['station'],
                 'date': interval['start'].strftime("%Y-%m-%d"),
                 'start': interval['start'].strftime("%H:%M:%S"),
-                'duration': "%02d:%02d" % (minutes, seconds),
-                'blocked': blocked
+                'duration': "%02d:%02d" % (minutes, seconds)
             }
 
 class water_log_page(ProtectedPage):

@@ -9,6 +9,7 @@ import logging
 import time
 
 # Local imports
+from inputs import inputs
 from log import log
 from options import level_adjustments
 from options import options
@@ -54,6 +55,7 @@ def predicted_schedule(start_time, end_time):
                     'program': program.index,
                     'program_name': program.name, # Save it because programs can be reordered
                     'manual': program.manual,
+                    'blocked': False,
                     'start': interval['start'],
                     'end': interval['end'],
                     'uid': '%s-%d-%d' % (str(interval['start']), program.index, station),
@@ -89,7 +91,6 @@ def predicted_schedule(start_time, end_time):
     # Make list of entries sorted on time (stable sorted on station #)
     all_intervals.sort(key=lambda inter: inter['start'])
 
-    blocked = []
     # Try to add each interval
     for interval in all_intervals:
 
@@ -105,7 +106,9 @@ def predicted_schedule(start_time, end_time):
             if current_usage + interval['usage'] <= max_usage:
                 if not stations.get(interval['station']).ignore_rain and \
                         rain_block_start <= interval['start'] < rain_block_end:
-                    blocked.append(interval)
+                    interval['blocked'] = 'rain delay'
+                elif not stations.get(interval['station']).ignore_rain and inputs.rain_sensed():
+                    interval['blocked'] = 'rain sensor'
                 else:
                     current_usage += interval['usage']
                     # Add the newly "activated" station to the active list
@@ -115,7 +118,7 @@ def predicted_schedule(start_time, end_time):
                             break
                     else:
                         current_active.append(interval)
-                break
+                break  # We added or blocked it
             else:
                 # Shift this interval to next possibility
                 next_option = current_active[0]['end'] + datetime.timedelta(seconds=options.station_delay)
@@ -123,31 +126,25 @@ def predicted_schedule(start_time, end_time):
                 interval['start'] += time_to_next
                 interval['end'] += time_to_next
 
-    for interval in blocked:
-        all_intervals.remove(interval)
-
     all_intervals.sort(key=lambda inter: inter['start'])
 
-    return all_intervals, blocked
+    return all_intervals
 
 
 def combined_schedule(start_time, end_time):
     current_time = datetime.datetime.now()
     if current_time < start_time:
-        result, blocked = predicted_schedule(start_time, end_time)
+        result = predicted_schedule(start_time, end_time)
     elif current_time > end_time:
-        result = []
-        blocked = []
-        for entry in log.finished_runs():
-            if start_time <= entry['start'] <= end_time or start_time <= entry['end'] <= end_time:
-                result.append(entry)
+        result = [entry for entry in log.finished_runs() if start_time <= entry['start'] <= end_time or
+                                                            start_time <= entry['end'] <= end_time]
     else:
         result = log.finished_runs()
         result += log.active_runs()
-        predicted, blocked = predicted_schedule(start_time, end_time)
+        predicted = predicted_schedule(start_time, end_time)
         result += [entry for entry in predicted if current_time <= entry['start'] <= end_time]
 
-    return result, blocked
+    return result
 
 
 class _Scheduler(Thread):
@@ -181,22 +178,24 @@ class _Scheduler(Thread):
             check_start = current_time - datetime.timedelta(days=1)
             check_end = current_time + datetime.timedelta(days=1)
 
+            rain = not options.manual_mode and (rain_blocks.block_end() > datetime.datetime.now() or
+                                                inputs.rain_sensed())
+
             active = log.active_runs()
             for entry in active:
-                if entry['end'] <= current_time or (not options.manual_mode and
-                                                    rain_blocks.block_end() > datetime.datetime.now() and
-                                                    not stations.get(entry['station']).ignore_rain):
+                ignore_rain = stations.get(entry['station']).ignore_rain
+                if entry['end'] <= current_time or (rain and not ignore_rain and not entry['blocked']):
                     log.finish_run(entry)
                     stations.deactivate(entry['station'])
 
             if not options.manual_mode:
-                schedule, blocked = predicted_schedule(check_start, check_end)
+                schedule = predicted_schedule(check_start, check_end)
                 #logging.debug("Schedule: %s", str(schedule))
-                #logging.debug("Blocked: %s", str(blocked))
                 for entry in schedule:
                     if entry['start'] <= current_time < entry['end']:
                         log.start_run(entry)
-                        stations.activate(entry['station'])
+                        if not entry['blocked']:
+                            stations.activate(entry['station'])
 
             if stations.master is not None:
                 master_on = False
@@ -206,7 +205,7 @@ class _Scheduler(Thread):
                     active = log.active_runs()
 
                     for entry in active:
-                        if stations.get(entry['station']).activate_master:
+                        if not entry['blocked'] and stations.get(entry['station']).activate_master:
                             master_on = True
                             break
 
@@ -215,10 +214,10 @@ class _Scheduler(Thread):
                     if options.manual_mode:
                         active = log.finished_runs() + log.active_runs()
                     else:
-                        active, blocked = combined_schedule(check_start, check_end)
+                        active = combined_schedule(check_start, check_end)
 
                     for entry in active:
-                        if stations.get(entry['station']).activate_master:
+                        if not entry['blocked'] and stations.get(entry['station']).activate_master:
                             if entry['start'] + datetime.timedelta(seconds=options.master_on_delay) \
                                     <= current_time < \
                                     entry['end'] + datetime.timedelta(seconds=options.master_off_delay):

@@ -58,7 +58,7 @@ class _Station(object):
         index = self.index
         result = 0
         for interval in active:
-            if interval['station'] == index:
+            if not interval['blocked'] and interval['station'] == index:
                 result = max(0, (interval['end'] - datetime.datetime.now()).total_seconds())
                 if result > datetime.timedelta(days=356).total_seconds():
                     result = -1
