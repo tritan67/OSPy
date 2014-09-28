@@ -47,10 +47,9 @@ $var page: stations
         <tr>
             <th class="stationNumber">Station</th>
             <th class="stationName">Name</th>
-            <th class="stationEnabled">Connected?</th> <!-- Enabled -->
+            <th class="stationEnabled">Connected?</th>
             <th class="stationIgnoreRain">Ignore Rain?</th>
-            $if stations.master:
-                <th class="activateMaster">Activate Master?</th>
+            <th class="activateMaster">Activate Master?</th>
         </tr>
         $for station in stations:
             <tr>
@@ -68,14 +67,14 @@ $var page: stations
                 <td class="stationIgnoreRain">
                     <input type="checkbox" ${"checked" if station.ignore_rain else ""} id="ir${station.index}">
                 </td>
-            $if stations.master and stations.master != station.index:
                 <td class="activateMaster">
-                    <input type="checkbox" ${"checked" if station.activate_master else ""} id="am${station.index}">
+                    <input type="checkbox" ${"checked" if station.activate_master else ""} ${"disabled" if stations.master is None else ""} id="am${station.index}">
                 </td>
             </tr>
     </table>
 
-    <p>Enable master in options</p>
+    <p></p>
+    <p>Enable master in <a href="/options">Options</a></p>
 
     <form id="stationsForm" name="stationsForm" action="/stations" method="POST">
     <!--Fun with HTML froms and tables .. hint -- they cannot be mixed with one another-->
