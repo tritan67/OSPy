@@ -528,6 +528,9 @@ td.stationSchedule {
 .schedule {
     background-image:url("whitestripes.png");
 }
+.blocked {
+    background-image:url("redcross.png");
+}
 
 .showDetails {
     position: absolute;

@@ -482,27 +482,31 @@ class api_log_page(ProtectedPage):
             log_start = check_start - datetime.timedelta(days=1)
 
             events, blocked = scheduler.combined_schedule(log_start, check_end)
-
             for interval in events:
-                # return only records that are visible on this day:
                 if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:
-                    duration = (interval['end'] - interval['start']).total_seconds()
-                    minutes, seconds = divmod(duration, 60)
-
-                    data.append({
-                        'program': interval['program'],
-                        'program_name': interval['program_name'],
-                        'active': interval['active'],
-                        'manual': interval.get('manual', False),
-                        'station': interval['station'],
-                        'date': interval['start'].strftime("%Y-%m-%d"),
-                        'start': interval['start'].strftime("%H:%M:%S"),
-                        'duration': "%02d:%02d" % (minutes, seconds),
-                    })
+                    data.append(self._convert(interval, False))
+            for interval in blocked:
+                if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:
+                    data.append(self._convert(interval, True))
 
         web.header('Content-Type', 'application/json')
         return json.dumps(data)
 
+    def _convert(self, interval, blocked):
+        # return only records that are visible on this day:
+            duration = (interval['end'] - interval['start']).total_seconds()
+            minutes, seconds = divmod(duration, 60)
+            return {
+                'program': interval['program'],
+                'program_name': interval['program_name'],
+                'active': interval['active'],
+                'manual': interval.get('manual', False),
+                'station': interval['station'],
+                'date': interval['start'].strftime("%Y-%m-%d"),
+                'start': interval['start'].strftime("%H:%M:%S"),
+                'duration': "%02d:%02d" % (minutes, seconds),
+                'blocked': blocked
+            }
 
 class water_log_page(ProtectedPage):
     """Simple Log API"""

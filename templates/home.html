@@ -221,20 +221,33 @@ $if options.manual_mode:
                     <td class='station_name'>${station.name}</td>
                     $if station.is_master:
                         $if station.active:
-                            <td class="master station_on">On (Master)</td>
+                            <td class="master station_on" colspan="6">On (Master)</td>
                         $else:
-                            <td class="master station_off">Off (Master)</td>
+                            <td class="master station_off" colspan="6">Off (Master)</td>
                     $else:
-                        <td class="station_running" colspan="3">
-                            $ rem = 0 # FIXME
-                            <button class='toggle manual narrow ${'on' if station.active else 'off'}' id='${station.index}'><span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button>
-                                ${'in' if station.active else 'for'}
-                            <input type='text' id='mm${station.index}' size='2' maxlength='3' value='${two_digits(rem/60)}'/>:
-                            <input type='text' id='ss${station.index}' size='2' maxlength='2' value='${two_digits(rem%60)}'/> (mm:ss)
-                        </td>
+                        $if station.active:
+                            $ rem = station.remaining_seconds()
+                            <td class="shrink station_running"><button class='toggle manual narrow on' id='${station.index}'>
+                            <span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button></td>
+                            $if rem >= 0:
+                                <td class="shrink station_running">in</td>
+                                <td class="shrink station_running"><input type='text' id='mm${station.index}' size='2' maxlength='3' value='${two_digits(rem/60)}' readonly/></td>
+                                <td class="shrink station_running">:</td>
+                                <td class="shrink station_running"><input type='text' id='ss${station.index}' size='2' maxlength='2' value='${two_digits(rem%60)}' readonly/></td>
+                                <td class="station_running">(mm:ss)</td>
+                            $else:
+                                <td class="shrink station_running" colspan="5">Forever</td>
+                        $else:
+                            <td class="shrink station_running"><button class='toggle manual narrow off' id='${station.index}'>
+                            <span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button></td>
+                            <td class="shrink station_running">for</td>
+                            <td class="shrink station_running"><input type='text' id='mm${station.index}' size='2' maxlength='3' value='00'/></td>
+                            <td class="shrink station_running">:</td>
+                            <td class="shrink station_running"><input type='text' id='ss${station.index}' size='2' maxlength='2' value='00'/></td>
+                            <td class="station_running">(mm:ss)</td>
                 </tr>
         <tr>
-            <td colspan="4">
+            <td colspan="7">
                 <button id="pStopAll" class="execute delete">Stop All Stations</button>
             </td>
         </tr>

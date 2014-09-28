@@ -3,6 +3,7 @@
 __author__ = 'Rimco'
 
 # System imports
+import datetime
 import logging
 
 # Local imports
@@ -47,6 +48,22 @@ class _Station(object):
             self._stations.activate(self.index)
         else:
             self._stations.deactivate(self.index)
+
+    def remaining_seconds(self):
+        """Tries to figure out how long this output will be active.
+        Returns 0 if no corresponding interval was found.
+        Returns -1 if it should be considered infinite."""
+        from log import log
+        active = log.active_runs()
+        index = self.index
+        result = 0
+        for interval in active:
+            if interval['station'] == index:
+                result = max(0, (interval['end'] - datetime.datetime.now()).total_seconds())
+                if result > datetime.timedelta(days=356).total_seconds():
+                    result = -1
+                break
+        return result
 
     def __setattr__(self, key, value):
         try:
