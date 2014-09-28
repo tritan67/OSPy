@@ -145,48 +145,22 @@ class options_page(ProtectedPage):
         raise web.seeother('/')
 
 
-class view_stations_page(ProtectedPage):
-    """Open a page to view and edit a run once program."""
+class stations_page(ProtectedPage):
+    """Stations page"""
 
     def GET(self):
         return self.template_render.stations()
 
-
-class change_stations_page(ProtectedPage):
-    """Save changes to station names, ignore rain and master associations."""
-
-    def GET(self):
+    def POST(self):
         qdict = web.input()
-        for i in range(gv.sd['nbrd']):  # capture master associations
-            if 'm' + str(i) in qdict:
-                try:
-                    gv.sd['mo'][i] = int(qdict['m' + str(i)])
-                except ValueError:
-                    gv.sd['mo'][i] = 0
-            if 'i' + str(i) in qdict:
-                try:
-                    gv.sd['ir'][i] = int(qdict['i' + str(i)])
-                except ValueError:
-                    gv.sd['ir'][i] = 0
-            if 'sh' + str(i) in qdict:
-                try:
-                    gv.sd['show'][i] = int(qdict['sh' + str(i)])
-                except ValueError:
-                    gv.sd['show'][i] = 255
-            if 'd' + str(i) in qdict:
-                try:
-                    gv.sd['show'][i] = ~int(qdict['d' + str(i)])&255
-                except ValueError:
-                    gv.sd['show'][i] = 255
-        names = []
-        for i in range(gv.sd['nst']):
-            if 's' + str(i) in qdict:
-                names.append(qdict['s'+str(i)])
-            else:
-                names.append('S'+str(i+1))
-        gv.snames = names
-        jsave(names, 'snames')
-        jsave(gv.sd, 'sd')
+
+        for s in xrange(0, stations.count()):
+            stations[s].name = qdict["%d_name" % s]
+            stations[s].enabled = True if qdict.get("%d_enabled" % s, 'off') == 'on' else False
+            stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'off') == 'on' else False
+            if stations.master is not None:
+                stations[s].activate_master = True if qdict.get("%d_activate_master" % s, 'off') == 'on' else False
+
         raise web.seeother('/')
 
 

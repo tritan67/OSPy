@@ -50,7 +50,7 @@ function intervalSelectMouseover() {
 }
 
 function intervalSelectMouseout() {
-    var originalSize =     jQuery(this).hasClass("distance0") ? 40 :
+    var originalSize =  jQuery(this).hasClass("distance0") ? 40 :
                         (jQuery(this).hasClass("distance1") ? 34 :
                         (jQuery(this).hasClass("distance2") ? 30 :
                         26));
