@@ -107,152 +107,6 @@ class home_page(ProtectedPage):
         raise web.seeother('/')  # Send browser back to home page
 
 
-class options_page(ProtectedPage):
-    """Open the options page for viewing and editing."""
-
-    def GET(self):
-        qdict = web.input()
-        errorCode = qdict.get('errorCode', 'none')
-
-        return self.template_render.options(errorCode)
-
-    def POST(self):
-        qdict = web.input()
-
-        save_to_options(qdict)
-
-        if 'master' in qdict:
-            m = int(qdict['master'])
-            if m < 0:
-                stations.master = None
-            elif m < stations.count():
-                stations.master = m
-
-        if 'old_password' in qdict and qdict['old_password'] != "":
-            try:
-                if test_password(qdict['old_password']):
-                    if qdict['new_password'] == "":
-                        raise web.seeother('/options?errorCode=pw_blank')
-                    elif qdict['new_password'] == qdict['check_password']:
-                        options.password_salt = password_salt()  # Make a new salt
-                        options.password_hash = password_hash(qdict['new_password'], options.password_salt)
-                    else:
-                        raise web.seeother('/options?errorCode=pw_mismatch')
-                else:
-                    raise web.seeother('/options?errorCode=pw_wrong')
-            except KeyError:
-                pass
-
-        raise web.seeother('/')
-
-
-class stations_page(ProtectedPage):
-    """Stations page"""
-
-    def GET(self):
-        return self.template_render.stations()
-
-    def POST(self):
-        qdict = web.input()
-
-        for s in xrange(0, stations.count()):
-            stations[s].name = qdict["%d_name" % s]
-            stations[s].enabled = True if qdict.get("%d_enabled" % s, 'off') == 'on' else False
-            stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'off') == 'on' else False
-            if stations.master is not None:
-                stations[s].activate_master = True if qdict.get("%d_activate_master" % s, 'off') == 'on' else False
-
-        raise web.seeother('/')
-
-
-class get_set_station_page(ProtectedPage):
-    """Return a page containing a number representing the state of a station or all stations if 0 is entered as station number."""
-
-    def GET(self):
-        qdict = web.input()
-
-        sid = get_input(qdict, 'sid', 0, int) - 1
-        set_to = get_input(qdict, 'set_to', None, int)
-        set_time = get_input(qdict, 'set_time', 0, int)
-
-        if set_to is None:
-            if sid < 0:
-                status = '<!DOCTYPE html>\n'
-                status += ''.join(('1' if s.active else '0') for s in stations)
-                return status
-            elif sid < stations.count():
-                status = '<!DOCTYPE html>\n'
-                status += '1' if stations.get(sid).active else '0'
-                return status
-            else:
-                return 'Station ' + str(sid+1) + ' not found.'
-        elif options.manual_mode:
-            if set_to:  # if status is on
-                start = datetime.datetime.now()
-                new_schedule = {
-                    'active': True,
-                    'program': -1,
-                    'station': sid,
-                    'program_name': "Manual mode",
-                    'manual': True,
-                    'blocked': False,
-                    'start': start,
-                    'end': start + datetime.timedelta(days=3650),
-                    'uid': '%s-%d-%d' % (str(start), -1, sid),
-                    'usage': 1.0  # FIXME
-                }
-                if set_time > 0:  # if an optional duration time is given
-                    new_schedule['end'] = datetime.datetime.now() + datetime.timedelta(seconds=set_time)
-
-                log.start_run(new_schedule)
-                stations.activate(new_schedule['station'])
-
-            else:  # If status is off
-                stations.deactivate(sid)
-                active = log.active_runs()
-                for interval in active:
-                    if interval['station'] == sid:
-                        log.finish_run(interval)
-
-            raise web.seeother('/')
-        else:
-            return 'Manual mode not active.'
-
-
-class view_runonce_page(ProtectedPage):
-    """Open a page to view and edit a run once program."""
-
-    def GET(self):
-        return self.template_render.runonce()
-
-
-class change_runonce_page(ProtectedPage):
-    """Start a Run Once program. This will override any running program."""
-
-    def GET(self):
-        qdict = web.input()
-        if not options.scheduler_enabled:   # check operation status
-            return
-        gv.rovals = json.loads(qdict['t'])
-        gv.rovals.pop()
-        stations = [0] * gv.sd['nbrd']
-        gv.ps = []  # program schedule (for display)
-        gv.rs = []  # run schedule
-        for i in range(gv.sd['nst']):
-            gv.ps.append([0, 0])
-            gv.rs.append([0, 0, 0, 0])
-        for i, v in enumerate(gv.rovals):
-            if v:  # if this element has a value
-                gv.rs[i][0] = gv.now
-                gv.rs[i][2] = v
-                gv.rs[i][3] = 98
-                gv.ps[i][0] = 98
-                gv.ps[i][1] = v
-                stations[i / 8] += 2 ** (i % 8)
-        schedule_stations(stations)
-        raise web.seeother('/')
-
-
 class view_programs_page(ProtectedPage):
     """Open programs page."""
 
@@ -332,7 +186,41 @@ class enable_program_page(ProtectedPage):
         raise web.seeother('/vp')
 
 
-class view_log_page(ProtectedPage):
+class view_runonce_page(ProtectedPage):
+    """Open a page to view and edit a run once program."""
+
+    def GET(self):
+        return self.template_render.runonce()
+
+
+class change_runonce_page(ProtectedPage):
+    """Start a Run Once program. This will override any running program."""
+
+    def GET(self):
+        qdict = web.input()
+        if not options.scheduler_enabled:   # check operation status
+            return
+        gv.rovals = json.loads(qdict['t'])
+        gv.rovals.pop()
+        stations = [0] * gv.sd['nbrd']
+        gv.ps = []  # program schedule (for display)
+        gv.rs = []  # run schedule
+        for i in range(gv.sd['nst']):
+            gv.ps.append([0, 0])
+            gv.rs.append([0, 0, 0, 0])
+        for i, v in enumerate(gv.rovals):
+            if v:  # if this element has a value
+                gv.rs[i][0] = gv.now
+                gv.rs[i][2] = v
+                gv.rs[i][3] = 98
+                gv.ps[i][0] = 98
+                gv.ps[i][1] = v
+                stations[i / 8] += 2 ** (i % 8)
+        schedule_stations(stations)
+        raise web.seeother('/')
+
+
+class log_page(ProtectedPage):
     """View Log"""
 
     def GET(self):
@@ -345,29 +233,119 @@ class view_log_page(ProtectedPage):
         raise web.seeother('/log')
 
 
-class run_now_page(ProtectedPage):
-    """Run a scheduled program now. This will override any running programs."""
+class options_page(ProtectedPage):
+    """Open the options page for viewing and editing."""
 
     def GET(self):
         qdict = web.input()
-        pid = int(qdict['pid'])
-        p = gv.pd[int(qdict['pid'])]  # program data
-        if not p[0]:  # if program is disabled
-            raise web.seeother('/vp')
-        stop_stations()
-        extra_adjustment = plugin_adjustment()
-        for b in range(len(p[7:7 + gv.sd['nbrd']])):  # check each station
-            for s in range(8):
-                sid = b * 8 + s  # station index
-                if sid + 1 == gv.sd['mas']:  # skip if this is master valve
-                    continue
-                if p[7 + b] & 1 << s:  # if this station is scheduled in this program
-                    gv.rs[sid][2] = p[6] * options.level_adjustment / 100 * extra_adjustment  # duration scaled by water level
-                    gv.rs[sid][3] = pid + 1  # store program number in schedule
-                    gv.ps[sid][0] = pid + 1  # store program number for display
-                    gv.ps[sid][1] = gv.rs[sid][2]  # duration
-        schedule_stations(p[7:7 + gv.sd['nbrd']])
+        errorCode = qdict.get('errorCode', 'none')
+
+        return self.template_render.options(errorCode)
+
+    def POST(self):
+        qdict = web.input()
+
+        save_to_options(qdict)
+
+        if 'master' in qdict:
+            m = int(qdict['master'])
+            if m < 0:
+                stations.master = None
+            elif m < stations.count():
+                stations.master = m
+
+        if 'old_password' in qdict and qdict['old_password'] != "":
+            try:
+                if test_password(qdict['old_password']):
+                    if qdict['new_password'] == "":
+                        raise web.seeother('/options?errorCode=pw_blank')
+                    elif qdict['new_password'] == qdict['check_password']:
+                        options.password_salt = password_salt()  # Make a new salt
+                        options.password_hash = password_hash(qdict['new_password'], options.password_salt)
+                    else:
+                        raise web.seeother('/options?errorCode=pw_mismatch')
+                else:
+                    raise web.seeother('/options?errorCode=pw_wrong')
+            except KeyError:
+                pass
+
         raise web.seeother('/')
+
+
+class stations_page(ProtectedPage):
+    """Stations page"""
+
+    def GET(self):
+        return self.template_render.stations()
+
+    def POST(self):
+        qdict = web.input()
+
+        for s in xrange(0, stations.count()):
+            stations[s].name = qdict["%d_name" % s]
+            stations[s].enabled = True if qdict.get("%d_enabled" % s, 'off') == 'on' else False
+            stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'off') == 'on' else False
+            if stations.master is not None:
+                stations[s].activate_master = True if qdict.get("%d_activate_master" % s, 'off') == 'on' else False
+
+        raise web.seeother('/')
+
+################################################################################
+# Helpers                                                                      #
+################################################################################
+
+class get_set_station_page(ProtectedPage):
+    """Return a page containing a number representing the state of a station or all stations if 0 is entered as station number."""
+
+    def GET(self):
+        qdict = web.input()
+
+        sid = get_input(qdict, 'sid', 0, int) - 1
+        set_to = get_input(qdict, 'set_to', None, int)
+        set_time = get_input(qdict, 'set_time', 0, int)
+
+        if set_to is None:
+            if sid < 0:
+                status = '<!DOCTYPE html>\n'
+                status += ''.join(('1' if s.active else '0') for s in stations)
+                return status
+            elif sid < stations.count():
+                status = '<!DOCTYPE html>\n'
+                status += '1' if stations.get(sid).active else '0'
+                return status
+            else:
+                return 'Station ' + str(sid+1) + ' not found.'
+        elif options.manual_mode:
+            if set_to:  # if status is on
+                start = datetime.datetime.now()
+                new_schedule = {
+                    'active': True,
+                    'program': -1,
+                    'station': sid,
+                    'program_name': "Manual",
+                    'manual': True,
+                    'blocked': False,
+                    'start': start,
+                    'end': start + datetime.timedelta(days=3650),
+                    'uid': '%s-%d-%d' % (str(start), -1, sid),
+                    'usage': 1.0  # FIXME
+                }
+                if set_time > 0:  # if an optional duration time is given
+                    new_schedule['end'] = datetime.datetime.now() + datetime.timedelta(seconds=set_time)
+
+                log.start_run(new_schedule)
+                stations.activate(new_schedule['station'])
+
+            else:  # If status is off
+                stations.deactivate(sid)
+                active = log.active_runs()
+                for interval in active:
+                    if interval['station'] == sid:
+                        log.finish_run(interval)
+
+            raise web.seeother('/')
+        else:
+            return 'Manual mode not active.'
 
 
 class show_revision_page(ProtectedPage):
@@ -378,8 +356,8 @@ class show_revision_page(ProtectedPage):
         revpg += 'Python Interval Program for OpenSprinkler Pi<br/><br/>\n'
         revpg += 'Compatable with OpenSprinkler firmware 1.8.3.<br/><br/>\n'
         revpg += 'Includes plugin architecture\n'
-        revpg += 'ospy.py version: v' + gv.ver_str + '<br/><br/>\n'
-        revpg += 'Updated ' + gv.ver_date + '\n'
+        revpg += 'ospy.py version: v' + version.ver_str + '<br/><br/>\n'
+        revpg += 'Updated ' + version.ver_date + '\n'
         return revpg
 
 
@@ -391,6 +369,9 @@ class toggle_temp_page(ProtectedPage):
         options.temp_unit = "F" if qdict['tunit'] == "C" else "C"
         raise web.seeother('/')
 
+################################################################################
+# APIs                                                                         #
+################################################################################
 
 class api_status_page(ProtectedPage):
     """Simple Status API"""

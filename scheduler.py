@@ -33,9 +33,12 @@ def predicted_schedule(start_time, end_time):
 
     current_usage = 0.0
     for active in current_active:
-        current_usage += active['usage']
+        if not active['blocked']:
+            current_usage += active['usage']
         if active['uid'] not in skip_uids:
             skip_uids.append(active['uid'])
+
+    current_active = [interval for interval in current_active if not interval['blocked']]
 
     # Aggregate per station:
     station_schedules = {}
