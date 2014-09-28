@@ -161,8 +161,8 @@ class _Options(object):
         #######################################################################
         # Not in Options page as-is ###########################################
         {
-            "key": "system_enabled",
-            "name": "Enable system",
+            "key": "scheduler_enabled",
+            "name": "Enable scheduler",
             "default": True,
         },
         {

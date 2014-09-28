@@ -38,6 +38,7 @@ class WebPage(object):
             'plugins': plugins,
             'rain_blocks': rain_blocks,
             'stations': stations,
+            'log': log,
 
             'version': version,
 
@@ -89,8 +90,8 @@ class home_page(ProtectedPage):
 
     def POST(self):
         qdict = web.input()
-        if 'system_enabled' in qdict and qdict['system_enabled'] != '':
-            options.system_enabled = True if qdict['system_enabled'] == '1' else False
+        if 'scheduler_enabled' in qdict and qdict['scheduler_enabled'] != '':
+            options.scheduler_enabled = True if qdict['scheduler_enabled'] == '1' else False
         if 'manual_mode' in qdict and qdict['manual_mode'] != '':
             options.manual_mode = True if qdict['manual_mode'] == '1' else False
 
@@ -104,151 +105,6 @@ class home_page(ProtectedPage):
             options.level_adjustment = float(qdict['level_adjustment']) / 100
 
         raise web.seeother('/')  # Send browser back to home page
-
-
-class options_page(ProtectedPage):
-    """Open the options page for viewing and editing."""
-
-    def GET(self):
-        qdict = web.input()
-        errorCode = qdict.get('errorCode', 'none')
-
-        return self.template_render.options(errorCode)
-
-    def POST(self):
-        qdict = web.input()
-
-        save_to_options(qdict)
-
-        if 'master' in qdict:
-            m = int(qdict['master'])
-            if m < 0:
-                stations.master = None
-            elif m < stations.count():
-                stations.master = m
-
-        if 'old_password' in qdict and qdict['old_password'] != "":
-            try:
-                if test_password(qdict['old_password']):
-                    if qdict['new_password'] == "":
-                        raise web.seeother('/options?errorCode=pw_blank')
-                    elif qdict['new_password'] == qdict['check_password']:
-                        options.password_salt = password_salt()  # Make a new salt
-                        options.password_hash = password_hash(qdict['new_password'], options.password_salt)
-                    else:
-                        raise web.seeother('/options?errorCode=pw_mismatch')
-                else:
-                    raise web.seeother('/options?errorCode=pw_wrong')
-            except KeyError:
-                pass
-
-        raise web.seeother('/')
-
-
-class stations_page(ProtectedPage):
-    """Stations page"""
-
-    def GET(self):
-        return self.template_render.stations()
-
-    def POST(self):
-        qdict = web.input()
-
-        for s in xrange(0, stations.count()):
-            stations[s].name = qdict["%d_name" % s]
-            # print "%d_enabled " % s, qdict.get("%d_enabled" % s, 'false') == 'true'
-            stations[s].enabled = True if qdict.get("%d_enabled" % s, 'false') == 'true' else False
-            stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'false') == 'true' else False
-            stations[s].activate_master = True if qdict.get("%d_activate_master" % s, 'false') == 'true' else False
-
-        raise web.seeother('/')
-
-
-class get_set_station_page(ProtectedPage):
-    """Return a page containing a number representing the state of a station or all stations if 0 is entered as station number."""
-
-    def GET(self):
-        qdict = web.input()
-
-        sid = get_input(qdict, 'sid', 0, int) - 1
-        set_to = get_input(qdict, 'set_to', None, int)
-        set_time = get_input(qdict, 'set_time', 0, int)
-
-        if set_to is None:
-            if sid < 0:
-                status = '<!DOCTYPE html>\n'
-                status += ''.join(('1' if s.active else '0') for s in stations)
-                return status
-            elif sid < stations.count():
-                status = '<!DOCTYPE html>\n'
-                status += '1' if stations.get(sid).active else '0'
-                return status
-            else:
-                return 'Station ' + str(sid+1) + ' not found.'
-        elif options.manual_mode:
-            if set_to:  # if status is on
-                start = datetime.datetime.now()
-                new_schedule = {
-                    'active': True,
-                    'program': -1,
-                    'station': sid,
-                    'program_name': "Manual mode",
-                    'manual': True,
-                    'start': start,
-                    'end': start + datetime.timedelta(days=3650),
-                    'uid': '%s-%d-%d' % (str(start), -1, sid),
-                    'usage': 1.0  # FIXME
-                }
-                if set_time > 0:  # if an optional duration time is given
-                    new_schedule['end'] = datetime.datetime.now() + datetime.timedelta(seconds=set_time)
-
-                log.start_run(new_schedule)
-                stations.activate(new_schedule['station'])
-
-            else:  # If status is off
-                stations.deactivate(sid)
-                active = log.active_runs()
-                for interval in active:
-                    if interval['station'] == sid:
-                        log.finish_run(interval)
-
-            raise web.seeother('/')
-        else:
-            return 'Manual mode not active.'
-
-
-class view_runonce_page(ProtectedPage):
-    """Open a page to view and edit a run once program."""
-
-    def GET(self):
-        return self.template_render.runonce()
-
-
-class change_runonce_page(ProtectedPage):
-    """Start a Run Once program. This will override any running program."""
-
-    def GET(self):
-        qdict = web.input()
-        if not options.system_enabled:   # check operation status
-            return
-        gv.rovals = json.loads(qdict['t'])
-        gv.rovals.pop()
-        stations = [0] * gv.sd['nbrd']
-        gv.ps = []  # program schedule (for display)
-        gv.rs = []  # run schedule
-        for i in range(gv.sd['nst']):
-            gv.ps.append([0, 0])
-            gv.rs.append([0, 0, 0, 0])
-        for i, v in enumerate(gv.rovals):
-            if v:  # if this element has a value
-                gv.rs[i][0] = gv.now
-                gv.rs[i][2] = v
-                gv.rs[i][3] = 98
-                gv.ps[i][0] = 98
-                gv.ps[i][1] = v
-                stations[i / 8] += 2 ** (i % 8)
-        schedule_stations(stations)
-        raise web.seeother('/')
 
 
 class view_programs_page(ProtectedPage):
@@ -330,47 +186,166 @@ class enable_program_page(ProtectedPage):
         raise web.seeother('/vp')
 
 
-class view_log_page(ProtectedPage):
+class view_runonce_page(ProtectedPage):
+    """Open a page to view and edit a run once program."""
+
+    def GET(self):
+        return self.template_render.runonce()
+
+
+class change_runonce_page(ProtectedPage):
+    """Start a Run Once program. This will override any running program."""
+
+    def GET(self):
+        qdict = web.input()
+        if not options.scheduler_enabled:   # check operation status
+            return
+        gv.rovals = json.loads(qdict['t'])
+        gv.rovals.pop()
+        stations = [0] * gv.sd['nbrd']
+        gv.ps = []  # program schedule (for display)
+        gv.rs = []  # run schedule
+        for i in range(gv.sd['nst']):
+            gv.ps.append([0, 0])
+            gv.rs.append([0, 0, 0, 0])
+        for i, v in enumerate(gv.rovals):
+            if v:  # if this element has a value
+                gv.rs[i][0] = gv.now
+                gv.rs[i][2] = v
+                gv.rs[i][3] = 98
+                gv.ps[i][0] = 98
+                gv.ps[i][1] = v
+                stations[i / 8] += 2 ** (i % 8)
+        schedule_stations(stations)
+        raise web.seeother('/')
+
+
+class log_page(ProtectedPage):
     """View Log"""
 
     def GET(self):
-        records = read_log()
-        return self.template_render.log(records)
+        return self.template_render.log()
+
+    def POST(self):
+        qdict = web.input()
+        if 'clear' in qdict:
+            log.clear_runs()
+        raise web.seeother('/log')
 
 
-class clear_log_page(ProtectedPage):
-    """Delete all log records"""
+class options_page(ProtectedPage):
+    """Open the options page for viewing and editing."""
 
     def GET(self):
         qdict = web.input()
-        with open('./data/log.json', 'w') as f:
-            f.write('')
-        raise web.seeother('/vl')
+        errorCode = qdict.get('errorCode', 'none')
 
+        return self.template_render.options(errorCode)
 
-class run_now_page(ProtectedPage):
-    """Run a scheduled program now. This will override any running programs."""
-
-    def GET(self):
+    def POST(self):
         qdict = web.input()
-        pid = int(qdict['pid'])
-        p = gv.pd[int(qdict['pid'])]  # program data
-        if not p[0]:  # if program is disabled
-            raise web.seeother('/vp')
-        stop_stations()
-        extra_adjustment = plugin_adjustment()
-        for b in range(len(p[7:7 + gv.sd['nbrd']])):  # check each station
-            for s in range(8):
-                sid = b * 8 + s  # station index
-                if sid + 1 == gv.sd['mas']:  # skip if this is master valve
-                    continue
-                if p[7 + b] & 1 << s:  # if this station is scheduled in this program
-                    gv.rs[sid][2] = p[6] * options.level_adjustment / 100 * extra_adjustment  # duration scaled by water level
-                    gv.rs[sid][3] = pid + 1  # store program number in schedule
-                    gv.ps[sid][0] = pid + 1  # store program number for display
-                    gv.ps[sid][1] = gv.rs[sid][2]  # duration
-        schedule_stations(p[7:7 + gv.sd['nbrd']])
+
+        save_to_options(qdict)
+
+        if 'master' in qdict:
+            m = int(qdict['master'])
+            if m < 0:
+                stations.master = None
+            elif m < stations.count():
+                stations.master = m
+
+        if 'old_password' in qdict and qdict['old_password'] != "":
+            try:
+                if test_password(qdict['old_password']):
+                    if qdict['new_password'] == "":
+                        raise web.seeother('/options?errorCode=pw_blank')
+                    elif qdict['new_password'] == qdict['check_password']:
+                        options.password_salt = password_salt()  # Make a new salt
+                        options.password_hash = password_hash(qdict['new_password'], options.password_salt)
+                    else:
+                        raise web.seeother('/options?errorCode=pw_mismatch')
+                else:
+                    raise web.seeother('/options?errorCode=pw_wrong')
+            except KeyError:
+                pass
+
         raise web.seeother('/')
+
+
+class stations_page(ProtectedPage):
+    """Stations page"""
+
+    def GET(self):
+        return self.template_render.stations()
+
+    def POST(self):
+        qdict = web.input()
+
+        for s in xrange(0, stations.count()):
+            stations[s].name = qdict["%d_name" % s]
+            stations[s].enabled = True if qdict.get("%d_enabled" % s, 'off') == 'on' else False
+            stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'off') == 'on' else False
+            if stations.master is not None:
+                stations[s].activate_master = True if qdict.get("%d_activate_master" % s, 'off') == 'on' else False
+
+        raise web.seeother('/')
+
+################################################################################
+# Helpers                                                                      #
+################################################################################
+
+class get_set_station_page(ProtectedPage):
+    """Return a page containing a number representing the state of a station or all stations if 0 is entered as station number."""
+
+    def GET(self):
+        qdict = web.input()
+
+        sid = get_input(qdict, 'sid', 0, int) - 1
+        set_to = get_input(qdict, 'set_to', None, int)
+        set_time = get_input(qdict, 'set_time', 0, int)
+
+        if set_to is None:
+            if sid < 0:
+                status = '<!DOCTYPE html>\n'
+                status += ''.join(('1' if s.active else '0') for s in stations)
+                return status
+            elif sid < stations.count():
+                status = '<!DOCTYPE html>\n'
+                status += '1' if stations.get(sid).active else '0'
+                return status
+            else:
+                return 'Station ' + str(sid+1) + ' not found.'
+        elif options.manual_mode:
+            if set_to:  # if status is on
+                start = datetime.datetime.now()
+                new_schedule = {
+                    'active': True,
+                    'program': -1,
+                    'station': sid,
+                    'program_name': "Manual",
+                    'manual': True,
+                    'blocked': False,
+                    'start': start,
+                    'end': start + datetime.timedelta(days=3650),
+                    'uid': '%s-%d-%d' % (str(start), -1, sid),
+                    'usage': 1.0  # FIXME
+                }
+                if set_time > 0:  # if an optional duration time is given
+                    new_schedule['end'] = datetime.datetime.now() + datetime.timedelta(seconds=set_time)
+
+                log.start_run(new_schedule)
+                stations.activate(new_schedule['station'])
+
+            else:  # If status is off
+                stations.deactivate(sid)
+                active = log.active_runs()
+                for interval in active:
+                    if interval['station'] == sid:
+                        log.finish_run(interval)
+
+            raise web.seeother('/')
+        else:
+            return 'Manual mode not active.'
 
 
 class show_revision_page(ProtectedPage):
@@ -381,8 +356,8 @@ class show_revision_page(ProtectedPage):
         revpg += 'Python Interval Program for OpenSprinkler Pi<br/><br/>\n'
         revpg += 'Compatable with OpenSprinkler firmware 1.8.3.<br/><br/>\n'
         revpg += 'Includes plugin architecture\n'
-        revpg += 'ospy.py version: v' + gv.ver_str + '<br/><br/>\n'
-        revpg += 'Updated ' + gv.ver_date + '\n'
+        revpg += 'ospy.py version: v' + version.ver_str + '<br/><br/>\n'
+        revpg += 'Updated ' + version.ver_date + '\n'
         return revpg
 
 
@@ -394,6 +369,9 @@ class toggle_temp_page(ProtectedPage):
         options.temp_unit = "F" if qdict['tunit'] == "C" else "C"
         raise web.seeother('/')
 
+################################################################################
+# APIs                                                                         #
+################################################################################
 
 class api_status_page(ProtectedPage):
     """Simple Status API"""
@@ -401,41 +379,36 @@ class api_status_page(ProtectedPage):
     def GET(self):
         statuslist = []
         for station in stations.get():
-            if station.enabled:
+            if station.enabled or station.is_master:
                 status = {
                     'station': station.index,
-                    'status': 'off',
-                    'reason': '',
-                    'master': 0,
+                    'status': 'on' if station.active else 'off',
+                    'reason': 'master' if station.is_master else '',
+                    'master': 1 if station.is_master else 0,
                     'programName': '',
                     'remaining': 0}
-                if options.system_enabled == 1:
-                    if station.active:
-                        status['status'] = 'on'
-                    if not station.ignore_rain:
-                        if rain_blocks.seconds_left():
-                            status['reason'] = 'rain_delay'
-                        if inputs.rain_sensed():
-                            status['reason'] = 'rain_sensed'
-                    if station.is_master:
-                        status['master'] = 1
-                        status['reason'] = 'master'
-                    else:
 
-                        if options.manual_mode:
-                            status['programName'] = 'Manual Mode'
+                if not station.is_master:
+                    if options.manual_mode:
+                        status['programName'] = 'Manual Mode'
+                    else:
+                        if not options.scheduler_enabled:
+                            status['reason'] = 'system_off'
+                        elif not station.ignore_rain and inputs.rain_sensed():
+                            status['reason'] = 'rain_sensed'
+                        elif not station.ignore_rain and rain_blocks.seconds_left():
+                            status['reason'] = 'rain_delay'
                         else:
                             active = log.active_runs()
                             for interval in active:
-                                if interval['station'] == station.index:
+                                if not interval['blocked'] and interval['station'] == station.index:
                                     status['programName'] = interval['program_name']
 
                                     status['status'] = 'on'
                                     status['reason'] = 'program'
-                                    status['remaining'] = max(0, (interval['end'] - datetime.datetime.now()).total_seconds())
+                                    status['remaining'] = max(0, (interval['end'] -
+                                                                  datetime.datetime.now()).total_seconds())
 
-                else:
-                    status['reason'] = 'system_off'
                 statuslist.append(status)
 
         web.header('Content-Type', 'application/json')
@@ -455,28 +428,29 @@ class api_log_page(ProtectedPage):
             check_start = datetime.datetime.combine(date, datetime.time.min)
             log_start = check_start - datetime.timedelta(days=1)
 
-            events, blocked = scheduler.combined_schedule(log_start, check_end)
-
+            events = scheduler.combined_schedule(log_start, check_end)
             for interval in events:
-                # return only records that are visible on this day:
+                # Return only records that are visible on this day:
                 if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:
-                    duration = (interval['end'] - interval['start']).total_seconds()
-                    minutes, seconds = divmod(duration, 60)
-
-                    data.append({
-                        'program': interval['program'],
-                        'program_name': interval['program_name'],
-                        'active': interval['active'],
-                        'manual': interval.get('manual', False),
-                        'station': interval['station'],
-                        'date': interval['start'].strftime("%Y-%m-%d"),
-                        'start': interval['start'].strftime("%H:%M:%S"),
-                        'duration': "%02d:%02d" % (minutes, seconds),
-                    })
+                    data.append(self._convert(interval))
 
         web.header('Content-Type', 'application/json')
         return json.dumps(data)
 
+    def _convert(self, interval):
+            duration = (interval['end'] - interval['start']).total_seconds()
+            minutes, seconds = divmod(duration, 60)
+            return {
+                'program': interval['program'],
+                'program_name': interval['program_name'],
+                'active': interval['active'],
+                'manual': interval.get('manual', False),
+                'blocked': interval.get('blocked', False),
+                'station': interval['station'],
+                'date': interval['start'].strftime("%Y-%m-%d"),
+                'start': interval['start'].strftime("%H:%M:%S"),
+                'duration': "%02d:%02d" % (minutes, seconds)
+            }
 
 class water_log_page(ProtectedPage):
     """Simple Log API"""

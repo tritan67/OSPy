@@ -1,6 +1,6 @@
 $def with ()
 
-$var title: OpenSprinkler Pi
+$var title: Home
 $var page: home
 
 $# For some reason the functions below do not work in a single $code block
@@ -75,10 +75,13 @@ $code:
                     }
                     break;
                 case "rain_delay" :
-                    display = "Suppressed by Rain Delay";
+                    display = "Rain Delay";
                     break;
                 case "rain_sensed" :
-                    display = "Suppressed by Rain Sensor";
+                    display = "Rain Sensor";
+                    break;
+                case "system_off" :
+                    display = "Disabled";
                     break;
                 default:
                     display = "Off";
@@ -107,7 +110,7 @@ $code:
             statusTimer();
 
         jQuery("button#cStartStop").click(function(){
-            jQuery("form[name='hf'] input[name='system_enabled']").val(system_enabled ? 0 : 1);
+            jQuery("form[name='hf'] input[name='scheduler_enabled']").val(scheduler_enabled ? 0 : 1);
             jQuery("form[name='hf']").submit();
         });
 
@@ -196,8 +199,6 @@ $code:
     }
 </script>
 <div id="options">
-    <button id="cStartStop" class="toggle ${'on' if options.system_enabled else 'off'}"><span class='toggleleft'>System On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>System Off</span></button>
-    <br>
     <button id="cWaterLevel" class="toggle choice ${'on' if options.level_adjustment==1.0 else 'off'}"><span class='toggleleft'>Normal</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>${'Water Level' if options.level_adjustment==1.0 else str(round(options.level_adjustment*100)) + '% Level'}</span></button>
     <br>
     <button id="cRainDelay" class="toggle ${'off' if rain_blocks.seconds_left() else 'on'}"><span class='toggleleft'>Active</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Rain Delay</span></button>
@@ -206,7 +207,12 @@ $code:
     $if inputs.rain_sensed():
         <span class="rainsense">Rain sensed</span>
     <br>
-    <button id="cManual" class="toggle choice ${'off' if options.manual_mode else 'on'}"><span class='toggleleft'>Auto</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Manual</span></button>
+    <br>
+    <button id="cManual" class="toggle choice ${'off' if options.manual_mode else 'on'}"><span class='toggleleft'>Schedule</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Manual</span></button>
+    $if not options.manual_mode:
+        <br>
+        <button id="cStartStop" class="toggle ${'on' if options.scheduler_enabled else 'off'}"><span class='toggleleft'>Enabled</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Disabled</span></button>
+    <br>&nbsp;
 </div>
 
 <div id="stationsdiv">
@@ -216,25 +222,38 @@ $if options.manual_mode:
         <table id="stations" class="stationList">
         $# Manual program control formatting
         $for station in stations:
-            $if station.enabled:
+            $if station.enabled or station.is_master:
                 <tr>
                     <td class='station_name'>${station.name}</td>
                     $if station.is_master:
                         $if station.active:
-                            <td class="master station_on">On (Master)</td>
+                            <td class="master station_on" colspan="6">On (Master)</td>
                         $else:
-                            <td class="master station_off">Off (Master)</td>
+                            <td class="master station_off" colspan="6">Off (Master)</td>
                     $else:
-                        <td class="station_running" colspan="3">
-                            $ rem = 0 # FIXME
-                            <button class='toggle manual narrow ${'on' if station.active else 'off'}' id='${station.index}'><span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button>
-                                ${'in' if station.active else 'for'}
-                            <input type='text' id='mm${station.index}' size='2' maxlength='3' value='${two_digits(rem/60)}'/>:
-                            <input type='text' id='ss${station.index}' size='2' maxlength='2' value='${two_digits(rem%60)}'/> (mm:ss)
-                        </td>
+                        $if station.active:
+                            $ rem = station.remaining_seconds()
+                            <td class="shrink station_running"><button class='toggle manual narrow on' id='${station.index}'>
+                            <span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button></td>
+                            $if rem >= 0:
+                                <td class="shrink station_running">in</td>
+                                <td class="shrink station_running"><input type='text' id='mm${station.index}' size='2' maxlength='3' value='${two_digits(rem/60)}' readonly/></td>
+                                <td class="shrink station_running">:</td>
+                                <td class="shrink station_running"><input type='text' id='ss${station.index}' size='2' maxlength='2' value='${two_digits(rem%60)}' readonly/></td>
+                                <td class="station_running">(mm:ss)</td>
+                            $else:
+                                <td class="shrink station_running" colspan="5">Forever</td>
+                        $else:
+                            <td class="shrink station_running"><button class='toggle manual narrow off' id='${station.index}'>
+                            <span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button></td>
+                            <td class="shrink station_running">for</td>
+                            <td class="shrink station_running"><input type='text' id='mm${station.index}' size='2' maxlength='3' value='00'/></td>
+                            <td class="shrink station_running">:</td>
+                            <td class="shrink station_running"><input type='text' id='ss${station.index}' size='2' maxlength='2' value='00'/></td>
+                            <td class="station_running">(mm:ss)</td>
                 </tr>
         <tr>
-            <td colspan="4">
+            <td colspan="7">
                 <button id="pStopAll" class="execute delete">Stop All Stations</button>
             </td>
         </tr>
@@ -263,12 +282,13 @@ $else:
                         <td class="scheduleTick">${t.strftime("%I %p").lstrip('0')}</td>
             </tr>
             $for station in stations:
-                <tr class="stationSchedule ${loop.parity}" id='schedule${loop.index}' data="${loop.index0}">
-                    <td class='station_name'>${station.name}</td>
-                    <td id='status${loop.index0}' class="stationStatus">loading...</td>
-                    $for tick in xrange(0,24):
-                        <td class="scheduleTick" data="$tick"></td>
-                </tr>
+                $if station.enabled or station.is_master:
+                    <tr class="stationSchedule ${loop.parity}" id='schedule${loop.index}' data="${loop.index0}">
+                        <td class='station_name'>${station.name}</td>
+                        <td id='status${loop.index0}' class="stationStatus">loading...</td>
+                        $for tick in xrange(0,24):
+                            <td class="scheduleTick" data="$tick"></td>
+                    </tr>
             <tr>
                 <td colspan="2">
                     <button id="pStopAll" class="execute delete">Stop All Stations</button>
@@ -283,7 +303,7 @@ $else:
 
 <div id="controls">
     <form name="hf" action="/" method="post">
-        <input type="hidden" name="system_enabled">
+        <input type="hidden" name="scheduler_enabled">
         <input type="hidden" name="manual_mode">
         <input type="hidden" name="rain_block">
         <input type="hidden" name="level_adjustment">

@@ -51,7 +51,7 @@ div.footer {
     background-color: #32A620;
     color:white;
     text-align: right;
-    padding: 16px 170px;
+    padding: 16px 170px 16px 16px;
     font-size:9pt;
     clear: both;
 }
@@ -527,6 +527,9 @@ td.stationSchedule {
 .programManual {background-color: hsl(25,80%,40%)}
 .schedule {
     background-image:url("whitestripes.png");
+}
+.blocked {
+    background-image:url("redcross.png");
 }
 
 .showDetails {

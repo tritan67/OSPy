@@ -1,92 +1,67 @@
 $def with ()
-<!--FIXME maybe it's a good idea to avoid passing all as global context -->
-$var title: options.name Stations
+
+$var title: Stations
 $var page: stations
 
-
 <script>
+    // Initialize behaviors
     jQuery(document).ready(function(){
-        // Submit
-        jQuery("button#cSubmit").click(function(){
-            // FIXME - just make it in json and post it, damned ....
-            var id, name, en, ir, am;
-            for (id = 0; id < ${stations.count()}; id++) {
-                name = jQuery("input#n"+id).val();
-                en = jQuery("input#en"+id).is(":checked");
-                ir = jQuery("input#ir"+id).is(":checked");
-                am = jQuery("input#am"+id).is(":checked");
 
-                jQuery("input#"+id+"_name").val(name);
-                jQuery("input#"+id+"_enabled").val(en);
-                jQuery("input#"+id+"_ignore_rain").val(ir);
-                jQuery("input#"+id+"_activate_master").val(am);
-            }
+        jQuery("#cSubmit").click(function() {
             jQuery("#stationsForm").submit();
         });
 
-        // Reset names
         jQuery("button#cResetNames").click(function(){
             jQuery("input[type='text']").each(function () {
-                jQuery(this).val("Station " + (parseInt(jQuery(this).attr("name").substring(1)) + 1));
+                jQuery(this).val("S" + (parseInt(jQuery(this).attr("name").substring(1)) + 1));
             });
-            jQuery(".stationEnabled input").each(function () {
+            jQuery(".stationShow input").each(function () {
                 jQuery(this).prop('checked', true);
             });
         });
 
-        // Cancel
         jQuery("button#cCancel").click(function(){
             window.location="/";
         });
-    });
-</script>
 
+    });
+
+</script>
 <div id="stations">
     <div class="title">Configure Stations</div>
-    <table class="stationList">
-        <tr>
-            <th class="stationNumber">Station</th>
-            <th class="stationName">Name</th>
-            <th class="stationEnabled">Connected?</th>
-            <th class="stationIgnoreRain">Ignore Rain?</th>
-            <th class="activateMaster">Activate Master?</th>
-        </tr>
-        $for station in stations:
+    <form id="stationsForm" name="stationsForm" action="/stations" method="post">
+        <table class="stationList">
             <tr>
-                <td class="stationNumber">${station.index + 1}</td>
-                <td class="stationName">
-                    <!-- FIXME stations name length hardcoded here -->
-                    <input type="text" size="32" maxlength="32" value="${station.name}" name="s${station.index}" id="n${station.index}">
-                </td>
-            $if station.is_master:
-                <td class="activateMaster" colspan="4">(Master valve)</td>
-            $else:
-                <td class="stationEnabled">
-                    <input type="checkbox" ${"checked" if station.enabled else ""} id="en${station.index}">
-                </td>
-                <td class="stationIgnoreRain">
-                    <input type="checkbox" ${"checked" if station.ignore_rain else ""} id="ir${station.index}">
-                </td>
-                <td class="activateMaster">
-                    <input type="checkbox" ${"checked" if station.activate_master else ""} ${"disabled" if stations.master is None else ""} id="am${station.index}">
-                </td>
+                <th class="stationNumber">Station</th>
+                <th class="stationName">Name</th>
+                <th class="stationShow">Connected?</th>
+                <th class="stationIgnore">Ignore Rain?</th>
+                $if stations.master is not None:
+                    <th class="stationMaster">Activate Master?</th>
             </tr>
-    </table>
+            $for station in stations.get():
+                <tr>
+                    <td class="stationNumber">${station.index + 1}</td>
+                    <td class="stationName">
+                        <input type="text" size="32" value="${station.name}" name="${station.index}_name">
+                    </td>
+                    $if station.is_master:
+                        <td class="stationMaster" colspan="3">(Master station)</td>
+                    $else:
+                        <td class="stationShow">
+                            <input type="checkbox" ${"checked" if station.enabled else ""} name="${station.index}_enabled">
+                        </td>
+                        <td class="stationIgnore">
+                            <input type="checkbox" ${"checked" if station.ignore_rain else ""} name="${station.index}_ignore_rain">
+                        </td>
+                        $if stations.master is not None:
+                            <td class="stationMaster">
+                                <input type="checkbox" ${"checked" if station.activate_master else ""} name="${station.index}_activate_master">
+                            </td>
+                </tr>
+        </table>
 
-    <p></p>
-    <p>Enable master in <a href="/options">Options</a></p>
-
-    <form id="stationsForm" name="stationsForm" action="/stations" method="POST">
-    <!--Fun with HTML froms and tables .. hint -- they cannot be mixed with one another-->
-    $for station in stations:
-        <!-- name -->
-        <input type="hidden" id="${station.index}_name" name="${station.index}_name"/>
-        <!-- enabled -->
-        <input type="hidden" id="${station.index}_enabled" name="${station.index}_enabled"/>
-        <!-- ignore rain -->
-        <input type="hidden" id="${station.index}_ignore_rain" name="${station.index}_ignore_rain"/>
-        <!-- trigger master -->
-        <input type="hidden" id="${station.index}_activate_master" name="${station.index}_activate_master"/>
+        <p></p>
     </form>
 </div>
 

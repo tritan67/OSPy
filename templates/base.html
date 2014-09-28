@@ -3,10 +3,15 @@ $def with (content)
 <head>
     <meta name="viewport" content="width=640">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>${content.title + (" - "+options.name if options.name != "OpenSprinkler Pi" else "")}</title>
+    <title>${options.name + " - " + content.title}</title>
     <link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
     <link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>
     <style type="text/css">
+        $if not options.manual_mode and content.page == 'home':
+            div.content {
+                min-width: 1100px;
+            }
+
         .bluebg {background-color:lightblue;}
         .opOn, .wlOn, .rsOff {color:green;}
         .opOff, .wlOff, .rsOn {color:red;}
@@ -34,6 +39,14 @@ $def with (content)
 
         td.stationNumber, td.stationShow, td.stationIgnore, td.activateMaster {text-align:center}
         td.stationName {text-align:left; padding-left:1em;}
+
+        table td.shrink {
+            width: 1px;
+            white-space:nowrap
+        }
+        table td.expand {
+            width: 99%
+        }
     </style>
     <script src="/static/scripts/jquery-1.8.2.min.js"></script>
     <script>
@@ -47,7 +60,7 @@ $def with (content)
         var tempunit = "${options.temp_unit}";
 
         $if content.page != 'login':
-            var system_enabled = ${str(options.system_enabled).lower()};
+            var scheduler_enabled = ${str(options.scheduler_enabled).lower()};
             var manual_mode = ${str(options.manual_mode).lower()};
             var level_adjustment = ${options.level_adjustment};
             var rain_block = ${max(0, (options.rain_block - datetime.datetime.now()).total_seconds())};

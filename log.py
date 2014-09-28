@@ -24,7 +24,7 @@ class _Log(logging.Handler):
         }
 
         # Remove old entries:
-        self._prune('Run')
+        self.clear_runs(False)
 
     @property
     def level(self):
@@ -34,13 +34,17 @@ class _Log(logging.Handler):
     def level(self, value):
         pass  # Override level using options
 
-    def _save_log(self, msg, level, event_type):
+    def _save_logs(self):
         result = []
-        for entry in self._log['Run']:
-            result.append(entry)
-            if 0 < options.run_entries <= len(result):
-                break
-        options.logged_runs = result
+        if options.run_log:
+            for entry in self._log['Run']:
+                result.append(entry)
+                if 0 < options.run_entries <= len(result):
+                    break
+            options.logged_runs = result
+
+    def _save_log(self, msg, level, event_type):
+        self._save_logs()
 
         # Print if it we are debugging, if it is general information or if it is important
         if options.debug_log or (event_type == 'Event' and level >= logging.INFO) or level >= logging.WARNING:
@@ -52,13 +56,17 @@ class _Log(logging.Handler):
                 fh.write(msg + '\n')
 
     def _prune(self, event_type):
-        if event_type not in self._log or (event_type == 'Run' and options.run_entries == 0):
+        if event_type not in self._log:
             return  # We cannot prune
 
-        current_time = datetime.datetime.now()
-        while len(self._log[event_type]) > options.run_entries and \
-                current_time - self._log[event_type][0]['time'] > datetime.timedelta(days=2):
-            del self._log[event_type][0]
+        if event_type == 'Run':
+            self.clear_runs(False)
+        else:
+            # Delete everything older than 1 day
+            current_time = datetime.datetime.now()
+            while len(self._log[event_type]) > 0 and \
+                    current_time - self._log[event_type][0]['time'] > datetime.timedelta(days=1):
+                del self._log[event_type][0]
 
     def start_run(self, interval):
         """Indicates a certain run has been started. The start time will be updated."""
@@ -125,8 +133,29 @@ class _Log(logging.Handler):
             self._save_log(message, level, event_type)
             self._prune(event_type)
 
+    def clear_runs(self, all=True):
+        if all:
+            minimum = 0
+        elif options.run_entries > 0:
+            minimum = options.run_entries
+        else:
+            return  # We should not prune in this case
+
+        # Now try to remove as much as we can
+        last_start = datetime.datetime.now()
+        for index in reversed(xrange(minimum, len(self._log['Run']))):
+            interval = self._log['Run'][index]['data']
+            if interval['active']:
+                last_start = interval['start']
+            else:
+                # If this entry cannot have influence on the current state anymore:
+                if (last_start - interval['end']).total_seconds() > max(options.station_delay,
+                                                                        options.master_off_delay, 60):
+                    del self._log['Run'][index]
+
     def clear(self, event_type):
-        self._log[event_type] = []
+        if event_type != 'Run':
+            self._log[event_type] = []
 
     def event_types(self):
         return self._log.keys()

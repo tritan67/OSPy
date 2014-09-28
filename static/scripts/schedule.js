@@ -60,6 +60,9 @@ function displaySchedule(schedule) {
                         }
                         programClassesUsed[schedule[s].program_name] = programClass;
                         var markerClass = (schedule[s].active == null ? "schedule" : "history");
+                        if (schedule[s].blocked) {
+                            markerClass = "blocked"
+                        }
                         boxes.append("<div class='scheduleMarker " + programClass + " " + markerClass + "' style='left:" + barStart*100 + "%;width:" + barWidth*100 + "%' data='" + schedule[s].program_name + ": " + schedule[s].label + "'></div>");
                     }
                 }
@@ -95,7 +98,11 @@ function displayProgram() {
             if (log[l].date != visibleDate) {
                 log[l].start -= 24*60;
             }
-            log[l].label = toClock(log[l].start, timeFormat) + " for " + toClock(log[l].duration, 1);
+            if (log[l].blocked) {
+                log[l].label = toClock(log[l].start, timeFormat) + " (blocked by " + log[l].blocked + ")";
+            } else {
+                log[l].label = toClock(log[l].start, timeFormat) + " for " + toClock(log[l].duration, 1);
+            }
         }
         displaySchedule(log);
     })

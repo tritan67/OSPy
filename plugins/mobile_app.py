@@ -66,7 +66,7 @@ class cur_settings(ProtectedPage):  # /jc
         jsettings = {
             "devt": gv.now,
             "nbrd": gv.sd['nbrd'],
-            "en": options.system_enabled,
+            "en": options.scheduler_enabled,
             "rd": rain_blocks,
             "rs": inputs.rain_input,
             "mm": options.manual_mode,
