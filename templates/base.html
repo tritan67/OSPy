@@ -7,6 +7,11 @@ $def with (content)
     <link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
     <link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>
     <style type="text/css">
+        $if not options.manual_mode and content.page == 'home':
+            div.content {
+                min-width: 1100px;
+            }
+
         .bluebg {background-color:lightblue;}
         .opOn, .wlOn, .rsOff {color:green;}
         .opOff, .wlOff, .rsOn {color:red;}
@@ -55,7 +60,7 @@ $def with (content)
         var tempunit = "${options.temp_unit}";
 
         $if content.page != 'login':
-            var system_enabled = ${str(options.system_enabled).lower()};
+            var scheduler_enabled = ${str(options.scheduler_enabled).lower()};
             var manual_mode = ${str(options.manual_mode).lower()};
             var level_adjustment = ${options.level_adjustment};
             var rain_block = ${max(0, (options.rain_block - datetime.datetime.now()).total_seconds())};

@@ -104,7 +104,9 @@ def predicted_schedule(start_time, end_time):
 
             # Check if we can add it now
             if current_usage + interval['usage'] <= max_usage:
-                if not stations.get(interval['station']).ignore_rain and \
+                if not options.scheduler_enabled:
+                    interval['blocked'] = 'disabled scheduler'
+                elif not stations.get(interval['station']).ignore_rain and \
                         rain_block_start <= interval['start'] < rain_block_end:
                     interval['blocked'] = 'rain delay'
                 elif not stations.get(interval['station']).ignore_rain and inputs.rain_sensed():
@@ -151,7 +153,7 @@ class _Scheduler(Thread):
     def __init__(self):
         super(_Scheduler, self).__init__()
         self.daemon = True
-        options.add_callback('system_enabled', self._option_cb)
+        options.add_callback('scheduler_enabled', self._option_cb)
         options.add_callback('manual_mode', self._option_cb)
 
         # If manual mode is active, finish all stale runs:
@@ -161,8 +163,8 @@ class _Scheduler(Thread):
     def _option_cb(self, key, old, new):
         # Clear if:
         #   - Manual mode changed
-        #   - System was disabled
-        if key == 'manual_mode' or not new:
+        #   - Scheduler was disabled
+        if key == 'manual_mode' or (key == 'scheduler_enabled' and not new and not options.manual_mode):
             log.finish_run(None)
             stations.clear()
 
@@ -173,61 +175,60 @@ class _Scheduler(Thread):
 
     @staticmethod
     def _check_schedule():
-        if options.system_enabled:
-            current_time = datetime.datetime.now()
-            check_start = current_time - datetime.timedelta(days=1)
-            check_end = current_time + datetime.timedelta(days=1)
+        current_time = datetime.datetime.now()
+        check_start = current_time - datetime.timedelta(days=1)
+        check_end = current_time + datetime.timedelta(days=1)
 
-            rain = not options.manual_mode and (rain_blocks.block_end() > datetime.datetime.now() or
-                                                inputs.rain_sensed())
+        rain = not options.manual_mode and (rain_blocks.block_end() > datetime.datetime.now() or
+                                            inputs.rain_sensed())
 
-            active = log.active_runs()
-            for entry in active:
-                ignore_rain = stations.get(entry['station']).ignore_rain
-                if entry['end'] <= current_time or (rain and not ignore_rain and not entry['blocked']):
-                    log.finish_run(entry)
-                    stations.deactivate(entry['station'])
+        active = log.active_runs()
+        for entry in active:
+            ignore_rain = stations.get(entry['station']).ignore_rain
+            if entry['end'] <= current_time or (rain and not ignore_rain and not entry['blocked']):
+                log.finish_run(entry)
+                stations.deactivate(entry['station'])
 
-            if not options.manual_mode:
-                schedule = predicted_schedule(check_start, check_end)
-                #logging.debug("Schedule: %s", str(schedule))
-                for entry in schedule:
-                    if entry['start'] <= current_time < entry['end']:
-                        log.start_run(entry)
-                        if not entry['blocked']:
-                            stations.activate(entry['station'])
+        if not options.manual_mode:
+            schedule = predicted_schedule(check_start, check_end)
+            #logging.debug("Schedule: %s", str(schedule))
+            for entry in schedule:
+                if entry['start'] <= current_time < entry['end']:
+                    log.start_run(entry)
+                    if not entry['blocked']:
+                        stations.activate(entry['station'])
 
-            if stations.master is not None:
-                master_on = False
+        if stations.master is not None:
+            master_on = False
 
-                # It's easy if we don't have to use delays:
-                if options.master_on_delay == options.master_off_delay == 0:
-                    active = log.active_runs()
+            # It's easy if we don't have to use delays:
+            if options.master_on_delay == options.master_off_delay == 0:
+                active = log.active_runs()
 
-                    for entry in active:
-                        if not entry['blocked'] and stations.get(entry['station']).activate_master:
+                for entry in active:
+                    if not entry['blocked'] and stations.get(entry['station']).activate_master:
+                        master_on = True
+                        break
+
+            else:
+                # In manual mode we cannot predict, we only know what is currently running and the history
+                if options.manual_mode:
+                    active = log.finished_runs() + log.active_runs()
+                else:
+                    active = combined_schedule(check_start, check_end)
+
+                for entry in active:
+                    if not entry['blocked'] and stations.get(entry['station']).activate_master:
+                        if entry['start'] + datetime.timedelta(seconds=options.master_on_delay) \
+                                <= current_time < \
+                                entry['end'] + datetime.timedelta(seconds=options.master_off_delay):
                             master_on = True
                             break
 
-                else:
-                    # In manual mode we cannot predict, we only know what is currently running and the history
-                    if options.manual_mode:
-                        active = log.finished_runs() + log.active_runs()
-                    else:
-                        active = combined_schedule(check_start, check_end)
+            master_station = stations.get(stations.master)
 
-                    for entry in active:
-                        if not entry['blocked'] and stations.get(entry['station']).activate_master:
-                            if entry['start'] + datetime.timedelta(seconds=options.master_on_delay) \
-                                    <= current_time < \
-                                    entry['end'] + datetime.timedelta(seconds=options.master_off_delay):
-                                master_on = True
-                                break
-
-                master_station = stations.get(stations.master)
-
-                if master_on != master_station.active:
-                    master_station.active = master_on
+            if master_on != master_station.active:
+                master_station.active = master_on
 
 scheduler = _Scheduler()
 

@@ -89,8 +89,8 @@ class home_page(ProtectedPage):
 
     def POST(self):
         qdict = web.input()
-        if 'system_enabled' in qdict and qdict['system_enabled'] != '':
-            options.system_enabled = True if qdict['system_enabled'] == '1' else False
+        if 'scheduler_enabled' in qdict and qdict['scheduler_enabled'] != '':
+            options.scheduler_enabled = True if qdict['scheduler_enabled'] == '1' else False
         if 'manual_mode' in qdict and qdict['manual_mode'] != '':
             options.manual_mode = True if qdict['manual_mode'] == '1' else False
 
@@ -256,7 +256,7 @@ class change_runonce_page(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        if not options.system_enabled:   # check operation status
+        if not options.scheduler_enabled:   # check operation status
             return
         gv.rovals = json.loads(qdict['t'])
         gv.rovals.pop()
@@ -431,38 +431,33 @@ class api_status_page(ProtectedPage):
             if station.enabled:
                 status = {
                     'station': station.index,
-                    'status': 'off',
-                    'reason': '',
-                    'master': 0,
+                    'status': 'on' if station.active else 'off',
+                    'reason': 'master' if station.is_master else '',
+                    'master': 1 if station.is_master else 0,
                     'programName': '',
                     'remaining': 0}
-                if options.system_enabled == 1:
-                    if station.active:
-                        status['status'] = 'on'
-                    if not station.ignore_rain:
-                        if rain_blocks.seconds_left():
-                            status['reason'] = 'rain_delay'
-                        if inputs.rain_sensed():
-                            status['reason'] = 'rain_sensed'
-                    if station.is_master:
-                        status['master'] = 1
-                        status['reason'] = 'master'
-                    else:
 
-                        if options.manual_mode:
-                            status['programName'] = 'Manual Mode'
+                if not station.is_master:
+                    if options.manual_mode:
+                        status['programName'] = 'Manual Mode'
+                    else:
+                        if not options.scheduler_enabled:
+                            status['reason'] = 'system_off'
+                        elif not station.ignore_rain and inputs.rain_sensed():
+                            status['reason'] = 'rain_sensed'
+                        elif not station.ignore_rain and rain_blocks.seconds_left():
+                            status['reason'] = 'rain_delay'
                         else:
                             active = log.active_runs()
                             for interval in active:
-                                if interval['station'] == station.index:
+                                if not interval['blocked'] and interval['station'] == station.index:
                                     status['programName'] = interval['program_name']
 
                                     status['status'] = 'on'
                                     status['reason'] = 'program'
-                                    status['remaining'] = max(0, (interval['end'] - datetime.datetime.now()).total_seconds())
+                                    status['remaining'] = max(0, (interval['end'] -
+                                                                  datetime.datetime.now()).total_seconds())
 
-                else:
-                    status['reason'] = 'system_off'
                 statuslist.append(status)
 
         web.header('Content-Type', 'application/json')
