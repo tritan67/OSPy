@@ -51,7 +51,7 @@ jQuery(document).ready(function(){
         window.location = "/options";
     });
     jQuery("button#bStations").click(function(){
-        window.location = "/vs";
+        window.location = "/stations";
     });
     jQuery("button#bPrograms").click(function(){
         window.location = "/vp";

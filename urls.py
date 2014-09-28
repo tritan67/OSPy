@@ -6,8 +6,7 @@
 urls = [
     '/',  'webpages.home_page',
     '/options', 'webpages.options_page',
-    '/vs', 'webpages.view_stations_page',
-    '/cs', 'webpages.change_stations_page',
+    '/stations', 'webpages.stations_page',
     '/sn', 'webpages.get_set_station_page',
     '/vr', 'webpages.view_runonce_page',
     '/cr', 'webpages.change_runonce_page',
