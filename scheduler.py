@@ -46,6 +46,9 @@ def predicted_schedule(start_time, end_time):
         program_intervals = program.active_intervals(start_time, end_time)
 
         for station in sorted(program.stations):
+            if station >= stations.count() or stations.master == station or not stations[station].enabled:
+                continue
+
             if station not in station_schedules:
                 station_schedules[station] = []
 
