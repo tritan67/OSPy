@@ -79,31 +79,29 @@ class home_page(ProtectedPage):
     """Open Home page."""
 
     def GET(self):
-        return self.template_render.home()
-
-
-class change_values_page(ProtectedPage):
-    """Save controller values, return browser to home page."""
-
-    def GET(self):
         qdict = web.input()
-        if 'rsn' in qdict and qdict['rsn'] == '1':
+        if 'stop_all' in qdict and qdict['stop_all'] == '1':
             log.finish_run(None)
             stations.clear()
             raise web.seeother('/')
 
-        if 'en' in qdict:
-            options.system_enabled = True if qdict['en'] == '1' else False
-        if 'mm' in qdict:
-            options.manual_mode = True if qdict['mm'] == '1' else False
+        return self.template_render.home()
 
-        if 'rd' in qdict:
-            if qdict['rd'] != '0' and qdict['rd'] != '':
-                options.rain_block = datetime.datetime.now() + datetime.timedelta(hours=float(qdict['rd']))
-            elif qdict['rd'] == '0':
+    def POST(self):
+        qdict = web.input()
+        if 'system_enabled' in qdict and qdict['system_enabled'] != '':
+            options.system_enabled = True if qdict['system_enabled'] == '1' else False
+        if 'manual_mode' in qdict and qdict['manual_mode'] != '':
+            options.manual_mode = True if qdict['manual_mode'] == '1' else False
+
+        if 'rain_block' in qdict:
+            if qdict['rain_block'] != '0' and qdict['rain_block'] != '':
+                options.rain_block = datetime.datetime.now() + datetime.timedelta(hours=float(qdict['rain_block']))
+            elif qdict['rain_block'] == '0':
                 options.rain_block = datetime.datetime.now()
 
-        save_to_options(qdict)
+        if 'level_adjustment' in qdict and qdict['level_adjustment'] != '':
+            options.level_adjustment = float(qdict['level_adjustment']) / 100
 
         raise web.seeother('/')  # Send browser back to home page
 
@@ -205,29 +203,41 @@ class get_set_station_page(ProtectedPage):
         if set_to is None:
             if sid < 0:
                 status = '<!DOCTYPE html>\n'
-                status += ''.join(str(x) for x in gv.srvals)
+                status += ''.join(('1' if s.active else '0') for s in stations)
                 return status
-            elif sid < gv.sd['nbrd'] * 8:
+            elif sid < stations.count():
                 status = '<!DOCTYPE html>\n'
-                status += str(gv.srvals[sid])
+                status += '1' if stations.get(sid).active else '0'
                 return status
             else:
                 return 'Station ' + str(sid+1) + ' not found.'
         elif options.manual_mode:
-            if set_to:  # if status is
-                gv.rs[sid][0] = gv.now  # set start time to current time
+            if set_to:  # if status is on
+                start = datetime.datetime.now()
+                new_schedule = {
+                    'active': True,
+                    'program': -1,
+                    'station': sid,
+                    'program_name': "Manual mode",
+                    'manual': True,
+                    'start': start,
+                    'end': start + datetime.timedelta(days=3650),
+                    'uid': '%s-%d-%d' % (str(start), -1, sid),
+                    'usage': 1.0  # FIXME
+                }
                 if set_time > 0:  # if an optional duration time is given
-                    gv.rs[sid][2] = set_time
-                    gv.rs[sid][1] = gv.rs[sid][0] + set_time  # stop time = start time + duration
-                else:
-                    gv.rs[sid][1] = float('inf')  # stop time = infinity
-                gv.rs[sid][3] = 99  # set program index
-                gv.ps[sid][1] = set_time
-                gv.sd['bsy'] = 1
-                time.sleep(1)
+                    new_schedule['end'] = datetime.datetime.now() + datetime.timedelta(seconds=set_time)
+
+                log.start_run(new_schedule)
+                stations.activate(new_schedule['station'])
+
             else:  # If status is off
-                gv.rs[sid][1] = gv.now
-                time.sleep(1)
+                stations.deactivate(sid)
+                active = log.active_runs()
+                for interval in active:
+                    if interval['station'] == sid:
+                        log.finish_run(interval)
+
             raise web.seeother('/')
         else:
             return 'Manual mode not active.'
