@@ -3,33 +3,52 @@ $def with ()
 $var title: Programs
 $var page: programs
 $code:
-    snames = gv.snames
-    nprogs = len(gv.pd)
-
     def two_digits(n):
         return '%02d' % int(n)
 
-    def pdays(days, dayInterval):
-        output = ""
-        if (days&0x80) and (dayInterval>1): # this is an interval program
-            days = days&0x7f
-            dse = int(gv.now/86400) # days since epoc
-            daysRemaining = ((days + dayInterval)-(dse % dayInterval)) % dayInterval
-            output += "Every " + str(dayInterval) + " days"
-            if daysRemaining:
-                output += ", starting in " + str(daysRemaining) + " days."
-        else: # this is a weekly program
-            if days == 127:
-                output += "Every Weekday"
+    def schedule_to_string(program):
+        DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+        modulo = program.modulo
+        schedule = program.schedule
+        start = program.start
+
+        if len(schedule) == 0:
+            result = "No Schedule"
+        else:
+            if program.manual:
+                result = (start + datetime.timedelta(minutes=schedule[0][0])).strftime("%Y-%m-%d")
             else:
-                for d in range(0,7):
-                    if days & (1<<d):
-                        output += " " + ["Mon","Tue","Wed","Thur","Fri","Sat","Sun"][d]
-        if (days&0x80) and (dayInterval==0):
-            output += " (Even days only)"
-        if (days&0x80) and (dayInterval==1):
-            output += " (Odd days only)"
-        return output
+                if modulo % 1440 == 0:
+                    days = modulo / 1440
+                    day0 = start.weekday()
+                    if days == 7:
+                        days = []
+                        for interval in schedule:
+                            day = DAYS[interval[0] / 1440 + day0]
+                            if day not in days:
+                                days.append(day)
+                            result = ' '.join(days)
+                    else:
+                        if days == 1:
+                            result = 'Daily'
+                        else:
+                            result = 'Every %d days' % days
+                else:
+                    result = 'Every %d minutes' % modulo
+        return result
+
+    def formatTime(t):
+        if options.time_format:
+            return t
+        else:
+            hour = int(t[0:2])
+            newhour = hour
+            if hour == 0:
+                newhour = 12
+            if hour > 12:
+                newhour = hour-12
+            return str(newhour)  + t[2:] + (" am" if hour<12 else " pm")
 
     def formatTime(t):
         if options.time_format:
@@ -46,109 +65,59 @@ $code:
 <script>
     // Initialize behaviors
     jQuery(document).ready(function(){
-
-        jQuery("button#nDelAll, button.cDelete").click(function(){
-            try{
-                var pid = jQuery(this).attr("data")
-                }
-            catch(err) {
-                var pid = 0
-            }
-            jQuery("form#df input[name='pid']").val(pid);
-            jQuery("form#df").submit();
+        jQuery("button.add").click(function(){
+            window.location = "/program/new";
+        });
+        jQuery("button.deleteAll").click(function(){
+            window.location = "/programs?delete=1";
         });
 
-        jQuery("button#nAdd, button.cModify").click(function(){
-            try{
-                var pid = jQuery(this).attr("data")
-                }
-            catch(err) {
-                var pid = 0
-            }
-            jQuery("form#mf input[name='pid']").val(pid);
-            jQuery("form#mf").submit();
+        jQuery("button.cModify").click(function(){
+            window.location = "/program/" + jQuery(this).attr("data");
         });
-
+        jQuery("button.cDelete").click(function(){
+            window.location = "/program/" + jQuery(this).attr("data") + "?delete=1";
+        });
         jQuery("button.cRunNow").click(function(){
-            try{
-                var pid = jQuery(this).attr("data")
-                }
-            catch(err) {
-                var pid = 0
-            }
-            jQuery("form#rn input[name='pid']").val(pid);
-            jQuery("form#rn").submit();
+            window.location = "/program/" + jQuery(this).attr("data") + "?runnow=1";
         });
-
-            jQuery("button.cDisable").click(function(){
-                var pid = jQuery(this).attr("data");
-                var enable = jQuery(this).hasClass("off");
-                jQuery("form#ep input[name='pid']").val(pid);
-                jQuery("form#ep input[name='enable']").val(enable ? 1 : 0);
-                jQuery("form#ep").submit();
-            });
+        jQuery("button.cDisable").click(function(){
+            var enable = jQuery(this).hasClass("off");
+            window.location = "/program/" + jQuery(this).attr("data") + "?enable=" + (enable ? '1' : '0');
+        });
         
     });
 
 </script>
-<form name="df" id="df" action="dp" method="get">
-        <input type="hidden" name="pid">
-</form>
-<form name="rn" id="rn" action="rp" method="get">
-    <input type="hidden" name="pid">
-</form>
-<form name="mf" id="mf" action="mp" method="get">
-    <input type="hidden" name="pid">
-</form>
-     <form name="ep" id="ep" action="ep" method="get">
-     <input type="hidden" name="pid">
-     <input type="hidden" name="enable">
-</form>
 <div id="controls">
-    <button id="nAdd" class="add" data="-1">Add a New Program</button>
-    <button id="nDelAll" class="deleteAll danger" data="-1">Delete All</button>
+    <button id="nAdd" class="add">Add a New Program</button>
+    <button id="nDelAll" class="deleteAll danger">Delete All</button>
+    $for program in programs.get():
+        <div id="p${program.index}" class="controlBlock program ${'' if program.enabled else 'disabled'}">
+        <p>
+            <button class="cDisable toggle ${'on' if program.enabled else 'off'}" data="${program.index}">
+                <span class='toggleleft'>On</span>
+                <span class='togglesep'>&nbsp;</span>
+                <span class='toggleright'>Off</span>
+            </button>
+        ${program.index+1}. ${program.name}: <span class="val">${schedule_to_string(program)}</span>
+        </p>
+        <p class="stationList">Run: <span class="val">${', '.join([stations[s].name for s in program.stations]) or "None"}</span></p>
+        $if len(program.schedule) > 0:
+            <p class="stationList">Starting:
+                <span class="val">${(program.start + datetime.timedelta(minutes=program.schedule[0][0])).strftime("%H:%M")}</span>
+                for
+                <span class="val">${(program.schedule[0][1] - program.schedule[0][0])}</span>
+                mins
+            </p>
+
+        <p>
+            <button class="cRunNow" data="${program.index}">Run Now</button>
+            <button class="cModify" data="${program.index}">Edit</button>
+            <button class="cDelete danger" data="${program.index}">Delete</button>
+        </p>
+        </div>
 </div>
 
 <div id="programs">
-    $for pid in range(0,nprogs):
-        $ prog = gv.pd[pid]
-        <div id="p${pid}" class="controlBlock program ${'disabled' if prog[0] == 0 else ''}">
-         <p>
-             <button class="cDisable toggle ${'off' if prog[0] == 0 else 'on'}" data="${pid}">
-                 <span class='toggleleft'>On</span>
-                 <span class='togglesep'>&nbsp;</span>
-                 <span class='toggleright'>Off</span>
-             </button>
-             Program ${pid+1}: <span class="val">${pdays(prog[1], prog[2])}</span></b>
-         </p>
-            $ start = prog[3]
-            $ end = prog[4]
-            $ interval = prog[5]
-            $ duration = prog[6]
-            <p class="stationList">Run:
-            $ stationsOn = 0
-            $for bid in range(0,gv.sd['nbrd']):
-                $if len(prog) >= 8 + bid:
-                    $ bits = prog[7 + bid]
-                $else:
-                    $ bits = 0
-                $for s in range(0,8):
-                    $ sid = bid*8 + s
-                    $if (gv.sd['show'][bid]>>s)&1 and bits&(1<<s):
-                        <span class="stationName val">${snames[sid]}</span>
-                        $ stationsOn = stationsOn + 1
-            </p>
-            <p>Starting: <span class="val">${formatTime(two_digits(start/60) + ":" + two_digits(start%60))}</span>
-            for <span class="val">${(duration/60>>0)}</span> mins<span class="val">${"" if (duration%60) == 0 else (" " + str(duration%60) + " secs")}</span></p>
-            $ recurring = start + duration/60*stationsOn < end
-            $if recurring:
-                <p>Recurring every</b> <span class="val">${two_digits(interval/60)}</span> hrs <span class="val">${two_digits(interval%60)}</span> mins
-                until <span class="val">${formatTime(two_digits(end/60) + ":" + two_digits(end%60))}</span></p>
-
-            <p>
-                <button class="cRunNow" data="${pid}">Run Now</button>
-                <button class="cModify" data="${pid}">Edit</button>
-                <button class="cDelete danger" data="${pid}">Delete</button>
-            </p>
-        </div>
 </div>

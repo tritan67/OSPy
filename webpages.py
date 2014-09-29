@@ -15,6 +15,7 @@ from options import level_adjustments
 from options import options
 from options import plugins
 from options import rain_blocks
+from programs import programs
 from stations import stations
 import scheduler
 import version
@@ -33,13 +34,13 @@ class WebPage(object):
             'isinstance': isinstance,
 
             'inputs': inputs,
+            'log': log,
             'level_adjustments': level_adjustments,
             'options': options,
             'plugins': plugins,
             'rain_blocks': rain_blocks,
             'stations': stations,
-            'log': log,
-
+            'programs': programs,
             'version': version,
 
             'cpu_temp': get_cpu_temp(),
@@ -107,7 +108,7 @@ class home_page(ProtectedPage):
         raise web.seeother('/')  # Send browser back to home page
 
 
-class view_programs_page(ProtectedPage):
+class programs_page(ProtectedPage):
     """Open programs page."""
 
     def GET(self):
@@ -158,7 +159,7 @@ class change_program_page(ProtectedPage):
             gv.pd[int(qdict['pid'])] = cp  # replace program
         jsave(gv.pd, 'programs')
         gv.sd['nprogs'] = len(gv.pd)
-        raise web.seeother('/vp')
+        raise web.seeother('/programs')
 
 
 class delete_program_page(ProtectedPage):
@@ -173,7 +174,7 @@ class delete_program_page(ProtectedPage):
             del gv.pd[int(qdict['pid'])]
         jsave(gv.pd, 'programs')
         gv.sd['nprogs'] = len(gv.pd)
-        raise web.seeother('/vp')
+        raise web.seeother('/programs')
 
 
 class enable_program_page(ProtectedPage):
@@ -183,7 +184,7 @@ class enable_program_page(ProtectedPage):
         qdict = web.input()
         gv.pd[int(qdict['pid'])][0] = int(qdict['enable'])
         jsave(gv.pd, 'programs')
-        raise web.seeother('/vp')
+        raise web.seeother('/programs')
 
 
 class view_runonce_page(ProtectedPage):

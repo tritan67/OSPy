@@ -5,7 +5,7 @@ $def with (content)
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>${options.name + " - " + content.title}</title>
     <link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
-    <link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css"/>
+    <link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css">
     <style type="text/css">
         $if not options.manual_mode and content.page == 'home':
             div.content {
@@ -28,7 +28,7 @@ $def with (content)
 
         .progstation_on {background-color:#9AFA9A; color:black; font-size:10pt}
         .progstation_off {background-color:white; color:lightgray; font-size:10pt}
-        button.cDisable.toggle {float:right; width:130px; margin:0px; padding:0px; background-color:transparent}
+        button.cDisable.toggle {float:right; width:130px; margin:0px !important; padding:0px; background-color:transparent}
         button.cDisable.toggle span.toggleleft {width: 30px;}
         button.cDisable.toggle span.toggleright {width: 30px;}
 
