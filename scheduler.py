@@ -35,8 +35,6 @@ def predicted_schedule(start_time, end_time):
     for active in current_active:
         if not active['blocked']:
             current_usage += active['usage']
-        if active['uid'] not in skip_uids:
-            skip_uids.append(active['uid'])
 
     current_active = [interval for interval in current_active if not interval['blocked']]
 
@@ -96,6 +94,14 @@ def predicted_schedule(start_time, end_time):
 
     # Make list of entries sorted on time (stable sorted on station #)
     all_intervals.sort(key=lambda inter: inter['start'])
+
+    # If we have active intervals, we should skip all that were scheduled before them
+    for i in range(len(current_active)):
+        for j in range(len(all_intervals)):
+            if all_intervals[j]['uid'] == current_active[i]['uid']:
+                for k in range(j+1):
+                    del all_intervals[0]
+                break
 
     # Try to add each interval
     for interval in all_intervals:
