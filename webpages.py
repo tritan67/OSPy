@@ -83,6 +83,8 @@ class home_page(ProtectedPage):
     def GET(self):
         qdict = web.input()
         if 'stop_all' in qdict and qdict['stop_all'] == '1':
+            if not options.manual_mode:
+                options.scheduler_enabled = False
             log.finish_run(None)
             stations.clear()
             raise web.seeother('/')
@@ -425,11 +427,12 @@ class api_log_page(ProtectedPage):
         if 'date' in qdict:
             # date parameter filters the log values returned; "yyyy-mm-dd" format
             date = datetime.datetime.strptime(qdict['date'], "%Y-%m-%d").date()
-            check_end = datetime.datetime.combine(date, datetime.time.max)
             check_start = datetime.datetime.combine(date, datetime.time.min)
+            check_end = datetime.datetime.combine(date, datetime.time.max)
             log_start = check_start - datetime.timedelta(days=1)
+            log_end = check_end + datetime.timedelta(days=1)
 
-            events = scheduler.combined_schedule(log_start, check_end)
+            events = scheduler.combined_schedule(log_start, log_end)
             for interval in events:
                 # Return only records that are visible on this day:
                 if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:

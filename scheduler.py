@@ -28,15 +28,13 @@ def predicted_schedule(start_time, end_time):
     rain_block_start = datetime.datetime.now()
     rain_block_end = rain_blocks.block_end()
 
-    skip_uids = [entry['uid'] for entry in log.finished_runs()]
-    current_active = log.active_runs()
+    current_active = log.finished_runs() + log.active_runs()
+    skip_uids = [entry['uid'] for entry in current_active]
 
     current_usage = 0.0
     for active in current_active:
         if not active['blocked']:
             current_usage += active['usage']
-        if active['uid'] not in skip_uids:
-            skip_uids.append(active['uid'])
 
     current_active = [interval for interval in current_active if not interval['blocked']]
 
@@ -204,7 +202,7 @@ class _Scheduler(Thread):
 
         if not options.manual_mode:
             schedule = predicted_schedule(check_start, check_end)
-            logging.debug("Schedule: %s", str(schedule))
+            #logging.debug("Schedule: %s", str(schedule))
             for entry in schedule:
                 if entry['start'] <= current_time < entry['end']:
                     log.start_run(entry)
