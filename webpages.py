@@ -15,6 +15,7 @@ from options import level_adjustments
 from options import options
 from options import plugins
 from options import rain_blocks
+from programs import programs
 from stations import stations
 import scheduler
 import version
@@ -33,13 +34,13 @@ class WebPage(object):
             'isinstance': isinstance,
 
             'inputs': inputs,
+            'log': log,
             'level_adjustments': level_adjustments,
             'options': options,
             'plugins': plugins,
             'rain_blocks': rain_blocks,
             'stations': stations,
-            'log': log,
-
+            'programs': programs,
             'version': version,
 
             'cpu_temp': get_cpu_temp(),
@@ -82,6 +83,8 @@ class home_page(ProtectedPage):
     def GET(self):
         qdict = web.input()
         if 'stop_all' in qdict and qdict['stop_all'] == '1':
+            if not options.manual_mode:
+                options.scheduler_enabled = False
             log.finish_run(None)
             stations.clear()
             raise web.seeother('/')
@@ -107,7 +110,7 @@ class home_page(ProtectedPage):
         raise web.seeother('/')  # Send browser back to home page
 
 
-class view_programs_page(ProtectedPage):
+class programs_page(ProtectedPage):
     """Open programs page."""
 
     def GET(self):
@@ -158,7 +161,7 @@ class change_program_page(ProtectedPage):
             gv.pd[int(qdict['pid'])] = cp  # replace program
         jsave(gv.pd, 'programs')
         gv.sd['nprogs'] = len(gv.pd)
-        raise web.seeother('/vp')
+        raise web.seeother('/programs')
 
 
 class delete_program_page(ProtectedPage):
@@ -173,7 +176,7 @@ class delete_program_page(ProtectedPage):
             del gv.pd[int(qdict['pid'])]
         jsave(gv.pd, 'programs')
         gv.sd['nprogs'] = len(gv.pd)
-        raise web.seeother('/vp')
+        raise web.seeother('/programs')
 
 
 class enable_program_page(ProtectedPage):
@@ -183,7 +186,7 @@ class enable_program_page(ProtectedPage):
         qdict = web.input()
         gv.pd[int(qdict['pid'])][0] = int(qdict['enable'])
         jsave(gv.pd, 'programs')
-        raise web.seeother('/vp')
+        raise web.seeother('/programs')
 
 
 class view_runonce_page(ProtectedPage):
@@ -424,11 +427,12 @@ class api_log_page(ProtectedPage):
         if 'date' in qdict:
             # date parameter filters the log values returned; "yyyy-mm-dd" format
             date = datetime.datetime.strptime(qdict['date'], "%Y-%m-%d").date()
-            check_end = datetime.datetime.combine(date, datetime.time.max)
             check_start = datetime.datetime.combine(date, datetime.time.min)
+            check_end = datetime.datetime.combine(date, datetime.time.max)
             log_start = check_start - datetime.timedelta(days=1)
+            log_end = check_end + datetime.timedelta(days=1)
 
-            events = scheduler.combined_schedule(log_start, check_end)
+            events = scheduler.combined_schedule(log_start, log_end)
             for interval in events:
                 # Return only records that are visible on this day:
                 if check_start <= interval['start'] <= check_end or check_start <= interval['end'] <= check_end:

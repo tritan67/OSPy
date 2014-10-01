@@ -28,15 +28,13 @@ def predicted_schedule(start_time, end_time):
     rain_block_start = datetime.datetime.now()
     rain_block_end = rain_blocks.block_end()
 
-    skip_uids = [entry['uid'] for entry in log.finished_runs()]
-    current_active = log.active_runs()
+    current_active = log.finished_runs() + log.active_runs()
+    skip_uids = [entry['uid'] for entry in current_active]
 
     current_usage = 0.0
     for active in current_active:
         if not active['blocked']:
             current_usage += active['usage']
-        if active['uid'] not in skip_uids:
-            skip_uids.append(active['uid'])
 
     current_active = [interval for interval in current_active if not interval['blocked']]
 
@@ -67,8 +65,7 @@ def predicted_schedule(start_time, end_time):
                     'uid': '%s-%d-%d' % (str(interval['start']), program.index, station),
                     'usage': 1.0  # FIXME
                 }
-                if new_schedule['uid'] not in skip_uids:
-                    station_schedules[station].append(new_schedule)
+                station_schedules[station].append(new_schedule)
 
     all_intervals = []
     # Adjust for weather and remove overlap:
@@ -96,6 +93,14 @@ def predicted_schedule(start_time, end_time):
 
     # Make list of entries sorted on time (stable sorted on station #)
     all_intervals.sort(key=lambda inter: inter['start'])
+
+    # If we have processed some intervals before, we should skip all that were scheduled before them
+    for i in range(len(skip_uids)):
+        for j in range(len(all_intervals)):
+            if all_intervals[j]['uid'] == skip_uids[i]:
+                for k in range(j+1):
+                    del all_intervals[0]
+                break
 
     # Try to add each interval
     for interval in all_intervals:

@@ -54,7 +54,7 @@ jQuery(document).ready(function(){
         window.location = "/stations";
     });
     jQuery("button#bPrograms").click(function(){
-        window.location = "/vp";
+        window.location = "/programs";
     });
     jQuery("button#bRunOnce").click(function(){
         window.location = "/vr";

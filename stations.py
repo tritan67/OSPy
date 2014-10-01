@@ -135,6 +135,8 @@ class _BaseStations(object):
             result = self._stations[index]
         return result
 
+    __getitem__ = get
+
     def activate(self, index):
         if not isinstance(index, list):
             index = [index]
@@ -159,9 +161,6 @@ class _BaseStations(object):
     def clear(self):
         for i in range(len(self._state)):
             self._state[i] = False
-
-    def __getitem__(self, index):
-        return self._stations[index]
 
 
 class _DummyStations(_BaseStations):
