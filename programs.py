@@ -70,6 +70,29 @@ class _Program(object):
     def start(self):
         return self._start
 
+    def summary(self):
+        result = "Unknown schedule"
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        if self.type == ProgramType.CUSTOM:
+            result = "Custom schedule"
+        elif self.type == ProgramType.REPEAT_SIMPLE:
+            if self.type_data[4] == 1:
+                result = "Simple daily schedule"
+            else:
+                result = "Simple schedule repeating every %d days" % self.type_data[4]
+        elif self.type == ProgramType.REPEAT_ADVANCED:
+            if self.type_data[1] == 1:
+                result = "Advanced daily schedule"
+            else:
+                result = "Advanced schedule repeating every %d days" % self.type_data[1]
+        elif self.type == ProgramType.DAYS_SIMPLE:
+            result = "Simple schedule on " + ' '.join([days[x] for x in self.type_data[4]])
+        elif self.type == ProgramType.DAYS_ADVANCED:
+            result = "Advanced schedule on " + ' '.join([days[x] for x in self.type_data[1]])
+        elif self.type == ProgramType.WEEKLY_ADVANCED:
+            result = "Advanced weekly schedule"
+        return result
+
     def clear(self):
         self._schedule = []
 
@@ -132,7 +155,7 @@ class _Program(object):
                                                 datetime.time.min)  # First day of current week
         self._schedule = new_schedule
 
-        self.type = ProgramType.DAYS_SIMPLE
+        self.type = ProgramType.DAYS_ADVANCED
         self.type_data = [schedule, days]
 
     def set_weekly_advanced(self, schedule):
@@ -147,7 +170,7 @@ class _Program(object):
                                                 datetime.time.min)  # First day of current week
         self._schedule = new_schedule
 
-        self.type = ProgramType.DAYS_SIMPLE
+        self.type = ProgramType.WEEKLY_ADVANCED
         self.type_data = [schedule]
 
     @staticmethod
