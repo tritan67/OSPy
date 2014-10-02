@@ -9,43 +9,164 @@ import datetime
 from options import options
 
 
+class ProgramType(object):
+    CUSTOM = 0
+    REPEAT_SIMPLE = 1
+    REPEAT_ADVANCED = 2
+    DAYS_SIMPLE = 3
+    DAYS_ADVANCED = 4
+    WEEKLY_ADVANCED = 5
+
+
 class _Program(object):
-    SAVE_EXCLUDE = ['SAVE_EXCLUDE', 'index']
+    SAVE_EXCLUDE = ['SAVE_EXCLUDE', 'index', '_programs', '_loading']
 
     def __init__(self, programs_instance, index):
         self._programs = programs_instance
-        self.schedule = []
+        self._loading = True
 
         self.name = "Program %02d" % (index+1)
         self.stations = []
         self.enabled = True
 
-        self.modulo = 24*60
-        self.manual = False  # Non-repetitive (run-once) if True
-        self.start = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+        self._schedule = []
+        self._modulo = 24*60
+        self._manual = False  # Non-repetitive (run-once) if True
+        self._start = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+
+        self.type = ProgramType.CUSTOM
+        self.type_data = [[]]
 
         options.load(self, index)
+        self._loading = False
 
     @property
     def index(self):
         return self._programs.get().index(self)
 
-    def add(self, start_minute, end_minute):
-        start_minute %= self.modulo
-        end_minute %= self.modulo
+    @property
+    def schedule(self):
+        return [interval[:] for interval in self._schedule]
+
+    @schedule.setter
+    def schedule(self, value):
+        new_schedule = []
+        for interval in value:
+            new_schedule = self._update_schedule(new_schedule, self.modulo, interval[0], interval[1])
+
+        self._schedule = new_schedule
+        self.type = ProgramType.CUSTOM
+        self.type_data = [value]
+
+    @property
+    def modulo(self):
+        return self._modulo
+
+    @property
+    def manual(self):
+        return self._manual
+
+    @property
+    def start(self):
+        return self._start
+
+    def clear(self):
+        self._schedule = []
+
+    def set_repeat_simple(self, start_min, duration_min, pause_min, repeat_times, repeat_days, start_date):
+        new_schedule = []
+        for i in range(repeat_times+1):
+            new_schedule = self._update_schedule(new_schedule, repeat_days*1440, start_min, start_min + duration_min)
+            start_min += pause_min + duration_min
+
+        self._modulo = repeat_days*1440
+        self._manual = False
+        self._start = datetime.datetime.combine(start_date, datetime.time.min)
+        self._schedule = new_schedule
+
+        self.type = ProgramType.REPEAT_SIMPLE
+        self.type_data = [start_min, duration_min, pause_min, repeat_times, repeat_days, start_date]
+
+    def set_repeat_advanced(self, schedule, repeat_days, start_date):
+        new_schedule = []
+        for interval in schedule:
+            new_schedule = self._update_schedule(new_schedule, repeat_days*1440, interval[0], interval[1])
+
+        self._schedule = new_schedule
+        self._modulo = repeat_days*1440
+        self._manual = False
+        self._start = datetime.datetime.combine(start_date, datetime.time.min)
+
+        self.type = ProgramType.REPEAT_ADVANCED
+        self.type_data = [schedule, repeat_days, start_date]
+
+    def set_days_simple(self, start_min, duration_min, pause_min, repeat_times, days):
+        new_schedule = []
+        for day in days:
+            day_start_min = start_min + 1440 * day
+            for i in range(repeat_times+1):
+                new_schedule = self._update_schedule(new_schedule, 7*1440, day_start_min, day_start_min + duration_min)
+                day_start_min += pause_min + duration_min
+
+        self._modulo = 7*1440
+        self._manual = False
+        self._start = datetime.datetime.combine(datetime.date.today() -
+                                                datetime.timedelta(days=datetime.date.today().weekday()),
+                                                datetime.time.min)  # First day of current week
+        self._schedule = new_schedule
+
+        self.type = ProgramType.DAYS_SIMPLE
+        self.type_data = [start_min, duration_min, pause_min, repeat_times, days[:]]
+
+    def set_days_advanced(self, schedule, days):
+        new_schedule = []
+        for day in days:
+            offset = 1440 * day
+            for interval in schedule:
+                new_schedule = self._update_schedule(new_schedule, 7*1440, interval[0] + offset, interval[1] + offset)
+
+        self._modulo = 7*1440
+        self._manual = False
+        self._start = datetime.datetime.combine(datetime.date.today() -
+                                                datetime.timedelta(days=datetime.date.today().weekday()),
+                                                datetime.time.min)  # First day of current week
+        self._schedule = new_schedule
+
+        self.type = ProgramType.DAYS_SIMPLE
+        self.type_data = [schedule, days]
+
+    def set_weekly_advanced(self, schedule):
+        new_schedule = []
+        for interval in schedule:
+            new_schedule = self._update_schedule(new_schedule, 7*1440, interval[0], interval[1])
+
+        self._modulo = 7*1440
+        self._manual = False
+        self._start = datetime.datetime.combine(datetime.date.today() -
+                                                datetime.timedelta(days=datetime.date.today().weekday()),
+                                                datetime.time.min)  # First day of current week
+        self._schedule = new_schedule
+
+        self.type = ProgramType.DAYS_SIMPLE
+        self.type_data = [schedule]
+
+    @staticmethod
+    def _update_schedule(schedule, modulo, start_minute, end_minute):
+        start_minute %= modulo
+        end_minute %= modulo
 
         if end_minute < start_minute:
-            end_minute += self.modulo
+            end_minute += modulo
 
-        if end_minute > self.modulo:
+        if end_minute > modulo:
             new_entries = [
-                [0, end_minute % self.modulo],
-                [start_minute, self.modulo]
+                [0, end_minute % modulo],
+                [start_minute, modulo]
             ]
         else:
             new_entries = [[start_minute, end_minute]]
 
-        new_schedule = self.schedule[:]
+        new_schedule = schedule[:]
 
         while new_entries:
             entry = new_entries.pop(0)
@@ -65,7 +186,7 @@ class _Program(object):
                 new_schedule.append(entry)
                 new_schedule.sort(key=lambda ent: ent[0])
 
-        self.schedule = new_schedule
+        return new_schedule
 
     def is_active(self, date_time):
         time_delta = date_time - self.start
@@ -121,12 +242,27 @@ class _Program(object):
         return result
 
     def __setattr__(self, key, value):
-        try:
+        if key == 'modulo':
+            self._modulo = value
+            if not self._loading:
+                self.schedule = self._schedule  # Convert to custom sequence
+        elif key == 'manual':
+            self._manual = value
+            if not self._loading and value:
+                self.schedule = self._schedule  # Convert to custom sequence
+        elif key == 'start':
+            if self._loading:  # Update start date to most recent possible
+                while value <= datetime.datetime.today():
+                    value += datetime.timedelta(minutes=self._modulo)
+                self._start = value
+            else:
+                self._start = value
+                self.schedule = self._schedule  # Convert to custom sequence
+        else:
             super(_Program, self).__setattr__(key, value)
-            if not key.startswith('_') and key not in self.SAVE_EXCLUDE:
-                options.save(self, self.index)
-        except ValueError:  # No index available yet
-            pass
+            if key not in self.SAVE_EXCLUDE:
+                if not self._loading:
+                    options.save(self, self.index)
 
 
 class _Programs(object):
@@ -168,5 +304,7 @@ class _Programs(object):
         else:
             result = self._programs[index]
         return result
+
+    __getitem__ = get
 
 programs = _Programs()
