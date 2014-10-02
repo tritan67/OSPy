@@ -6,6 +6,7 @@ __author__ = 'Rimco'
 import datetime
 
 # Local imports
+from helpers import minute_time_str
 from options import options
 
 
@@ -70,11 +71,26 @@ class _Program(object):
     def start(self):
         return self._start
 
+    def _day_str(self, index):
+        if self.type != ProgramType.CUSTOM and self.type != ProgramType.REPEAT_ADVANCED:
+            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index]
+        else:
+            return "Day %d" % (index + 1)
+
     def summary(self):
         result = "Unknown schedule"
-        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         if self.type == ProgramType.CUSTOM:
-            result = "Custom schedule"
+            if self.manual:
+                result = "Custom schedule running once on %s" % self.start.strftime("%Y-%m-%d")
+            else:
+                if self._modulo % 1440 == 0 and self._modulo > 0:
+                    days = (self._modulo / 1440)
+                    if days == 1:
+                        result = "Custom schedule repeating daily"
+                    else:
+                        result = "Custom schedule repeating every %d days" % (self._modulo / 1440)
+                else:
+                    result = "Custom schedule repeating every %d minutes" % self._modulo
         elif self.type == ProgramType.REPEAT_SIMPLE:
             if self.type_data[4] == 1:
                 result = "Simple daily schedule"
@@ -86,11 +102,67 @@ class _Program(object):
             else:
                 result = "Advanced schedule repeating every %d days" % self.type_data[1]
         elif self.type == ProgramType.DAYS_SIMPLE:
-            result = "Simple schedule on " + ' '.join([days[x] for x in self.type_data[4]])
+            result = "Simple schedule on " + ' '.join([self._day_str(x) for x in self.type_data[4]])
         elif self.type == ProgramType.DAYS_ADVANCED:
-            result = "Advanced schedule on " + ' '.join([days[x] for x in self.type_data[1]])
+            result = "Advanced schedule on " + ' '.join([self._day_str(x) for x in self.type_data[1]])
         elif self.type == ProgramType.WEEKLY_ADVANCED:
             result = "Advanced weekly schedule"
+        return result
+
+    def details(self):
+        result = "Unknown schedule"
+
+        if len(self._schedule) == 0:
+            result = "Empty schedule"
+        elif self.type == ProgramType.REPEAT_SIMPLE or self.type == ProgramType.DAYS_SIMPLE:
+            start_time = minute_time_str(self.type_data[0])
+            duration = self.type_data[1]
+            pause = self.type_data[2]
+            repeat = self.type_data[3]
+            result = "Starting: <span class='val'>%s</span> for <span class='val'>%d</span> minutes<br>" % (start_time, duration)
+            if repeat:
+                result += ("Repeat: <span class='val'>%s</span> " + ("times" if repeat > 1 else "time") +
+                           " with a <span class='val'>%d</span> minute delay<br>") % (repeat, pause)
+
+        elif self.type == ProgramType.CUSTOM or \
+                self.type == ProgramType.REPEAT_ADVANCED or \
+                self.type == ProgramType.WEEKLY_ADVANCED:
+            if self.type == ProgramType.CUSTOM:
+                days = self._modulo / 1440
+            else:
+                days = self.type_data[1]
+
+            if days == 1:
+                result = "Intervals: "
+                for interval in self.type_data[0]:
+                    result += "<span class='val'>%s-%s</span> " % (minute_time_str(interval[0]),
+                                                                   minute_time_str(interval[1]))
+            else:
+                day_strs = {}
+                for interval in self.type_data[0]:
+                    day_start = int(interval[0] / 1440)
+                    day_end = int(interval[1] / 1440)
+                    if day_start == day_end:
+                        if day_start not in day_strs:
+                            day_strs[day_start] = "%s: " % self._day_str(day_start)
+                        day_strs[day_start] += "<span class='val'>%s-%s</span> " % (minute_time_str(interval[0]),
+                                                                                    minute_time_str(interval[1]))
+                    else:
+                        if day_start not in day_strs:
+                            day_strs[day_start] = "%s: " % self._day_str(day_start)
+                        if day_end not in day_strs:
+                            day_strs[day_end] = "%s: " % self._day_str(day_end)
+                        day_strs[day_start] += "<span class='val'>%s-%s</span> " % (minute_time_str(interval[0]),
+                                                                                    minute_time_str(1440))
+                        day_strs[day_end] += "<span class='val'>%s-%s</span> " % (minute_time_str(1440),
+                                                                                  minute_time_str(interval[1]))
+                result = '<br>'.join(day_strs.values())
+
+        elif self.type == ProgramType.DAYS_ADVANCED:
+            result = 'Intervals: '
+            for interval in self.type_data[0]:
+                result += "<span class='val'>%s-%s</span> " % (minute_time_str(interval[0]),
+                                                               minute_time_str(interval[1]))
         return result
 
     def clear(self):
@@ -98,9 +170,10 @@ class _Program(object):
 
     def set_repeat_simple(self, start_min, duration_min, pause_min, repeat_times, repeat_days, start_date):
         new_schedule = []
+        day_start_min = start_min
         for i in range(repeat_times+1):
-            new_schedule = self._update_schedule(new_schedule, repeat_days*1440, start_min, start_min + duration_min)
-            start_min += pause_min + duration_min
+            new_schedule = self._update_schedule(new_schedule, repeat_days*1440, day_start_min, day_start_min + duration_min)
+            day_start_min += pause_min + duration_min
 
         self._modulo = repeat_days*1440
         self._manual = False

@@ -123,9 +123,25 @@ def get_cpu_temp(unit=None):
         return '!!'
 
 
-def timestr(t):
-    return str((t / 60 >> 0) / 10 >> 0) + str((t / 60 >> 0) % 10) + ":" + str((t % 60 >> 0) / 10 >> 0) + str(
-        (t % 60 >> 0) % 10)
+def duration_str(total_seconds):
+    minutes, seconds = divmod(total_seconds, 60)
+    return '%02d:%02d' % (minutes, seconds)
+
+
+def timedelta_duration_str(time_delta):
+    return duration_str(time_delta.total_seconds())
+
+
+def timedelta_time_str(time_delta, with_seconds=False):
+    hours, remainder = divmod(time_delta.total_seconds(), 3600)
+    if hours == 24:
+        hours = 0
+    minutes, seconds = divmod(remainder, 60)
+    return '%02d:%02d' % (hours, minutes) + ((':%02d' % seconds) if with_seconds else '')
+
+
+def minute_time_str(minute_time, with_seconds=False):
+    return timedelta_time_str(datetime.timedelta(minutes=minute_time), with_seconds)
 
 
 def stop_onrain():

@@ -6,50 +6,6 @@ $code:
     def two_digits(n):
         return '%02d' % int(n)
 
-    def schedule_to_string(program):
-        DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-        modulo = program.modulo
-        schedule = program.schedule
-        start = program.start
-
-        if len(schedule) == 0:
-            result = "No Schedule"
-        else:
-            if program.manual:
-                result = (start + datetime.timedelta(minutes=schedule[0][0])).strftime("%Y-%m-%d")
-            else:
-                if modulo % 1440 == 0:
-                    days = modulo / 1440
-                    day0 = start.weekday()
-                    if days == 7:
-                        days = []
-                        for interval in schedule:
-                            day = DAYS[interval[0] / 1440 + day0]
-                            if day not in days:
-                                days.append(day)
-                            result = ' '.join(days)
-                    else:
-                        if days == 1:
-                            result = 'Daily'
-                        else:
-                            result = 'Every %d days' % days
-                else:
-                    result = 'Every %d minutes' % modulo
-        return result
-
-    def formatTime(t):
-        if options.time_format:
-            return t
-        else:
-            hour = int(t[0:2])
-            newhour = hour
-            if hour == 0:
-                newhour = 12
-            if hour > 12:
-                newhour = hour-12
-            return str(newhour)  + t[2:] + (" am" if hour<12 else " pm")
-
     def formatTime(t):
         if options.time_format:
             return t
@@ -100,16 +56,11 @@ $code:
                 <span class='togglesep'>&nbsp;</span>
                 <span class='toggleright'>Off</span>
             </button>
-        ${program.index+1}. ${program.name}: <span class="val">${schedule_to_string(program)}</span>
+        ${program.index+1}. ${program.name}: <span class="val">${program.summary()}</span>
         </p>
         <p class="stationList">Run: <span class="val">${', '.join([stations[s].name for s in program.stations]) or "None"}</span></p>
         $if len(program.schedule) > 0:
-            <p class="stationList">Starting:
-                <span class="val">${(program.start + datetime.timedelta(minutes=program.schedule[0][0])).strftime("%H:%M")}</span>
-                for
-                <span class="val">${(program.schedule[0][1] - program.schedule[0][0])}</span>
-                mins
-            </p>
+            <p class="stationList">$:{program.details()}</p>
 
         <p>
             <button class="cRunNow" data="${program.index}">Run Now</button>
