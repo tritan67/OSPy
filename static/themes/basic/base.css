@@ -534,9 +534,9 @@ td.stationSchedule {
 
 .showDetails {
     position: absolute;
-    width: 90px;
+    width: 100px;
     top: 100%;
-    left:0px;
+    left:-50px;
     color:white;
     z-index:100;
     border-radius: 6px;

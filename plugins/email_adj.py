@@ -14,7 +14,7 @@ import gv  # Get access to ospy's settings
 from urls import urls  # Get access to ospy's URLs
 from ospy import template_render
 from webpages import ProtectedPage
-from helpers import timestr
+from helpers import duration_str
 
 from email import Encoders
 import smtplib
@@ -114,7 +114,7 @@ class EmailSender(Thread):
                         else:
                             pgr = str(gv.lrun[1])
 
-                        dur = str(timestr(gv.lrun[2]))
+                        dur = str(duration_str(gv.lrun[2]))
                         start = time.gmtime(gv.now - gv.lrun[2])
 
                         body = 'On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) + \

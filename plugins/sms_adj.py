@@ -10,7 +10,7 @@ import traceback
 
 import web
 import gv  # Get access to ospy's settings
-from helpers import get_ip, uptime, reboot, poweroff, timestr, jsave, restart
+from helpers import get_ip, uptime, reboot, poweroff, duration_str, jsave, restart
 from urls import urls  # Get access to ospy's URLs
 from ospy import template_render
 from webpages import ProtectedPage
@@ -165,7 +165,7 @@ def sms_check(self):
                         pgr = str(gv.lrun[1])
                     start = time.gmtime(gv.now - gv.lrun[2])
                     if pgr != '0':
-                        logline = ' {program: ' + pgr + ',station: ' + str(gv.lrun[0]) + ',duration: ' + timestr(
+                        logline = ' {program: ' + pgr + ',station: ' + str(gv.lrun[0]) + ',duration: ' + duration_str(
                             gv.lrun[2]) + ',start: ' + time.strftime("%H:%M:%S - %Y-%m-%d", start) + '}'
                     else:
                         logline = ' Last program none'
