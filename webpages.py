@@ -114,79 +114,30 @@ class programs_page(ProtectedPage):
     """Open programs page."""
 
     def GET(self):
+        qdict = web.input()
+        if 'delete' in qdict and qdict['delete'] == '1':
+            while programs.count() > 0:
+                programs.remove_program(programs.count()-1)
         return self.template_render.programs()
 
 
-class modify_program_page(ProtectedPage):
+class program_page(ProtectedPage):
     """Open page to allow program modification."""
 
-    def GET(self):
+    def GET(self, index):
         qdict = web.input()
-        pid = int(qdict['pid'])
-        prog = []
-        if pid != -1:
-            mp = gv.pd[pid][:]  # Modified program
-            if mp[1] >= 128 and mp[2] > 1:  # If this is an interval program
-                dse = int(gv.now / 86400)
-                # Convert absolute to relative days remaining for display
-                rel_rem = (((mp[1] - 128) + mp[2]) - (dse % mp[2])) % mp[2]
-                mp[1] = rel_rem + 128  # Update from saved value.
-            prog = str(mp).replace(' ', '')
-        return self.template_render.modify(pid, prog)
+        index = int(index)
+        if 'delete' in qdict and qdict['delete'] == '1':
+            programs.remove_program(index)
+            raise web.seeother('/programs')
+        elif 'runnow' in qdict and qdict['runnow'] == '1':
+            # TODO: Create temporary manual program?
+            raise web.seeother('/programs')
+        elif 'enable' in qdict:
+            programs[index].enabled = (qdict['enable'] == '1')
+            raise web.seeother('/programs')
 
-
-class change_program_page(ProtectedPage):
-    """Add a program or modify an existing one."""
-
-    def GET(self):
-        qdict = web.input()
-        pnum = int(qdict['pid']) + 1  # program number
-        cp = json.loads(qdict['v'])
-        if cp[0] == 0 and pnum == gv.pon:  # if disabled and program is running
-            for i in range(len(gv.ps)):
-                if gv.ps[i][0] == pnum:
-                    gv.ps[i] = [0, 0]
-                if gv.srvals[i]:
-                    gv.srvals[i] = 0
-            for i in range(len(gv.rs)):
-                if gv.rs[i][3] == pnum:
-                    gv.rs[i] = [0, 0, 0, 0]
-        if cp[1] >= 128 and cp[2] > 1:
-            dse = int(gv.now / 86400)
-            ref = dse + cp[1] - 128
-            cp[1] = (ref % cp[2]) + 128
-        if qdict['pid'] == '-1':  # add new program
-            gv.pd.append(cp)
-        else:
-            gv.pd[int(qdict['pid'])] = cp  # replace program
-        jsave(gv.pd, 'programs')
-        gv.sd['nprogs'] = len(gv.pd)
-        raise web.seeother('/programs')
-
-
-class delete_program_page(ProtectedPage):
-    """Delete one or all existing program(s)."""
-
-    def GET(self):
-        qdict = web.input()
-        if qdict['pid'] == '-1':
-            del gv.pd[:]
-            jsave(gv.pd, 'programs')
-        else:
-            del gv.pd[int(qdict['pid'])]
-        jsave(gv.pd, 'programs')
-        gv.sd['nprogs'] = len(gv.pd)
-        raise web.seeother('/programs')
-
-
-class enable_program_page(ProtectedPage):
-    """Activate or deactivate an existing program(s)."""
-
-    def GET(self):
-        qdict = web.input()
-        gv.pd[int(qdict['pid'])][0] = int(qdict['enable'])
-        jsave(gv.pd, 'programs')
-        raise web.seeother('/programs')
+        return self.template_render.program(index)
 
 
 class view_runonce_page(ProtectedPage):

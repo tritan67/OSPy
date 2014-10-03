@@ -129,17 +129,19 @@ class _Program(object):
                 self.type == ProgramType.WEEKLY_ADVANCED:
             if self.type == ProgramType.CUSTOM:
                 days = self._modulo / 1440
+                intervals = self.schedule
             else:
                 days = self.type_data[1]
+                intervals = self.type_data[0]
 
             if days == 1:
                 result = "Intervals: "
-                for interval in self.type_data[0]:
+                for interval in intervals:
                     result += "<span class='val'>%s-%s</span> " % (minute_time_str(interval[0]),
                                                                    minute_time_str(interval[1]))
             else:
                 day_strs = {}
-                for interval in self.type_data[0]:
+                for interval in intervals:
                     day_start = int(interval[0] / 1440)
                     day_end = int(interval[1] / 1440)
                     if day_start == day_end:
