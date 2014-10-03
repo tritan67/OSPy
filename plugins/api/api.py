@@ -54,7 +54,7 @@ dummy_options = {
 dummy_logs = [{'date': '2014-09-20T01:35.{}'.format(i),
                'message': 'Event {}'.format(i)}
               for i in xrange(1000)]
-pass
+
 urls.extend([
     # Stations
     '/stations/?', 'plugins.api.Stations',
@@ -96,12 +96,12 @@ class Stations(object):
         raise web.forbidden()
 
 
-def dummy_start(num):
-    logger.debug('would start %d' % num)
+def dummy_start(id):
+    logger.debug('would start %d' % id)
 
 
-def dummy_stop(num):
-    logger.debug('would stop %d' % num)
+def dummy_stop(id):
+    logger.debug('would stop %d' % id)
 
 
 class Station(object):

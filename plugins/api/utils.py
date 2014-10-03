@@ -75,13 +75,25 @@ def does_json(func):
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        result = {'http_status_code': 200}
+        # Take care of jsonp
+        params = web.input(callback=None)
+
+        # Set headers
+        web.header('Cache-Control', 'no-cache')
+        web.header('Content-Type', 'application/json')
 
         # This calls the decorated method
         try:
             r = func(self, *args, **kwargs)
             if r:
-                result.update(r)
+                if params.callback:
+                    return "{callback}({json});".format(callback=params.callback,
+                                                        json=_json_dumps(r))
+                else:
+                    return _json_dumps(r)
+            else:
+                return ''
+
         except IndexError:  # No such item
             raise web.notfound()
             # FIXME: Make up mind on exceptions
@@ -90,20 +102,6 @@ def does_json(func):
             raise web.badrequest()
             # FIXME: Make up mind on exceptions
             # result['http_status_code'] = 406
-
-        web.ctx['status'] = http_status_codes[result['http_status_code']]  # update return HTTP status
-        del result['http_status_code']  # we dont send that to the client
-
-        #  Set headers
-        web.header('Cache-Control', 'no-cache')
-
-        if result:
-            # If theres data to return, label it as json
-            web.header('Content-Type', 'application/json')
-            return _json_dumps(result)
-
-        # Return nothing on empty dictionay
-        return ''
 
     return wrapper
 
