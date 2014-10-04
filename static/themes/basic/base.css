@@ -79,7 +79,7 @@ div.panel div.title {
     margin-bottom: 8px;
 }
 
-div.controlblock {
+div.controlblock, div.simpleblock {
     border:3px solid #2E3959;
     border-radius: 12px;
     margin: 8px 0px;
@@ -574,6 +574,16 @@ td.stationSchedule {
     padding: 4px;
     border-spacing: 0px;
     background-color: white;
+}
+
+.program_label {
+    text-align: right;
+	padding: 0px 12px;
+	color: #2E3959;
+	font-weight: 700;
+	width: 12em;
+	white-space: nowrap;
+    display:inline-block;
 }
 
 @media only screen and (max-width: 1024px) {

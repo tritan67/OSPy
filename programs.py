@@ -18,6 +18,17 @@ class ProgramType(object):
     DAYS_ADVANCED = 4
     WEEKLY_ADVANCED = 5
 
+    FRIENDLY_NAMES = {
+        CUSTOM: 'Custom',
+        REPEAT_SIMPLE: 'Repeating (Simple)',
+        REPEAT_ADVANCED: 'Repeating (Advanced)',
+        DAYS_SIMPLE: 'Selected days (Simple)',
+        DAYS_ADVANCED: 'Selected days (Advanced)',
+        WEEKLY_ADVANCED: 'Weekly (Advanced)',
+    }
+
+ProgramType.NAMES = {getattr(ProgramType, x): x for x in dir(ProgramType) if not x.startswith('_') and
+                                                                             isinstance(getattr(ProgramType, x), int)}
 
 class _Program(object):
     SAVE_EXCLUDE = ['SAVE_EXCLUDE', 'index', '_programs', '_loading']
@@ -26,7 +37,7 @@ class _Program(object):
         self._programs = programs_instance
         self._loading = True
 
-        self.name = "Program %02d" % (index+1)
+        self.name = "Program %02d" % (index+1 if index >= 0 else abs(index))
         self.stations = []
         self.enabled = True
 
@@ -37,13 +48,17 @@ class _Program(object):
 
         self.type = ProgramType.CUSTOM
         self.type_data = [[]]
-
-        options.load(self, index)
+        if index >= 0:
+            options.load(self, index)
         self._loading = False
 
     @property
     def index(self):
-        return self._programs.get().index(self)
+        try:
+            return self._programs.get().index(self)
+        except ValueError:
+            return -1
+
 
     @property
     def schedule(self):
@@ -359,7 +374,7 @@ class _Program(object):
         else:
             super(_Program, self).__setattr__(key, value)
             if key not in self.SAVE_EXCLUDE:
-                if not self._loading:
+                if not self._loading and self.index >= 0:
                     options.save(self, self.index)
 
 
@@ -379,10 +394,15 @@ class _Programs(object):
         for program in self._programs:
             program.stations = [station for station in program.stations if 0 <= station < new]
 
-    def add_program(self):
-        program = _Program(self, len(self._programs))
+    def add_program(self, program=None):
+        if program is None:
+            program = _Program(self, len(self._programs))
         self._programs.append(program)
         options.save(program, program.index)
+
+    def create_program(self):
+        """Returns a new program, but doesn't add it to the list."""
+        return _Program(self, -1-len(self._programs))
 
     def remove_program(self, index):
         if 0 <= index < len(self._programs):

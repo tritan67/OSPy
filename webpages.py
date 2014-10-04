@@ -16,6 +16,7 @@ from options import options
 from options import plugins
 from options import rain_blocks
 from programs import programs
+from programs import ProgramType
 from stations import stations
 import scheduler
 import version
@@ -41,6 +42,7 @@ class WebPage(object):
             'rain_blocks': rain_blocks,
             'stations': stations,
             'programs': programs,
+            'ProgramType': ProgramType,
             'version': version,
 
             'cpu_temp': get_cpu_temp(),
@@ -126,18 +128,31 @@ class program_page(ProtectedPage):
 
     def GET(self, index):
         qdict = web.input()
-        index = int(index)
-        if 'delete' in qdict and qdict['delete'] == '1':
-            programs.remove_program(index)
-            raise web.seeother('/programs')
-        elif 'runnow' in qdict and qdict['runnow'] == '1':
-            # TODO: Create temporary manual program?
-            raise web.seeother('/programs')
-        elif 'enable' in qdict:
-            programs[index].enabled = (qdict['enable'] == '1')
-            raise web.seeother('/programs')
+        try:
+            index = int(index)
+            if 'delete' in qdict and qdict['delete'] == '1':
+                programs.remove_program(index)
+                raise web.seeother('/programs')
+            elif 'runnow' in qdict and qdict['runnow'] == '1':
+                # TODO: Create temporary manual program?
+                raise web.seeother('/programs')
+            elif 'enable' in qdict:
+                programs[index].enabled = (qdict['enable'] == '1')
+                raise web.seeother('/programs')
+        except ValueError:
+            pass
 
-        return self.template_render.program(index)
+        if isinstance(index, int):
+            program = programs.get(index)
+        else:
+            program = programs.create_program()
+            program.set_days_simple(8*60, 30, 30, 0, [])
+
+        return self.template_render.program(program)
+
+    def POST(self, index):
+        qdict = web.input()
+        return str(qdict)
 
 
 class view_runonce_page(ProtectedPage):

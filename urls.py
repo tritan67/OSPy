@@ -10,8 +10,7 @@ urls = [
     '/',  'webpages.home_page',
 
     '/programs', 'webpages.programs_page',
-    '/program/new', 'webpages.new_program_page',
-    '/program/([0-9]+)', 'webpages.program_page',
+    '/program/(new|[0-9]+)', 'webpages.program_page',
 
     '/runonce', 'webpages.runonce_page',
 
