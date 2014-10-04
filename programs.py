@@ -297,7 +297,7 @@ class _Program(object):
         else:
             return []
 
-    def interval(self):
+    def repeat_days(self):
         if self.type == ProgramType.REPEAT_SIMPLE:
             return self.type_data[4]
         elif self.type == ProgramType.REPEAT_ADVANCED:

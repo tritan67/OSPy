@@ -33,6 +33,7 @@ class WebPage(object):
             'datetime': datetime,
             'json': json,
             'isinstance': isinstance,
+            'sorted': sorted,
 
             'inputs': inputs,
             'log': log,

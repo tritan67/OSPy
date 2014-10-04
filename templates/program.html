@@ -90,6 +90,45 @@ $code:
         check_type();
         jQuery("#simple_repeat").change(check_repeat);
         check_repeat();
+
+        jQuery("#intervalSelector").click(function() {
+            var dayInterval = parseInt(jQuery("#intervalSelector .intervalSelect.distance0").text());
+            var delayInterval = parseInt(jQuery("#intervalDelaySelector .intervalSelect.distance0").text());
+            if (isNaN(delayInterval)) {
+                delayInterval = 0;
+            } else if (delayInterval >= 1 && delayInterval >= dayInterval) {
+                delayInterval = dayInterval - 1;
+            }
+            jQuery("#intervalDelaySelector").html("");
+            for (var i=0; i<dayInterval; i++) {
+                jQuery("#intervalDelaySelector").append(
+                        jQuery("<span class='intervalSelect'>" + i + "</span>")
+                            .on("click", intervalSelectClick)
+                            .on("mouseover", intervalSelectMouseover)
+                            .on("mouseout", intervalSelectMouseout)
+                );
+                if (i == 16) {
+                    jQuery("#intervalDelaySelector").append("<br/>");
+                }
+            }
+            jQuery("#intervalDelaySelector .intervalSelect").each(function() {
+                if (jQuery(this).text() == delayInterval) {
+                    jQuery(this).trigger("click");
+                }
+            });
+            jQuery("#interval").val(jQuery("#intervalSelector .intervalSelect.distance0").text());
+            jQuery("#interval_delay").val(jQuery("#intervalDelaySelector .intervalSelect.distance0").text());
+        });
+        jQuery("#intervalDelaySelector").click(function() {
+            jQuery("#interval_delay").val(jQuery("#intervalDelaySelector .intervalSelect.distance0").text());
+        });
+        jQuery("#intervalSelector .intervalSelect").each(function() {
+            var thisValue = parseInt(jQuery(this).text());
+            if (thisValue == ${program.repeat_days()}) {
+                jQuery(this).trigger("click");
+                jQuery("#intervalSelector").trigger("click");
+            }
+        });
     });
 </script>
 
@@ -114,8 +153,8 @@ $code:
                 <div class='option' style="white-space: nowrap">
                     <span class="program_label">Schedule type:</span>
                     <select id="schedule_type" name="schedule_type" style="width: 140px">
-                        $for value, name in ProgramType.FRIENDLY_NAMES.iteritems():
-                            <option value="${value}" ${'selected' if program.type == value else ''}>${name}</option>
+                        $for value in sorted(ProgramType.FRIENDLY_NAMES.keys()):
+                            <option value="${value}" ${'selected' if program.type == value else ''}>${ProgramType.FRIENDLY_NAMES[value]}</option>
                     </select>
                 </div>
 
@@ -148,7 +187,23 @@ $code:
         </div>
 
         <div class="simpleblock" id="repeat_controls" style="display: none;">
-            Repeat
+            <input type="hidden" id="interval" name="interval" value="">
+            <input type="hidden" id="interval_delay" name="interval_delay" value="">
+            <div class='option'>
+                <span class="program_label">Water interval:</span>
+                <div id="intervalSelector" class="animatedSelector simpleinlineblock" >
+                    <!--  Customize this with any set of intervals you like up to 127 -->
+                    $for days in range(1, 8) + [10, 12, 14, 15, 21, 30]:
+                        <span class="intervalSelect">${days}</span>
+                </div>
+            </div>
+            <div class='option'>
+                <span class="program_label">Starting in:</span>
+                <div id="intervalDelaySelector" class="animatedSelector simpleinlineblock">
+                    <span class="intervalSelect distance0">0</span>
+                    <span class="intervalSelect distance1">1</span>
+                </div>
+            </div>
         </div>
 
         <div class="simpleblock" id="simple_controls" style="display: none;">
