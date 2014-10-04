@@ -11,6 +11,49 @@ $code:
 <script>
     $for index, name in ProgramType.NAMES.iteritems():
         var ${name} = ${index};
+
+    function check_repeat() {
+        if (jQuery("#simple_repeat").prop('checked')) {
+            jQuery(".repeat").show()
+        } else {
+            jQuery(".repeat").hide()
+        }
+    }
+
+    function check_type() {
+        var schedule_type = jQuery("#schedule_type").val();
+        if (schedule_type == DAYS_SIMPLE || schedule_type == DAYS_ADVANCED) {
+            jQuery("#days_controls").show()
+        } else {
+            jQuery("#days_controls").hide()
+        }
+        if (schedule_type == REPEAT_SIMPLE || schedule_type == REPEAT_ADVANCED) {
+            jQuery("#repeat_controls").show()
+        } else {
+            jQuery("#repeat_controls").hide()
+        }
+        if (schedule_type == REPEAT_SIMPLE || schedule_type == DAYS_SIMPLE) {
+            jQuery("#simple_controls").show()
+        } else {
+            jQuery("#simple_controls").hide()
+        }
+        if (schedule_type == REPEAT_ADVANCED || schedule_type == DAYS_ADVANCED) {
+            jQuery("#advanced_controls").show()
+        } else {
+            jQuery("#advanced_controls").hide()
+        }
+        if (schedule_type == WEEKLY_ADVANCED) {
+            jQuery("#weekly_controls").show()
+        } else {
+            jQuery("#weekly_controls").hide()
+        }
+        if (schedule_type == CUSTOM) {
+            jQuery("#custom_controls").show()
+        } else {
+            jQuery("#custom_controls").hide()
+        }
+    };
+
     // Initialize behaviors
     jQuery(document).ready(function(){
         jQuery("#cSubmit").click(function() {
@@ -31,6 +74,22 @@ $code:
             jQuery("#stations").val('[' + stations.join(', ') + ']');
             return false;
         });
+        jQuery("button.weekday.pushon").click(function(){
+            var id = jQuery(this).attr("id");
+            var state = jQuery(this).hasClass("on");
+            jQuery(this)
+                .addClass(state ? "off": "on")
+                .removeClass(state ? "on" : "off");
+            var days = jQuery(".station.on").map(function() {
+                return jQuery(this).attr("id").replace("day", "");
+            }).get();
+            jQuery("#days").val('[' + days.join(', ') + ']');
+            return false;
+        });
+        jQuery("#schedule_type").change(check_type);
+        check_type();
+        jQuery("#simple_repeat").change(check_repeat);
+        check_repeat();
     });
 </script>
 
@@ -49,14 +108,14 @@ $code:
 
                 <div class='option' style="white-space: nowrap">
                     <span class="program_label">Enabled:</span>
-                    <input name="enabled" type="checkbox" ${'enabled' if program.enabled else ''}>
+                    <input name="enabled" type="checkbox" ${'checked' if program.enabled else ''}>
                 </div>
 
                 <div class='option' style="white-space: nowrap">
                     <span class="program_label">Schedule type:</span>
-                    <select name="schedule_type" style="width: 140px">
+                    <select id="schedule_type" name="schedule_type" style="width: 140px">
                         $for value, name in ProgramType.FRIENDLY_NAMES.iteritems():
-                            <option value="${value}" ${'selected="selected"' if program.type == value else ''}>${name}</option>
+                            <option value="${value}" ${'selected' if program.type == value else ''}>${name}</option>
                     </select>
                 </div>
 
@@ -76,6 +135,61 @@ $code:
                     </div>
             </div>
         </div>
+
+        <div class="simpleblock" id="days_controls" style="display: none;">
+            <input type="hidden" id="days" name="days" value="">
+            <div class='option'>
+                <span class="program_label">Days:</span>
+                <div style="display: inline-block;">
+                    $for day in xrange(7):
+                        <button id="day${day}" class="weekday pushon ${'on' if day in program.days() else 'off'}">${long_day(day)}</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="simpleblock" id="repeat_controls" style="display: none;">
+            Repeat
+        </div>
+
+        <div class="simpleblock" id="simple_controls" style="display: none;">
+            <div class='option' style="white-space: nowrap">
+                <span class="program_label">Start time:</span>
+                <input name="simple_hour" type="number" maxlength="2" value="${two_digits(program.start_min()/60)}" style="width: 60px" min="0" max="23"> :
+                <input name="simple_minute" type="number" maxlength="2" value="${two_digits(program.start_min()%60)}" style="width: 60px" min="0" max="59">
+            </div>
+            <div class='option' style="white-space: nowrap">
+                <span class="program_label">Duration:</span>
+                <input name="simple_duration" type="number" maxlength="4" value="${program.duration_min()}" style="width: 60px" min="0" max="1440">
+                minute(s)
+            </div>
+            <div class='option' style="white-space: nowrap">
+                <span class="program_label">Repeat:</span>
+                <input id="simple_repeat" name="simple_repeat" type="checkbox" ${'checked' if program.repeat_times() > 0 else ''}>
+            </div>
+            <div class='repeat option' style="white-space: nowrap">
+                <span class="program_label">Repetitions:</span>
+                <input name="simple_rcount" type="number" maxlength="1" value="${program.repeat_times()}" style="width: 60px" min="0" max="9">
+                time(s)
+            </div>
+            <div class='repeat option' style="white-space: nowrap">
+                <span class="program_label">Pause:</span>
+                <input name="simple_pause" type="number" maxlength="1" value="${program.pause_min()}" style="width: 60px" min="0" max="1440">
+                minute(s)
+            </div>
+        </div>
+
+        <div class="simpleblock" id="advanced_controls" style="display: none;">
+            Advanced
+        </div>
+
+        <div class="simpleblock" id="weekly_controls" style="display: none;">
+            Weekly
+        </div>
+
+        <div class="simpleblock" id="custom_controls" style="display: none;">
+            Custom
+        </div>
+
     </form>
 </div>
 

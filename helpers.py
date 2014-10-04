@@ -144,6 +144,20 @@ def minute_time_str(minute_time, with_seconds=False):
     return timedelta_time_str(datetime.timedelta(minutes=minute_time), with_seconds)
 
 
+def short_day(index):
+    return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index]
+
+
+def long_day(index):
+    return ["Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"][index]
+
+
 def stop_onrain():
     """Stop stations that do not ignore rain."""
     from stations import stations

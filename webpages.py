@@ -44,6 +44,7 @@ class WebPage(object):
             'programs': programs,
             'ProgramType': ProgramType,
             'version': version,
+            'long_day': long_day,
 
             'cpu_temp': get_cpu_temp(),
             'now': time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
@@ -146,7 +147,7 @@ class program_page(ProtectedPage):
             program = programs.get(index)
         else:
             program = programs.create_program()
-            program.set_days_simple(8*60, 30, 30, 0, [])
+            program.set_days_simple(6*60, 30, 30, 0, [])
 
         return self.template_render.program(program)
 

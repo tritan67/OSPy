@@ -329,9 +329,6 @@ button.toggle.narrow span.toggleright, button.toggle.narrow span.toggleleft {
     margin: 4px 0px;
 }
 
-button.weekday {
-    width:100%;
-}
 button.pushon.on {
     font-weight: 700;
 }
@@ -581,7 +578,7 @@ td.stationSchedule {
 	padding: 0px 12px;
 	color: #2E3959;
 	font-weight: 700;
-	width: 12em;
+	width: 10em;
 	white-space: nowrap;
     display:inline-block;
 }
