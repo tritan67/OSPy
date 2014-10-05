@@ -352,6 +352,13 @@ table.optionList {
     border-collapse: separate;
 }
 
+table.advancedSchedule {
+    padding: 4px;
+    border-spacing: 0px;
+    empty-cells: show;
+    border-collapse: separate;
+    width: 100%;
+}
 table.stationList {
     border:3px solid #2E3959;
     border-radius: 12px;
@@ -495,6 +502,22 @@ td.stationSchedule {
     top: 0px;
     height:28px;
 }
+
+.addStartMarker {
+    position:absolute;
+    top: 0px;
+    background-color: hsl(150,80%,40%);
+    height:28px;
+    width: 2px;
+}
+.addStopMarker {
+    position:absolute;
+    top: 0px;
+    background-color: hsl(0,80%,40%);
+    height:28px;
+    width: 2px;
+}
+
 .nowMarker {
     position:absolute;
     top: 0px;
@@ -529,6 +552,10 @@ td.stationSchedule {
 .program8 {background-color: hsl(275,80%,40%)}
 .program9 {background-color: hsl(125,80%,40%)}
 .programManual {background-color: hsl(25,80%,40%)}
+
+.programStart {background-color: hsl(150,80%,40%)}
+.programStop {background-color: hsl(0,80%,40%)}
+
 .schedule {
     background-image:url("whitestripes.png");
 }
@@ -536,9 +563,8 @@ td.stationSchedule {
     background-image:url("redcross.png");
 }
 
-.showDetails {
+.showDetails, .newDetails, .newStart, .newStop{
     position: absolute;
-    width: 100px;
     top: 100%;
     left:-50px;
     color:white;
@@ -548,6 +574,12 @@ td.stationSchedule {
     font-size: 10pt;
     margin: 3px;
     padding: 3px;
+}
+.showDetails{
+    width: 100px;
+}
+.newDetails, .newStart, .newStop{
+    width: 60px;
 }
 
 .scheduleMarker.showDetails {
