@@ -321,7 +321,7 @@ class _Program(object):
         elif self.type == ProgramType.WEEKLY_ADVANCED:
             return self.type_data[0]
         else:
-            return []
+            return self.schedule
 
     @staticmethod
     def _update_schedule(schedule, modulo, start_minute, end_minute):

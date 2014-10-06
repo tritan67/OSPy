@@ -27,6 +27,158 @@ $code:
         }
     }
 
+    function create_delay_selector(dayInterval, delayInterval) {
+        jQuery("#intervalDelaySelector").html("");
+        for (var i=0; i<dayInterval; i++) {
+            jQuery("#intervalDelaySelector").append(
+                    jQuery("<span class='intervalSelect'>" + i + "</span>")
+                        .on("click", intervalSelectClick)
+                        .on("mouseover", intervalSelectMouseover)
+                        .on("mouseout", intervalSelectMouseout)
+            );
+            if (i == 16) {
+                jQuery("#intervalDelaySelector").append("<br/>");
+            }
+        }
+        jQuery("#intervalDelaySelector .intervalSelect").each(function() {
+            if (jQuery(this).text() == delayInterval) {
+                jQuery(this).trigger("click");
+            }
+        });
+    }
+
+    function create_custom_schedule(dayInterval) {
+        var sched = jQuery("#custom_schedule");
+        sched.find("tr:not(:first-child)").remove();
+
+        for (var i=0; i < dayInterval; i++) {
+            var html = '<tr class="daySchedule ' + ((i%2)==0?'odd':'even') + '" id="custom_schedule' + i + '">';
+            html += '<td class="station_name" style="border-right: solid">Day ' + (i+1) + ':</td>';
+            for (var tick=0; tick < 24; tick++)
+                html += '<td class="scheduleTick" data="' + tick + '"></td>';
+            html += '</tr>';
+
+            sched.append(jQuery(html));
+        }
+
+        sched.find("tr.daySchedule td.scheduleTick")
+            .mousemove(addScheduleMouseover)
+            .mouseout(addScheduleMouseout)
+            .click(addScheduleClick);
+        update_schedule("custom_schedule");
+    }
+
+    function update_schedules(name) {
+        update_schedule("advanced_schedule");
+        update_schedule("weekly_schedule");
+        update_schedule("custom_schedule");
+    }
+
+    function update_schedule(name) {
+        jQuery(".addStartMarker").remove();
+        jQuery(".newStart").remove();
+        jQuery(".addStopMarker").remove();
+        var sched = jQuery("#" + name);
+        var data = JSON.parse(jQuery("#" + name + "_data").val());
+
+        sched.find("tr:not(:first-child)").find(".scheduleTick").html("");
+
+        for (var i=0; i < data.length; i++) {
+            var start = data[i][0];
+            var end = data[i][1];
+
+            var start_day = Math.floor(start / 1440);
+            var start_hour = Math.floor((start % 1440) / 60);
+            var start_min = start % 60;
+
+            var end_day = Math.floor(end / 1440);
+            var end_hour = Math.floor((end % 1440) / 60);
+            var end_min = end % 60;
+
+            for (var day=start_day; day <= end_day; day++) {
+                for (var hour=start_hour; hour <= (day == end_day ? end_hour : 24); hour++) {
+                    if (hour == 24) { hour = 0; day++; }
+
+                    var slice_start = (day == start_day && hour == start_hour ? start_min : 0);
+                    var slice_end = (day == end_day && hour == end_hour ? end_min : 60);
+                    var el = sched.find("#" + name + day).find(".scheduleTick[data='" + hour + "']");
+
+                    el.append('<div class="scheduleMarker program3" style="left:'+(slice_start / .6)+'%;width:'+((slice_end-slice_start) / .6)+'%" data=""></div>');
+                }
+            }
+        }
+    }
+
+
+    function pad(num, size) {
+        var s = num+"";
+        while (s.length < size) s = "0" + s;
+        return s;
+    }
+    function x_to_min(x, width) {
+        var max_steps = Math.max(1, width / 4);
+        var step_options = [12, 6, 4, 2, 1];
+        var steps = step_options.filter(function (x) {return x < max_steps})[0];
+        return Math.min(steps-1, Math.floor(x / width * steps)) * Math.round(60/steps);
+    }
+
+    function addScheduleMouseover(e) {
+        var hour = parseInt(jQuery(this).attr("data"));
+        var x = e.pageX - this.offsetLeft;
+        var width = jQuery(this).width();
+        var minute = x_to_min(x, width);
+        var left = x-30;
+
+        jQuery(".newDetails").remove();
+        if (jQuery(".newStart").length) {
+            if (jQuery(".newStart").parent().parent().attr("id") == jQuery(this).parent().attr("id")) {
+                var marker = jQuery(".addStartMarker:first");
+                var marker_width = e.pageX - marker.offset().left;
+                marker.width(Math.max(0, marker_width));
+                jQuery(".addStopMarker").remove();
+                if (x >= 0 && x <= width && marker_width > 0) {
+                    jQuery(this).append('<span class="newDetails programStop" style="left: ' + left.toString() + 'px;">' + pad(hour, 2) + ':' + pad(minute, 2) + '</span>');
+                    jQuery(this).append('<div class="addStopMarker" style="left: '+ x.toString() +'px;"></div>');
+                    jQuery(this).children(".newDetails").mousemove(function(){ return false; });
+                    jQuery(this).children(".newDetails").mouseout(function(){ return false; });
+                }
+            }
+        } else {
+            jQuery(".addStartMarker").remove();
+            if (x >= 0 && x <= width) {
+                jQuery(this).append('<span class="newDetails programStart" style="left: ' + left.toString() + 'px;">' + pad(hour, 2) + ':' + pad(minute, 2) + '</span>');
+                jQuery(this).append('<div class="addStartMarker" style="left: '+ x.toString() +'px;"></div>');
+                jQuery(this).children(".newDetails").mousemove(function(){ return false; });
+                jQuery(this).children(".newDetails").mouseout(function(){ return false; });
+            }
+        }
+
+    }
+    function addScheduleMouseout(e) {
+        jQuery(this).children(".newDetails").remove();
+    }
+    function addScheduleClick(e) {
+        var hour = parseInt(jQuery(this).attr("data"));
+        var x = e.pageX - this.offsetLeft;
+        var width = jQuery(this).width();
+        var minute = x_to_min(x, width);
+        var left = x-30;
+
+        jQuery(".newDetails").remove();
+        if (jQuery(".newStart").length) {
+            //TODO: Save it
+
+            jQuery(".addStartMarker").remove();
+            jQuery(".newStart").remove();
+            jQuery(".addStopMarker").remove();
+        } else {
+            jQuery(this).append('<span class="newStart programStart" style="left: ' + left.toString() + 'px;">' + pad(hour, 2) + ':' + pad(minute, 2) + '</span>');
+            jQuery(this).append('<div class="addStartMarker" style="left: '+ x.toString() +'px;"></div>');
+            jQuery(this).children(".newStart").mousemove(function(){ return false; });
+            jQuery(this).children(".newStart").mouseout(function(){ return false; });
+        }
+    }
+
     function check_type() {
         var schedule_type = jQuery("#schedule_type").val();
         if (schedule_type == DAYS_SIMPLE || schedule_type == DAYS_ADVANCED) {
@@ -91,7 +243,7 @@ $code:
             var days = jQuery(".station.on").map(function() {
                 return jQuery(this).attr("id").replace("day", "");
             }).get();
-            jQuery("#days").val('[' + days.join(', ') + ']');
+            jQuery("#days").val(JSON.stringify(days));
             return false;
         });
         jQuery("#schedule_type").change(check_type);
@@ -107,23 +259,8 @@ $code:
             } else if (delayInterval >= 1 && delayInterval >= dayInterval) {
                 delayInterval = dayInterval - 1;
             }
-            jQuery("#intervalDelaySelector").html("");
-            for (var i=0; i<dayInterval; i++) {
-                jQuery("#intervalDelaySelector").append(
-                        jQuery("<span class='intervalSelect'>" + i + "</span>")
-                            .on("click", intervalSelectClick)
-                            .on("mouseover", intervalSelectMouseover)
-                            .on("mouseout", intervalSelectMouseout)
-                );
-                if (i == 16) {
-                    jQuery("#intervalDelaySelector").append("<br/>");
-                }
-            }
-            jQuery("#intervalDelaySelector .intervalSelect").each(function() {
-                if (jQuery(this).text() == delayInterval) {
-                    jQuery(this).trigger("click");
-                }
-            });
+            create_delay_selector(dayInterval, delayInterval);
+            create_custom_schedule(dayInterval);
             jQuery("#interval").val(jQuery("#intervalSelector .intervalSelect.distance0").text());
             jQuery("#interval_delay").val(jQuery("#intervalDelaySelector .intervalSelect.distance0").text());
         });
@@ -149,75 +286,10 @@ $code:
                 .mousemove(addScheduleMouseover)
                 .mouseout(addScheduleMouseout)
                 .click(addScheduleClick);
+
+        create_custom_schedule(${int(program.modulo/1440)});
+        update_schedules();
     });
-    function pad(num, size) {
-        var s = num+"";
-        while (s.length < size) s = "0" + s;
-        return s;
-    }
-    function x_to_min(x, width) {
-        var max_steps = Math.max(1, width / 3);
-        var step_options = [12, 6, 4, 2, 1];
-        var steps = step_options.filter(function (x) {return x < max_steps})[0];
-        return Math.min(steps-1, Math.floor(x / width * steps)) * Math.round(60/steps);
-    }
-
-    function addScheduleMouseover(e) {
-        var hour = parseInt(jQuery(this).attr("data"));
-        var x = e.pageX - this.offsetLeft;
-        var width = jQuery(this).width();
-        var minute = x_to_min(x, width);
-        var left = x-30;
-
-        jQuery(".newDetails").remove();
-        if (jQuery(".newStart").length) {
-            if (jQuery(".newStart").parent().parent().attr("id") == jQuery(this).parent().attr("id")) {
-                var marker = jQuery(".addStartMarker:first");
-                var marker_width = e.pageX - marker.offset().left;
-                marker.width(Math.max(0, marker_width));
-                jQuery(".addStopMarker").remove();
-                if (x >= 0 && x <= width && marker_width > 0) {
-                    jQuery(this).append('<span class="newDetails programStop" style="left: ' + left.toString() + 'px;">' + pad(hour, 2) + ':' + pad(minute, 2) + '</span>');
-                    jQuery(this).append('<div class="addStopMarker" style="left: '+ x.toString() +'px;"></div>');
-                    jQuery(this).children(".newDetails").mousemove(function(){ return false; });
-                    jQuery(this).children(".newDetails").mouseout(function(){ return false; });
-                }
-            }
-        } else {
-            jQuery(".addStartMarker").remove();
-            if (x >= 0 && x <= width) {
-                jQuery(this).append('<span class="newDetails programStart" style="left: ' + left.toString() + 'px;">' + pad(hour, 2) + ':' + pad(minute, 2) + '</span>');
-                jQuery(this).append('<div class="addStartMarker" style="left: '+ x.toString() +'px;"></div>');
-                jQuery(this).children(".newDetails").mousemove(function(){ return false; });
-                jQuery(this).children(".newDetails").mouseout(function(){ return false; });
-            }
-        }
-
-    }
-    function addScheduleMouseout(e) {
-        jQuery(this).children(".newDetails").remove();
-    }
-    function addScheduleClick(e) {
-        var hour = parseInt(jQuery(this).attr("data"));
-        var x = e.pageX - this.offsetLeft;
-        var width = jQuery(this).width();
-        var minute = x_to_min(x, width);
-        var left = x-30;
-
-        jQuery(".newDetails").remove();
-        if (jQuery(".newStart").length) {
-            //TODO: Save it
-
-            jQuery(".addStartMarker").remove();
-            jQuery(".newStart").remove();
-            jQuery(".addStopMarker").remove();
-        } else {
-            jQuery(this).append('<span class="newStart programStart" style="left: ' + left.toString() + 'px;">' + pad(hour, 2) + ':' + pad(minute, 2) + '</span>');
-            jQuery(this).append('<div class="addStartMarker" style="left: '+ x.toString() +'px;"></div>');
-            jQuery(this).children(".newStart").mousemove(function(){ return false; });
-            jQuery(this).children(".newStart").mouseout(function(){ return false; });
-        }
-    }
 </script>
 
 <div id="programs">
@@ -322,6 +394,7 @@ $code:
         </div>
 
         <div class="simpleblock" id="advanced_controls" style="display: none;">
+            <input type="hidden" id="advanced_schedule_data" name="advanced_schedule_data" value="${[interval for interval in program.typed_schedule() if interval[1] <= 1440]}">
             <table id="advanced_schedule" class="advancedSchedule">
                 <tr>
                     <td>
@@ -332,7 +405,7 @@ $code:
                         $else:
                             <td class="scheduleTick">${t.strftime("%I %p").lstrip('0')}</td>
                 </tr>
-                <tr class="daySchedule even" id='advanced_schedule0'>
+                <tr class="daySchedule odd" id='advanced_schedule0'>
                     <td class='station_name' style="border-right: solid">Schedule:</td>
                     $for tick in xrange(0,24):
                         <td class="scheduleTick" data="$tick"></td>
@@ -341,6 +414,7 @@ $code:
         </div>
 
         <div class="simpleblock" id="weekly_controls" style="display: none;">
+            <input type="hidden" id="weekly_schedule_data" name="weekly_schedule_data" value="${[interval for interval in program.typed_schedule() if interval[1] <= 7*1440]}">
             <table id="weekly_schedule" class="advancedSchedule">
                 <tr>
                     <td>
@@ -361,6 +435,7 @@ $code:
         </div>
 
         <div class="simpleblock" id="custom_controls" style="display: none;">
+            <input type="hidden" id="custom_schedule_data" name="custom_schedule_data" value="${program.schedule}">
             <table id="custom_schedule" class="advancedSchedule">
                 <tr>
                     <td>
@@ -371,12 +446,6 @@ $code:
                         $else:
                             <td class="scheduleTick">${t.strftime("%I %p").lstrip('0')}</td>
                 </tr>
-                $for day in xrange(int(program.modulo/1440)):
-                    <tr class="daySchedule ${loop.parity}" id='custom_schedule${day}'>
-                        <td class='station_name' style="border-right: solid">${"Day %d:" % (day+1)}</td>
-                        $for tick in xrange(0,24):
-                            <td class="scheduleTick" data="$tick"></td>
-                    </tr>
             </table>
         </div>
 

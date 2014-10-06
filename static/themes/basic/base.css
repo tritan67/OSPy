@@ -506,7 +506,7 @@ td.stationSchedule {
 .addStartMarker {
     position:absolute;
     top: 0px;
-    background-color: hsl(150,80%,40%);
+    background-color: #397F19;
     height:28px;
     width: 2px;
 }
@@ -553,7 +553,7 @@ td.stationSchedule {
 .program9 {background-color: hsl(125,80%,40%)}
 .programManual {background-color: hsl(25,80%,40%)}
 
-.programStart {background-color: hsl(150,80%,40%)}
+.programStart {background-color: #397F19}
 .programStop {background-color: hsl(0,80%,40%)}
 
 .schedule {
