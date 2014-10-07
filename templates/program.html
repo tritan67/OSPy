@@ -74,6 +74,24 @@ $code:
         update_schedule("custom_schedule");
     }
 
+    function deleteScheduleClick(e) {
+        var info = jQuery(this).attr("data").split(',');
+        var name = info[0];
+        var interval = [info[1], info[2]];
+
+        var data = JSON.parse(jQuery("#" + name + "_data").val());
+        var result = [];
+        for (var i = 0; i < data.length; i++) {
+            if (data[i][0] != interval[0] || data[i][1] != interval[1]) {
+                result.push(data[i]);
+            }
+        }
+        jQuery("#" + name + "_data").val(JSON.stringify(result));
+
+        update_schedule(name);
+        return false;
+    }
+
     function update_schedule(name) {
         jQuery(".addStartMarker").remove();
         jQuery(".newStart").remove();
@@ -85,7 +103,7 @@ $code:
 
         for (var i=0; i < data.length; i++) {
             var start = data[i][0];
-            var end = data[i][1];
+            var end = data[i][1] - 1;
 
             var start_day = Math.floor(start / 1440);
             var start_hour = Math.floor((start % 1440) / 60);
@@ -103,7 +121,10 @@ $code:
                     var slice_end = (day == end_day && hour == end_hour ? end_min : 60);
                     var el = sched.find("#" + name + day).find(".scheduleTick[data='" + hour + "']");
 
-                    el.append('<div class="scheduleMarker program3" style="left:'+(slice_start / .6)+'%;width:'+((slice_end-slice_start) / .6)+'%" data=""></div>');
+                    var cross = (day == end_day && hour == end_hour ? '<div class="deleteProgram"></div>' : '');
+
+                    el.append(jQuery('<div class="scheduleMarker existingProgram" style="left:'+(slice_start / .6)+'%;width:'+((slice_end-slice_start) / .6)+'%" data="'+name+','+data[0]+','+data[1]+'">'+cross+'</div>')
+                            .click(deleteScheduleClick));
                 }
             }
         }

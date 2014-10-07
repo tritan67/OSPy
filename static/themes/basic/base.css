@@ -505,16 +505,16 @@ td.stationSchedule {
 
 .addStartMarker {
     position:absolute;
-    top: 0px;
+    top: 10px;
     background-color: #397F19;
-    height:28px;
+    height:18px;
     width: 2px;
 }
 .addStopMarker {
     position:absolute;
-    top: 0px;
+    top: 10px;
     background-color: hsl(0,80%,40%);
-    height:28px;
+    height:18px;
     width: 2px;
 }
 
@@ -555,6 +555,17 @@ td.stationSchedule {
 
 .programStart {background-color: #397F19}
 .programStop {background-color: hsl(0,80%,40%)}
+.existingProgram {
+    background-color: hsl(75,80%,40%);
+}
+.deleteProgram{
+    display:block;
+    float:right;
+    width:8px;
+    height:8px;
+    background:url("redcross.png") no-repeat center center;
+    cursor: pointer;
+}
 
 .schedule {
     background-image:url("whitestripes.png");
@@ -580,10 +591,6 @@ td.stationSchedule {
 }
 .newDetails, .newStart, .newStop{
     width: 60px;
-}
-
-.scheduleMarker.showDetails {
-    border: 1px solid black;
 }
 
 #displayScheduleDate {
