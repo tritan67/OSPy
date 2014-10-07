@@ -95,22 +95,22 @@ $var page: options
                 elif isinstance(value, int):
                     output += "<input name='" + name + "' type='number'" + minv + maxv + " size='3' maxlength='3' value='" + str(value) + "'>\n"
                 else:
-                    output += "<input name='" + name + "' type='text' size='31' maxlength='31' value='" + str(value) + "'>\n"
+                    output += "<input name='" + name + "' type='text' size='31' value='" + str(value) + "'>\n"
 
 
                 output += "<span class='tooltip'>" + tooltip + "</span>\n"
                 output += "</div>\n\n"
                 if name == 'no_password':
                     output += "<div class='option' title='Re-enter the current password.'><span class='label'>Current password:</span>\n"
-                    output += "<input name='old_password' type='password' size='31' maxlength='31'><span class='inputError' id='erroropw'></span>\n"
+                    output += "<input name='old_password' type='password' size='31'><span class='inputError' id='erroropw'></span>\n"
                     output += "<span class='tooltip'>Re-enter the current password.</span>\n"
                     output += "</div>\n"
                     output += "<div class='option' title='Enter a new password.'><span class='label'>New password:</span>\n"
-                    output += "<input name='new_password' type='password' size='31' maxlength='31'><span class='inputError' id='errornpw'></span>\n"
+                    output += "<input name='new_password' type='password' size='31'><span class='inputError' id='errornpw'></span>\n"
                     output += "<span class='tooltip'>Enter a new password.</span>\n"
                     output += "</div>\n"
                     output += "<div class='option' title='Confirm the new password.'><span class='label'>Confirm password:</span>\n"
-                    output += "<input name='check_password' type='password' size='31' maxlength='31'><span class='inputError' id='errorcpw'></span>\n"
+                    output += "<input name='check_password' type='password' size='31'><span class='inputError' id='errorcpw'></span>\n"
                     output += "<span class='tooltip'>Confirm the new password.</span>\n"
                     output += "</div>\n"
         output += categoryCloser

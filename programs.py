@@ -6,18 +6,29 @@ __author__ = 'Rimco'
 import datetime
 
 # Local imports
-from helpers import minute_time_str
+from helpers import minute_time_str, short_day
 from options import options
 
 
 class ProgramType(object):
-    CUSTOM = 0
-    REPEAT_SIMPLE = 1
-    REPEAT_ADVANCED = 2
     DAYS_SIMPLE = 3
     DAYS_ADVANCED = 4
+    REPEAT_SIMPLE = 1
+    REPEAT_ADVANCED = 2
     WEEKLY_ADVANCED = 5
+    CUSTOM = 0
 
+    FRIENDLY_NAMES = {
+        DAYS_SIMPLE: 'Selected days (Simple)',
+        DAYS_ADVANCED: 'Selected days (Advanced)',
+        REPEAT_SIMPLE: 'Repeating (Simple)',
+        REPEAT_ADVANCED: 'Repeating (Advanced)',
+        WEEKLY_ADVANCED: 'Weekly (Advanced)',
+        CUSTOM: 'Custom',
+    }
+
+ProgramType.NAMES = {getattr(ProgramType, x): x for x in dir(ProgramType) if not x.startswith('_') and
+                                                                             isinstance(getattr(ProgramType, x), int)}
 
 class _Program(object):
     SAVE_EXCLUDE = ['SAVE_EXCLUDE', 'index', '_programs', '_loading']
@@ -26,7 +37,7 @@ class _Program(object):
         self._programs = programs_instance
         self._loading = True
 
-        self.name = "Program %02d" % (index+1)
+        self.name = "Program %02d" % (index+1 if index >= 0 else abs(index))
         self.stations = []
         self.enabled = True
 
@@ -37,13 +48,17 @@ class _Program(object):
 
         self.type = ProgramType.CUSTOM
         self.type_data = [[]]
-
-        options.load(self, index)
+        if index >= 0:
+            options.load(self, index)
         self._loading = False
 
     @property
     def index(self):
-        return self._programs.get().index(self)
+        try:
+            return self._programs.get().index(self)
+        except ValueError:
+            return -1
+
 
     @property
     def schedule(self):
@@ -73,7 +88,7 @@ class _Program(object):
 
     def _day_str(self, index):
         if self.type != ProgramType.CUSTOM and self.type != ProgramType.REPEAT_ADVANCED:
-            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index]
+            return short_day(index)
         else:
             return "Day %d" % (index + 1)
 
@@ -129,17 +144,19 @@ class _Program(object):
                 self.type == ProgramType.WEEKLY_ADVANCED:
             if self.type == ProgramType.CUSTOM:
                 days = self._modulo / 1440
+                intervals = self.schedule
             else:
                 days = self.type_data[1]
+                intervals = self.type_data[0]
 
             if days == 1:
                 result = "Intervals: "
-                for interval in self.type_data[0]:
+                for interval in intervals:
                     result += "<span class='val'>%s-%s</span> " % (minute_time_str(interval[0]),
                                                                    minute_time_str(interval[1]))
             else:
                 day_strs = {}
-                for interval in self.type_data[0]:
+                for interval in intervals:
                     day_start = int(interval[0] / 1440)
                     day_end = int(interval[1] / 1440)
                     if day_start == day_end:
@@ -167,34 +184,6 @@ class _Program(object):
 
     def clear(self):
         self._schedule = []
-
-    def set_repeat_simple(self, start_min, duration_min, pause_min, repeat_times, repeat_days, start_date):
-        new_schedule = []
-        day_start_min = start_min
-        for i in range(repeat_times+1):
-            new_schedule = self._update_schedule(new_schedule, repeat_days*1440, day_start_min, day_start_min + duration_min)
-            day_start_min += pause_min + duration_min
-
-        self._modulo = repeat_days*1440
-        self._manual = False
-        self._start = datetime.datetime.combine(start_date, datetime.time.min)
-        self._schedule = new_schedule
-
-        self.type = ProgramType.REPEAT_SIMPLE
-        self.type_data = [start_min, duration_min, pause_min, repeat_times, repeat_days, start_date]
-
-    def set_repeat_advanced(self, schedule, repeat_days, start_date):
-        new_schedule = []
-        for interval in schedule:
-            new_schedule = self._update_schedule(new_schedule, repeat_days*1440, interval[0], interval[1])
-
-        self._schedule = new_schedule
-        self._modulo = repeat_days*1440
-        self._manual = False
-        self._start = datetime.datetime.combine(start_date, datetime.time.min)
-
-        self.type = ProgramType.REPEAT_ADVANCED
-        self.type_data = [schedule, repeat_days, start_date]
 
     def set_days_simple(self, start_min, duration_min, pause_min, repeat_times, days):
         new_schedule = []
@@ -229,7 +218,35 @@ class _Program(object):
         self._schedule = new_schedule
 
         self.type = ProgramType.DAYS_ADVANCED
-        self.type_data = [schedule, days]
+        self.type_data = [schedule, days[:]]
+
+    def set_repeat_simple(self, start_min, duration_min, pause_min, repeat_times, repeat_days, start_date):
+        new_schedule = []
+        day_start_min = start_min
+        for i in range(repeat_times+1):
+            new_schedule = self._update_schedule(new_schedule, repeat_days*1440, day_start_min, day_start_min + duration_min)
+            day_start_min += pause_min + duration_min
+
+        self._modulo = repeat_days*1440
+        self._manual = False
+        self._start = datetime.datetime.combine(start_date, datetime.time.min)
+        self._schedule = new_schedule
+
+        self.type = ProgramType.REPEAT_SIMPLE
+        self.type_data = [start_min, duration_min, pause_min, repeat_times, repeat_days, start_date]
+
+    def set_repeat_advanced(self, schedule, repeat_days, start_date):
+        new_schedule = []
+        for interval in schedule:
+            new_schedule = self._update_schedule(new_schedule, repeat_days*1440, interval[0], interval[1])
+
+        self._schedule = new_schedule
+        self._modulo = repeat_days*1440
+        self._manual = False
+        self._start = datetime.datetime.combine(start_date, datetime.time.min)
+
+        self.type = ProgramType.REPEAT_ADVANCED
+        self.type_data = [schedule, repeat_days, start_date]
 
     def set_weekly_advanced(self, schedule):
         new_schedule = []
@@ -245,6 +262,66 @@ class _Program(object):
 
         self.type = ProgramType.WEEKLY_ADVANCED
         self.type_data = [schedule]
+
+    # The following functions provide easy access to data of different types, returns default if not available
+
+    def start_min(self):
+        if self.type == ProgramType.DAYS_SIMPLE or self.type == ProgramType.REPEAT_SIMPLE:
+            return self.type_data[0]
+        else:
+            return 6*60
+
+    def duration_min(self):
+        if self.type == ProgramType.DAYS_SIMPLE or self.type == ProgramType.REPEAT_SIMPLE:
+            return self.type_data[1]
+        else:
+            return 30
+
+    def pause_min(self):
+        if self.type == ProgramType.DAYS_SIMPLE or self.type == ProgramType.REPEAT_SIMPLE:
+            return self.type_data[2]
+        else:
+            return 30
+
+    def repeat_times(self):
+        if self.type == ProgramType.DAYS_SIMPLE or self.type == ProgramType.REPEAT_SIMPLE:
+            return self.type_data[3]
+        else:
+            return 0
+
+    def days(self):
+        if self.type == ProgramType.DAYS_SIMPLE:
+            return self.type_data[4]
+        elif self.type == ProgramType.DAYS_ADVANCED:
+            return self.type_data[1]
+        else:
+            return []
+
+    def repeat_days(self):
+        if self.type == ProgramType.REPEAT_SIMPLE:
+            return self.type_data[4]
+        elif self.type == ProgramType.REPEAT_ADVANCED:
+            return self.type_data[1]
+        else:
+            return 7
+
+    def start_date(self):
+        if self.type == ProgramType.REPEAT_SIMPLE:
+            return self.type_data[5]
+        elif self.type == ProgramType.REPEAT_ADVANCED:
+            return self.type_data[2]
+        else:
+            return datetime.datetime.today()
+
+    def typed_schedule(self):
+        if self.type == ProgramType.DAYS_ADVANCED:
+            return self.type_data[0]
+        elif self.type == ProgramType.REPEAT_ADVANCED:
+            return self.type_data[0]
+        elif self.type == ProgramType.WEEKLY_ADVANCED:
+            return self.type_data[0]
+        else:
+            return self.schedule
 
     @staticmethod
     def _update_schedule(schedule, modulo, start_minute, end_minute):
@@ -357,7 +434,7 @@ class _Program(object):
         else:
             super(_Program, self).__setattr__(key, value)
             if key not in self.SAVE_EXCLUDE:
-                if not self._loading:
+                if not self._loading and self.index >= 0:
                     options.save(self, self.index)
 
 
@@ -377,10 +454,15 @@ class _Programs(object):
         for program in self._programs:
             program.stations = [station for station in program.stations if 0 <= station < new]
 
-    def add_program(self):
-        program = _Program(self, len(self._programs))
+    def add_program(self, program=None):
+        if program is None:
+            program = _Program(self, len(self._programs))
         self._programs.append(program)
         options.save(program, program.index)
+
+    def create_program(self):
+        """Returns a new program, but doesn't add it to the list."""
+        return _Program(self, -1-len(self._programs))
 
     def remove_program(self, index):
         if 0 <= index < len(self._programs):
