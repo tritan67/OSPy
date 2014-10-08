@@ -68,14 +68,14 @@ $code:
         update_schedule("custom_schedule");
     }
 
-    function update_schedules(name) {
+    function update_schedules() {
         update_schedule("advanced_schedule");
         update_schedule("weekly_schedule");
         update_schedule("custom_schedule");
     }
 
     function deleteScheduleClick(e) {
-        var info = jQuery(this).attr("data").split(',');
+        var info = jQuery(this).parent().attr("data").split(',');
         var name = info[0];
         var interval = [info[1], info[2]];
 
@@ -121,10 +121,10 @@ $code:
                     var slice_end = (day == end_day && hour == end_hour ? end_min : 60);
                     var el = sched.find("#" + name + day).find(".scheduleTick[data='" + hour + "']");
 
-                    var cross = (day == end_day && hour == end_hour ? '<div class="deleteProgram"></div>' : '');
+                    var cross = (day == end_day && hour == end_hour ? jQuery('<div class="deleteProgram"></div>').click(deleteScheduleClick) : '');
 
-                    el.append(jQuery('<div class="scheduleMarker existingProgram" style="left:'+(slice_start / .6)+'%;width:'+((slice_end-slice_start) / .6)+'%" data="'+name+','+data[0]+','+data[1]+'">'+cross+'</div>')
-                            .click(deleteScheduleClick));
+                    el.append(jQuery('<div class="scheduleMarker existingProgram" style="left:'+(slice_start / .6)+'%;width:'+((slice_end-slice_start) / .6)+'%" data="'+name+','+data[i][0]+','+data[i][1]+'"></div>')
+                            .append(cross));
                 }
             }
         }
@@ -184,14 +184,24 @@ $code:
         var width = jQuery(this).width();
         var minute = x_to_min(x, width);
         var left = x-30;
+        var start_el = jQuery(".newStart");
 
         jQuery(".newDetails").remove();
-        if (jQuery(".newStart").length) {
-            //TODO: Save it
+        if (start_el.length) {
+            var start_parts = start_el.text().split(':');
+            var start_min = parseInt(start_parts[0]) * 60 + parseInt(start_parts[1]);
+            var stop_min = hour * 60 + minute;
+            var name = start_el.closest("table").attr("id");
+            console.log(name);
+
+            var data = JSON.parse(jQuery("#" + name + "_data").val());
+            data.push([start_min, stop_min]);
+            jQuery("#" + name + "_data").val(JSON.stringify(data));
 
             jQuery(".addStartMarker").remove();
-            jQuery(".newStart").remove();
+            start_el.remove();
             jQuery(".addStopMarker").remove();
+            update_schedule(name);
         } else {
             jQuery(this).append('<span class="newStart programStart" style="left: ' + left.toString() + 'px;">' + pad(hour, 2) + ':' + pad(minute, 2) + '</span>');
             jQuery(this).append('<div class="addStartMarker" style="left: '+ x.toString() +'px;"></div>');
