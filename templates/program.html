@@ -152,7 +152,7 @@ $code:
 
         jQuery(".newDetails").remove();
         if (jQuery(".newStart").length) {
-            if (jQuery(".newStart").parent().parent().attr("id") == jQuery(this).parent().attr("id")) {
+            if (jQuery(".newStart").closest("tr").attr("id") == jQuery(this).closest("tr").attr("id")) {
                 var marker = jQuery(".addStartMarker:first");
                 var marker_width = e.pageX - marker.offset().left;
                 marker.width(Math.max(0, marker_width));
@@ -188,20 +188,22 @@ $code:
 
         jQuery(".newDetails").remove();
         if (start_el.length) {
-            var start_parts = start_el.text().split(':');
-            var start_min = parseInt(start_parts[0]) * 60 + parseInt(start_parts[1]);
-            var stop_min = hour * 60 + minute;
-            var name = start_el.closest("table").attr("id");
-            console.log(name);
+            var current_row = jQuery(this).closest("tr");
+            if (jQuery(".newStart").closest("tr").attr("id") == current_row.attr("id")) {
+                var name = start_el.closest("table").attr("id");
+                var day = parseInt(current_row.attr("id").replace(current_row.closest("table").attr("id"), ""));
+                var start_parts = start_el.text().split(':');
+                var start_min = day * 1440 + parseInt(start_parts[0]) * 60 + parseInt(start_parts[1]);
+                var stop_min = day * 1440 + hour * 60 + minute;
 
-            var data = JSON.parse(jQuery("#" + name + "_data").val());
-            data.push([start_min, stop_min]);
-            jQuery("#" + name + "_data").val(JSON.stringify(data));
-
+                var data = JSON.parse(jQuery("#" + name + "_data").val());
+                data.push([start_min, stop_min]);
+                jQuery("#" + name + "_data").val(JSON.stringify(data));
+                update_schedule(name);
+            }
             jQuery(".addStartMarker").remove();
             start_el.remove();
             jQuery(".addStopMarker").remove();
-            update_schedule(name);
         } else {
             jQuery(this).append('<span class="newStart programStart" style="left: ' + left.toString() + 'px;">' + pad(hour, 2) + ':' + pad(minute, 2) + '</span>');
             jQuery(this).append('<div class="addStartMarker" style="left: '+ x.toString() +'px;"></div>');
