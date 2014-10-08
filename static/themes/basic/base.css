@@ -497,7 +497,7 @@ td.stationSchedule {
     height:28px;
     position:relative;
 }
-.scheduleMarker {
+.scheduleMarker, .existingProgram {
     position:absolute;
     top: 0px;
     height:28px;

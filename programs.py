@@ -302,8 +302,10 @@ class _Program(object):
             return self.type_data[4]
         elif self.type == ProgramType.REPEAT_ADVANCED:
             return self.type_data[1]
-        else:
+        elif self.type == ProgramType.WEEKLY_ADVANCED:
             return 7
+        else:
+            return max(1, int(self._modulo / 1440))
 
     def start_date(self):
         if self.type == ProgramType.REPEAT_SIMPLE:

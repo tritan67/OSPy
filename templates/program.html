@@ -123,7 +123,7 @@ $code:
 
                     var cross = (day == end_day && hour == end_hour ? jQuery('<div class="deleteProgram"></div>').click(deleteScheduleClick) : '');
 
-                    el.append(jQuery('<div class="scheduleMarker existingProgram" style="left:'+(slice_start / .6)+'%;width:'+((slice_end-slice_start) / .6)+'%" data="'+name+','+data[i][0]+','+data[i][1]+'"></div>')
+                    el.append(jQuery('<div class="existingProgram" style="left:'+(slice_start / .6)+'%;width:'+((slice_end-slice_start) / .6)+'%" data="'+name+','+data[i][0]+','+data[i][1]+'"></div>')
                             .append(cross));
                 }
             }
