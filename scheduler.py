@@ -24,6 +24,7 @@ def predicted_schedule(start_time, end_time):
 
     adjustment = level_adjustments.total_adjustment()
     max_usage = 1.01 if options.sequential else 1000000  # FIXME
+    delay_delta = datetime.timedelta(seconds=options.station_delay)
 
     rain_block_start = datetime.datetime.now()
     rain_block_end = rain_blocks.block_end()
@@ -108,7 +109,7 @@ def predicted_schedule(start_time, end_time):
         while True:
             # Delete all intervals that have finished
             while current_active:
-                if current_active[0]['end'] > interval['start']:
+                if current_active[0]['end'] + delay_delta > interval['start']:
                     break
                 current_usage -= current_active[0]['usage']
                 del current_active[0]
@@ -134,7 +135,7 @@ def predicted_schedule(start_time, end_time):
                 break  # We added or blocked it
             else:
                 # Shift this interval to next possibility
-                next_option = current_active[0]['end'] + datetime.timedelta(seconds=options.station_delay)
+                next_option = current_active[0]['end'] + delay_delta
                 time_to_next = next_option - interval['start']
                 interval['start'] += time_to_next
                 interval['end'] += time_to_next

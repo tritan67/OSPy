@@ -262,9 +262,9 @@ $code:
                 .addClass(state ? "off": "on")
                 .removeClass(state ? "on" : "off");
             var stations = jQuery(".station.on").map(function() {
-                return jQuery(this).attr("id").replace("station", "");
+                return parseInt(jQuery(this).attr("id").replace("station", ""));
             }).get();
-            jQuery("#stations").val('[' + stations.join(', ') + ']');
+            jQuery("#stations").val(JSON.stringify(stations));
             return false;
         });
         jQuery("button.weekday.pushon").click(function(){
@@ -273,8 +273,8 @@ $code:
             jQuery(this)
                 .addClass(state ? "off": "on")
                 .removeClass(state ? "on" : "off");
-            var days = jQuery(".station.on").map(function() {
-                return jQuery(this).attr("id").replace("day", "");
+            var days = jQuery(".weekday.on").map(function() {
+                return parseInt(jQuery(this).attr("id").replace("day", ""));
             }).get();
             jQuery("#days").val(JSON.stringify(days));
             return false;
@@ -369,7 +369,7 @@ $code:
         </div>
 
         <div class="simpleblock" id="days_controls" style="display: none;">
-            <input type="hidden" id="days" name="days" value="">
+            <input type="hidden" id="days" name="days" value="${program.days()}">
             <div class='option'>
                 <span class="program_label">Days:</span>
                 <div style="display: inline-block;">

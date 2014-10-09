@@ -154,8 +154,57 @@ class program_page(ProtectedPage):
 
     def POST(self, index):
         qdict = web.input()
-        return str(qdict)
+        try:
+            index = int(index)
+            program = programs.get(index)
+        except ValueError:
+            program = programs.create_program()
 
+        qdict['schedule_type'] = int(qdict['schedule_type'])
+
+        program.name = qdict['name']
+        program.stations = json.loads(qdict['stations'])
+        program.enabled = True if 'enabled' in qdict and qdict['enabled'] == 'on' else False
+
+        simple = [int(qdict['simple_hour']) * 60 + int(qdict['simple_minute']),
+                  int(qdict['simple_duration']),
+                  int(qdict['simple_pause']),
+                  int(qdict['simple_rcount']) if 'simple_repeat' in qdict and qdict['simple_repeat'] == 'on' else 0]
+
+        repeat_start_date = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + \
+                            datetime.timedelta(days=int(qdict['interval_delay']))
+
+        if qdict['schedule_type'] == ProgramType.DAYS_SIMPLE:
+            program.set_days_simple(*(simple + [
+                                    json.loads(qdict['days'])]))
+
+        elif qdict['schedule_type'] == ProgramType.DAYS_ADVANCED:
+            program.set_days_advanced(json.loads(qdict['advanced_schedule_data']),
+                                      json.loads(qdict['days']))
+
+        elif qdict['schedule_type'] == ProgramType.REPEAT_SIMPLE:
+            program.set_repeat_simple(*(simple + [
+                                      int(qdict['interval']),
+                                      repeat_start_date]))
+
+        elif qdict['schedule_type'] == ProgramType.REPEAT_ADVANCED:
+            program.set_repeat_advanced(json.loads(qdict['advanced_schedule_data']),
+                                        int(qdict['interval']),
+                                        repeat_start_date)
+
+        elif qdict['schedule_type'] == ProgramType.WEEKLY_ADVANCED:
+            program.set_weekly_advanced(json.loads(qdict['weekly_schedule_data']))
+
+        elif qdict['schedule_type'] == ProgramType.CUSTOM:
+            program.modulo = int(qdict['interval'])*1440
+            program.manual = False
+            program.start = repeat_start_date
+            program.schedule = json.loads(qdict['custom_schedule_data'])
+
+        if program.index < 0:
+            programs.add_program(program)
+
+        raise web.seeother('/programs')
 
 class view_runonce_page(ProtectedPage):
     """Open a page to view and edit a run once program."""

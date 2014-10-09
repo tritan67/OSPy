@@ -280,6 +280,12 @@ class _Options(object):
         else:
             del self._values[item]
 
+            # Only write after 1 second without any more changes
+            if self._write_timer is not None:
+                self._write_timer.cancel()
+            self._write_timer = Timer(1.0, self._write)
+            self._write_timer.start()
+
     # Makes it possible to use this class like options[<item>]
     __getitem__ = __getattr__
 
