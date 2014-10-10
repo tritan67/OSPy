@@ -17,6 +17,7 @@ from options import plugins
 from options import rain_blocks
 from programs import programs
 from programs import ProgramType
+from runonce import run_once
 from stations import stations
 import scheduler
 import version
@@ -43,6 +44,7 @@ class WebPage(object):
             'rain_blocks': rain_blocks,
             'stations': stations,
             'programs': programs,
+            'run_once': run_once,
             'ProgramType': ProgramType,
             'version': version,
             'long_day': long_day,
@@ -206,38 +208,26 @@ class program_page(ProtectedPage):
 
         raise web.seeother('/programs')
 
-class view_runonce_page(ProtectedPage):
+class runonce_page(ProtectedPage):
     """Open a page to view and edit a run once program."""
 
     def GET(self):
         return self.template_render.runonce()
 
-
-class change_runonce_page(ProtectedPage):
-    """Start a Run Once program. This will override any running program."""
-
-    def GET(self):
+    def POST(self):
         qdict = web.input()
-        if not options.scheduler_enabled:   # check operation status
-            return
-        gv.rovals = json.loads(qdict['t'])
-        gv.rovals.pop()
-        stations = [0] * gv.sd['nbrd']
-        gv.ps = []  # program schedule (for display)
-        gv.rs = []  # run schedule
-        for i in range(gv.sd['nst']):
-            gv.ps.append([0, 0])
-            gv.rs.append([0, 0, 0, 0])
-        for i, v in enumerate(gv.rovals):
-            if v:  # if this element has a value
-                gv.rs[i][0] = gv.now
-                gv.rs[i][2] = v
-                gv.rs[i][3] = 98
-                gv.ps[i][0] = 98
-                gv.ps[i][1] = v
-                stations[i / 8] += 2 ** (i % 8)
-        schedule_stations(stations)
-        raise web.seeother('/')
+        station_seconds = {}
+        for station in stations.enabled_stations():
+            mm_str = "mm" + str(station.index)
+            ss_str = "ss" + str(station.index)
+            if mm_str in qdict and ss_str in qdict:
+                seconds = int(qdict[mm_str] or 0) * 60 + int(qdict[ss_str] or 0)
+                station_seconds[station.index] = seconds
+
+        run_once.set(station_seconds)
+        log.finish_run(None)
+        stations.clear()
+        raise web.seeother('/runonce')
 
 
 class log_page(ProtectedPage):
@@ -347,7 +337,7 @@ class get_set_station_page(ProtectedPage):
                     'blocked': False,
                     'start': start,
                     'end': start + datetime.timedelta(days=3650),
-                    'uid': '%s-%d-%d' % (str(start), -1, sid),
+                    'uid': '%s-%s-%d' % (str(start), "Manual", sid),
                     'usage': 1.0  # FIXME
                 }
                 if set_time > 0:  # if an optional duration time is given

@@ -57,7 +57,7 @@ jQuery(document).ready(function(){
         window.location = "/programs";
     });
     jQuery("button#bRunOnce").click(function(){
-        window.location = "/vr";
+        window.location = "/runonce";
     });
     jQuery("button#bLog").click(function(){
         window.location = "/log";

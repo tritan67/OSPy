@@ -353,18 +353,17 @@ $code:
 
             </div>
             <div style="display: inline-block; box-sizing: border-box; vertical-align: top;">
-            $for station in stations.get():
-                $if station.enabled and not station.is_master:
-                    <div style="padding: 0; white-space: nowrap;">
-                        <div class="program_label">${station.name}:</div>
-                        <div style="display: inline-block; padding: 0">
-                            <button id="station${station.index}" class="station toggle narrow ${'on' if station.index in program.stations else 'off'}">
-                                <span class="toggleleft">On</span>
-                                <span class="togglesep">&nbsp;</span>
-                                <span class="toggleright">Off</span>
-                            </button>
-                        </div>
+            $for station in stations.enabled_stations():
+                <div style="padding: 0; white-space: nowrap;">
+                    <div class="program_label">${station.name}:</div>
+                    <div style="display: inline-block; padding: 0">
+                        <button id="station${station.index}" class="station toggle narrow ${'on' if station.index in program.stations else 'off'}">
+                            <span class="toggleleft">On</span>
+                            <span class="togglesep">&nbsp;</span>
+                            <span class="toggleright">Off</span>
+                        </button>
                     </div>
+                </div>
             </div>
         </div>
 

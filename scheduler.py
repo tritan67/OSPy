@@ -15,6 +15,7 @@ from options import level_adjustments
 from options import options
 from options import rain_blocks
 from programs import programs
+from runonce import run_once
 from stations import stations
 
 
@@ -38,9 +39,30 @@ def predicted_schedule(start_time, end_time):
             current_usage += active['usage']
 
     current_active = [interval for interval in current_active if not interval['blocked']]
+    station_schedules = {}
+
+    # Get run-once information:
+    for station in stations.enabled_stations():
+        run_once_intervals = run_once.active_intervals(start_time, end_time, station.index)
+        for interval in run_once_intervals:
+            if station.index not in station_schedules:
+                station_schedules[station.index] = []
+
+            new_schedule = {
+                'active': None,
+                'program': -1,
+                'program_name': "Run-Once", # Save it because programs can be reordered
+                'manual': True,
+                'blocked': False,
+                'start': interval['start'],
+                'original_start': interval['start'],
+                'end': interval['end'],
+                'uid': '%s-%s-%d' % (str(interval['start']), "Run-Once", station.index),
+                'usage': 1.0  # FIXME
+            }
+            station_schedules[station.index].append(new_schedule)
 
     # Aggregate per station:
-    station_schedules = {}
     for program in programs.get():
         if not program.enabled:
             continue
@@ -55,6 +77,9 @@ def predicted_schedule(start_time, end_time):
                 station_schedules[station] = []
 
             for interval in program_intervals:
+                if current_active and current_active[-1]['original_start'] > interval['start']:
+                    continue
+
                 new_schedule = {
                     'active': None,
                     'program': program.index,
@@ -62,6 +87,7 @@ def predicted_schedule(start_time, end_time):
                     'manual': program.manual,
                     'blocked': False,
                     'start': interval['start'],
+                    'original_start': interval['start'],
                     'end': interval['end'],
                     'uid': '%s-%d-%d' % (str(interval['start']), program.index, station),
                     'usage': 1.0  # FIXME
@@ -72,10 +98,13 @@ def predicted_schedule(start_time, end_time):
     # Adjust for weather and remove overlap:
     for station, schedule in station_schedules.iteritems():
         for interval in schedule:
-            time_delta = interval['end'] - interval['start']
-            time_delta = datetime.timedelta(seconds=(time_delta.days * 24 * 3600 + time_delta.seconds) * adjustment)
-            interval['end'] = interval['start'] + time_delta
-            interval['adjustment'] = adjustment
+            if not interval['manual']:
+                time_delta = interval['end'] - interval['start']
+                time_delta = datetime.timedelta(seconds=(time_delta.days * 24 * 3600 + time_delta.seconds) * adjustment)
+                interval['end'] = interval['start'] + time_delta
+                interval['adjustment'] = adjustment
+            else:
+                interval['adjustment'] = 1.0
 
         last_end = datetime.datetime(2000, 1, 1)
         for interval in schedule:
@@ -94,6 +123,9 @@ def predicted_schedule(start_time, end_time):
 
     # Make list of entries sorted on time (stable sorted on station #)
     all_intervals.sort(key=lambda inter: inter['start'])
+
+    # And make sure manual programs get priority:
+    all_intervals.sort(key=lambda inter: not inter['manual'])
 
     # If we have processed some intervals before, we should skip all that were scheduled before them
     for i in range(len(skip_uids)):
