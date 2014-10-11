@@ -11,12 +11,12 @@ from options import options
 
 
 class ProgramType(object):
-    DAYS_SIMPLE = 3
-    DAYS_ADVANCED = 4
-    REPEAT_SIMPLE = 1
-    REPEAT_ADVANCED = 2
-    WEEKLY_ADVANCED = 5
-    CUSTOM = 0
+    DAYS_SIMPLE = 0
+    DAYS_ADVANCED = 1
+    REPEAT_SIMPLE = 2
+    REPEAT_ADVANCED = 3
+    WEEKLY_ADVANCED = 4
+    CUSTOM = 5
 
     FRIENDLY_NAMES = {
         DAYS_SIMPLE: 'Selected days (Simple)',
@@ -145,6 +145,9 @@ class _Program(object):
             if self.type == ProgramType.CUSTOM:
                 days = self._modulo / 1440
                 intervals = self.schedule
+            elif self.type == ProgramType.WEEKLY_ADVANCED:
+                days = self._modulo / 1440
+                intervals = self.type_data[0]
             else:
                 days = self.type_data[1]
                 intervals = self.type_data[0]
@@ -302,8 +305,10 @@ class _Program(object):
             return self.type_data[4]
         elif self.type == ProgramType.REPEAT_ADVANCED:
             return self.type_data[1]
-        else:
+        elif self.type == ProgramType.WEEKLY_ADVANCED:
             return 7
+        else:
+            return max(1, int(self._modulo / 1440))
 
     def start_date(self):
         if self.type == ProgramType.REPEAT_SIMPLE:
@@ -311,7 +316,7 @@ class _Program(object):
         elif self.type == ProgramType.REPEAT_ADVANCED:
             return self.type_data[2]
         else:
-            return datetime.datetime.today()
+            return self._start
 
     def typed_schedule(self):
         if self.type == ProgramType.DAYS_ADVANCED:

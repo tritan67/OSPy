@@ -17,6 +17,7 @@ from options import plugins
 from options import rain_blocks
 from programs import programs
 from programs import ProgramType
+from runonce import run_once
 from stations import stations
 import scheduler
 import version
@@ -43,6 +44,7 @@ class WebPage(object):
             'rain_blocks': rain_blocks,
             'stations': stations,
             'programs': programs,
+            'run_once': run_once,
             'ProgramType': ProgramType,
             'version': version,
             'long_day': long_day,
@@ -154,41 +156,78 @@ class program_page(ProtectedPage):
 
     def POST(self, index):
         qdict = web.input()
-        return str(qdict)
+        try:
+            index = int(index)
+            program = programs.get(index)
+        except ValueError:
+            program = programs.create_program()
 
+        qdict['schedule_type'] = int(qdict['schedule_type'])
 
-class view_runonce_page(ProtectedPage):
+        program.name = qdict['name']
+        program.stations = json.loads(qdict['stations'])
+        program.enabled = True if 'enabled' in qdict and qdict['enabled'] == 'on' else False
+
+        simple = [int(qdict['simple_hour']) * 60 + int(qdict['simple_minute']),
+                  int(qdict['simple_duration']),
+                  int(qdict['simple_pause']),
+                  int(qdict['simple_rcount']) if 'simple_repeat' in qdict and qdict['simple_repeat'] == 'on' else 0]
+
+        repeat_start_date = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + \
+                            datetime.timedelta(days=int(qdict['interval_delay']))
+
+        if qdict['schedule_type'] == ProgramType.DAYS_SIMPLE:
+            program.set_days_simple(*(simple + [
+                                    json.loads(qdict['days'])]))
+
+        elif qdict['schedule_type'] == ProgramType.DAYS_ADVANCED:
+            program.set_days_advanced(json.loads(qdict['advanced_schedule_data']),
+                                      json.loads(qdict['days']))
+
+        elif qdict['schedule_type'] == ProgramType.REPEAT_SIMPLE:
+            program.set_repeat_simple(*(simple + [
+                                      int(qdict['interval']),
+                                      repeat_start_date]))
+
+        elif qdict['schedule_type'] == ProgramType.REPEAT_ADVANCED:
+            program.set_repeat_advanced(json.loads(qdict['advanced_schedule_data']),
+                                        int(qdict['interval']),
+                                        repeat_start_date)
+
+        elif qdict['schedule_type'] == ProgramType.WEEKLY_ADVANCED:
+            program.set_weekly_advanced(json.loads(qdict['weekly_schedule_data']))
+
+        elif qdict['schedule_type'] == ProgramType.CUSTOM:
+            program.modulo = int(qdict['interval'])*1440
+            program.manual = False
+            program.start = repeat_start_date
+            program.schedule = json.loads(qdict['custom_schedule_data'])
+
+        if program.index < 0:
+            programs.add_program(program)
+
+        raise web.seeother('/programs')
+
+class runonce_page(ProtectedPage):
     """Open a page to view and edit a run once program."""
 
     def GET(self):
         return self.template_render.runonce()
 
-
-class change_runonce_page(ProtectedPage):
-    """Start a Run Once program. This will override any running program."""
-
-    def GET(self):
+    def POST(self):
         qdict = web.input()
-        if not options.scheduler_enabled:   # check operation status
-            return
-        gv.rovals = json.loads(qdict['t'])
-        gv.rovals.pop()
-        stations = [0] * gv.sd['nbrd']
-        gv.ps = []  # program schedule (for display)
-        gv.rs = []  # run schedule
-        for i in range(gv.sd['nst']):
-            gv.ps.append([0, 0])
-            gv.rs.append([0, 0, 0, 0])
-        for i, v in enumerate(gv.rovals):
-            if v:  # if this element has a value
-                gv.rs[i][0] = gv.now
-                gv.rs[i][2] = v
-                gv.rs[i][3] = 98
-                gv.ps[i][0] = 98
-                gv.ps[i][1] = v
-                stations[i / 8] += 2 ** (i % 8)
-        schedule_stations(stations)
-        raise web.seeother('/')
+        station_seconds = {}
+        for station in stations.enabled_stations():
+            mm_str = "mm" + str(station.index)
+            ss_str = "ss" + str(station.index)
+            if mm_str in qdict and ss_str in qdict:
+                seconds = int(qdict[mm_str] or 0) * 60 + int(qdict[ss_str] or 0)
+                station_seconds[station.index] = seconds
+
+        run_once.set(station_seconds)
+        log.finish_run(None)
+        stations.clear()
+        raise web.seeother('/runonce')
 
 
 class log_page(ProtectedPage):
@@ -298,7 +337,7 @@ class get_set_station_page(ProtectedPage):
                     'blocked': False,
                     'start': start,
                     'end': start + datetime.timedelta(days=3650),
-                    'uid': '%s-%d-%d' % (str(start), -1, sid),
+                    'uid': '%s-%s-%d' % (str(start), "Manual", sid),
                     'usage': 1.0  # FIXME
                 }
                 if set_time > 0:  # if an optional duration time is given

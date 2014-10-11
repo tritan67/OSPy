@@ -128,6 +128,9 @@ class _BaseStations(object):
     def count(self):
         return len(self._stations)
 
+    def enabled_stations(self):
+        return [s for s in self._stations if s.enabled and not s.is_master]
+
     def get(self, index=None):
         if index is None:
             result = self._stations[:]
