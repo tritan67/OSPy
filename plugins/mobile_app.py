@@ -4,8 +4,10 @@ import datetime
 import string
 
 from helpers import get_cpu_temp, check_login
+from inputs import inputs
+from options import options, rain_blocks
+from stations import stations
 import web
-import gv  # Gain access to ospy's settings
 from urls import urls  # Gain access to ospy's URL list
 from webpages import ProtectedPage, WebPage
 
@@ -36,14 +38,14 @@ class options(WebPage):  # /jo
                 "fwv": gv.ver_str+'-OSPi',
                 "tz": gv.sd['tz'],
                 "ext": gv.sd['nbrd'] - 1,
-                "seq": gv.sd['seq'],
-                "sdt": gv.sd['sdt'],
+                "seq":options.sequential,
+                "sdt": options.station_delay,
                 "mas": gv.sd['mas'],
-                "mton": gv.sd['mton'],
-                "mtof": gv.sd['mtoff'],
-                "urs": gv.sd['urs'],
-                "rso": gv.sd['rst'],
-                "wl": gv.sd['wl'],
+                "mton": options.master_on_delay,
+                "mtof": options.master_off_delay,
+                "urs": options.rain_sensor_enabled,
+                "rso": gv.options.rain_sensor_no,
+                "wl": options.level_adjustment,
                 "ipas": gv.sd['ipas'],
                 "reset": gv.sd['rbt'],
                 "lg": gv.sd['lg']
@@ -64,12 +66,12 @@ class cur_settings(ProtectedPage):  # /jc
         jsettings = {
             "devt": gv.now,
             "nbrd": gv.sd['nbrd'],
-            "en": gv.sd['en'],
-            "rd": gv.sd['rd'],
-            "rs": gv.sd['rs'],
-            "mm": gv.sd['mm'],
-            "rdst": gv.sd['rdst'],
-            "loc": gv.sd['loc'],
+            "en": options.scheduler_enabled,
+            "rd": rain_blocks,
+            "rs": inputs.rain_input,
+            "mm": options.manual_mode,
+            "rdst": rain_blocks.block_end(),
+            "loc": options.location,
             "sbits": gv.sbits,
             "ps": gv.ps,
             "lrun": gv.lrun,
@@ -130,7 +132,7 @@ class station_info(ProtectedPage):  # /jn
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jpinfo = {
-            "snames": gv.snames,
+            "snames": [s.name for s in stations]
             "ignore_rain": gv.sd['ir'],
             "masop": gv.sd['mo'],
             "stn_dis": disable,

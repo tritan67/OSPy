@@ -58,7 +58,7 @@ class LCDSender(Thread):
 
     def run(self):
         time.sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-        print "LCD plugin is active"
+        logging.debug("LCD plugin is active")
         text_shift = 0
 
         while True:
@@ -211,7 +211,7 @@ class settings(ProtectedPage):
     """Load an html page for entering lcd adjustments."""
 
     def GET(self):
-        return template_render.lcd_adj(get_lcd_options())
+        return self.template_render.lcd_adj(get_lcd_options())
 
 
 class settings_json(ProtectedPage):

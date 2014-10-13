@@ -75,7 +75,7 @@ class PressureSender(Thread):
 
     def run(self):
         time.sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-        print "Pressure plugin is active"
+        logging.debug("Pressure plugin is active")
         send = False
         SUBJ = "Reporting from OSPy"  # Subject in email
         self.add_status('Waiting...')
@@ -84,7 +84,7 @@ class PressureSender(Thread):
             try:
                 datapressure = get_pressure_options()                             # load data from file
                 if datapressure['press'] != 'off':                                # if pressure plugin is enabled
-                    if (gv.sd['mas'] != 0) and not (gv.sd['mm']):                   # if is use master station and not manual control
+                    if (gv.sd['mas'] != 0) and not (options.manual_mode):                   # if is use master station and not manual control
                         if gv.srvals[gv.sd['mas']] != 0:                              # if master station is ON
                             if GPIO.input(pin_pressure) == 0:                           # if sensor is open
                                 self._sleep(int(datapressure['time']))                   # wait to activated pressure sensor
@@ -163,7 +163,7 @@ class settings(ProtectedPage):
     """Load an html page for entering pressure adjustments."""
 
     def GET(self):
-        return template_render.pressure_adj(get_pressure_options())
+        return self.template_render.pressure_adj(get_pressure_options())
 
 
 class settings_json(ProtectedPage):

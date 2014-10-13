@@ -1,58 +1,16 @@
 $def with ()
 
-$var title: OpenSprinkler Pi Stations
+$var title: Stations
 $var page: stations
-$code:
-	snames = gv.snames
-	
+
 <script>
     // Initialize behaviors
     jQuery(document).ready(function(){
 
-        jQuery("button#cSubmit").click(function(){
-            if (mas>0) {
-                var s, bid, sid, vm;
-                for (bid=0; bid<nbrd; bid++) {
-                    vm = 0;
-                    for (s=0; s<8; s++) {
-                        sid = bid*8 + (7-s);
-                        vm = vm<<1;
-                        if (sid == mas-1) {
-                            vm = vm + 1;
-                            continue;
-                        }
-                        if	(jQuery("#mc"+sid).is(":checked")) {
-                            vm = vm + 1;
-                        }
-                    }
-                    jQuery("#m"+bid).val(vm);
-                }
-            }
-            var vi, vs;
-            for (bid=0; bid<nbrd; bid++) {
-                vi = 0;
-                vs = 0;
-                for (s=0; s<8; s++) {
-                    sid = bid*8 + (7-s);
-                    vi = vi<<1;
-                    vs = vs<<1;
-                    if (sid == mas-1) {
-                        vi = vi + 1;
-                        vs = vs + 1;
-                        continue;
-                    }
-                    if (jQuery("#rc"+sid).is(":checked")) {
-                        vi = vi + 1;
-                    }
-                    if (jQuery("#show"+sid).is(":checked")) {
-                        vs = vs + 1;
-                    }
-                }
-                jQuery("#i"+bid).val(vi);
-                jQuery("#sh"+bid).val(vs);
-            }
-            jQuery("#sf").submit();
+        jQuery("#cSubmit").click(function() {
+            jQuery("#stationsForm").submit();
         });
+
         jQuery("button#cResetNames").click(function(){
             jQuery("input[type='text']").each(function () {
                 jQuery(this).val("S" + (parseInt(jQuery(this).attr("name").substring(1)) + 1));
@@ -71,46 +29,40 @@ $code:
 </script>
 <div id="stations">
     <div class="title">Configure Stations</div>
-    <form id="sf" name="sf" action="cs" method="get">
+    <form id="stationsForm" name="stationsForm" action="/stations" method="post">
         <table class="stationList">
             <tr>
                 <th class="stationNumber">Station</th>
                 <th class="stationName">Name</th>
                 <th class="stationShow">Connected?</th>
                 <th class="stationIgnore">Ignore Rain?</th>
-                $if gv.sd['mas'] > 0:
+                $if stations.master is not None:
                     <th class="stationMaster">Activate Master?</th>
             </tr>
-            $for bid in range(0,gv.sd['nbrd']):
-                $for s in range(0,8):
-                    $ sid = bid*8 + s;
-                    <tr>
-                        <td class="stationNumber">${sid + 1}</td>
-                        <td class="stationName">
-                            <input type="text" size="${gv.sd['snlen']}" maxlength="${gv.sd['snlen']}" value="${snames[sid]}" name="s${sid}" id="n${sid}">
+            $for station in stations.get():
+                <tr>
+                    <td class="stationNumber">${station.index + 1}</td>
+                    <td class="stationName">
+                        <input type="text" size="32" value="${station.name}" name="${station.index}_name">
+                    </td>
+                    $if station.is_master:
+                        <td class="stationMaster" colspan="3">(Master station)</td>
+                    $else:
+                        <td class="stationShow">
+                            <input type="checkbox" ${"checked" if station.enabled else ""} name="${station.index}_enabled">
                         </td>
-                        $if sid == gv.sd['mas'] - 1:
-                            <td class="stationMaster" colspan="3">(Master valve)</td>
-                        $else:
-                            <td class="stationShow">
-                                <input type="checkbox" ${"checked" if gv.sd['show'][bid]&(1<<s) else ""} id="show${sid}">
-                            </td>
-                            <td class="stationIgnore">
-                                <input type="checkbox" ${"checked" if gv.sd['ir'][bid]&(1<<s) else ""} id="rc${sid}">
-                            </td>
-                        $if gv.sd['mas'] > 0 and gv.sd['mas'] != sid+1:
+                        <td class="stationIgnore">
+                            <input type="checkbox" ${"checked" if station.ignore_rain else ""} name="${station.index}_ignore_rain">
+                        </td>
+                        $if stations.master is not None:
                             <td class="stationMaster">
-                                <input type="checkbox" ${"checked" if gv.sd['mo'][bid]&(1<<s) else ""} id="mc${sid}">
+                                <input type="checkbox" ${"checked" if station.activate_master else ""} name="${station.index}_activate_master">
                             </td>
-                    </tr>
+                </tr>
+
         </table>
 
         <p></p>
-
-        $for bid in range(gv.sd['nbrd']):
-            <input type="hidden" id="i${bid}" name="i${bid}"/>
-            <input type="hidden" id="sh${bid}" name="sh${bid}"/>
-            <input type="hidden" id="m${bid}" name="m${bid}"/>
     </form>
 </div>
 

@@ -1,79 +1,72 @@
 $def with (content)
-$code:
-	snames = gv.snames
-
-$code:
-    def plugin_adjustment():
-        duration_adjustments = [gv.sd[entry] for entry in gv.sd if entry.startswith('wl_')]
-        result = 100.0
-        for entry in duration_adjustments:
-            result *= entry/100.0
-        return '%.0f' % result
 <html>
 <head>
-	<meta name="viewport" content="width=640">
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>${content.title + (" - "+gv.sd['name'] if gv.sd['name'] != "OpenSprinkler Pi" else "")}</title>
-	<link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
-	<link href="${gv.baseurl}/static/themes/${gv.sd['theme']}/base.css" rel="stylesheet" type="text/css"/>
-	<style type="text/css">
-		.bluebg {background-color:lightblue;}
-		.opOn, .wlOn, .rsOff {color:green;}
-		.opOff, .wlOff, .rsOn {color:red;}
-		.rdOff {color:black;}
-		.rdOn {color:red;}
-		.rsNA, station_waiting {color:gray;}
-		.station_disabled {color:gray;}
+    <meta name="viewport" content="width=640">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>${options.name + " - " + content.title}</title>
+    <link href="/static/images/favicon.ico" rel="icon" type="image/x-icon">
+    <link href="/static/themes/${options.theme}/base.css" rel="stylesheet" type="text/css">
+    <style type="text/css">
+        $if not options.manual_mode and content.page == 'home':
+            div.content {
+                min-width: 1100px;
+            }
 
-		#lastRun {color:gray;}
-		#stations {width:100%;}
-		#pluginMenu{display: none; z-index: 99}
-		.program {line-height:22px}
-		.strike {text-decoration:line-through;}
+        .bluebg {background-color:lightblue;}
+        .opOn, .wlOn, .rsOff {color:green;}
+        .opOff, .wlOff, .rsOn {color:red;}
+        .rdOff {color:black;}
+        .rdOn {color:red;}
+        .rsNA, .station_waiting {color:gray;}
+        .station_disabled {color:gray;}
 
-		.progstation_on {background-color:#9AFA9A; color:black; font-size:10pt}
-	    .progstation_off {background-color:white; color:lightgray; font-size:10pt}
-	    button.cDisable.toggle {float:right; width:130px; margin:0px; padding:0px; background-color:transparent}
-	    button.cDisable.toggle span.toggleleft {width: 30px;}
-	    button.cDisable.toggle span.toggleright {width: 30px;}
+        #lastRun {color:gray;}
+        #stations {width:100%;}
+        #pluginMenu{display: none; z-index: 99}
+        .program {line-height:22px}
+        .strike {text-decoration:line-through;}
 
-		button#tooltip {height:24px;}
-		.tooltip {background-color:#FFF2B8; display:none; font-size:10pt; margin-left:4px;}
-		.label {font-weight:bold; float:left; width:160px; text-align:right; padding-right:4px;}
-		.option {margin: 6px 0px; clear:both;}
+        .progstation_on {background-color:#9AFA9A; color:black; font-size:10pt}
+        .progstation_off {background-color:white; color:lightgray; font-size:10pt}
+        button.cDisable.toggle {float:right; width:130px; margin:0px !important; padding:0px; background-color:transparent}
+        button.cDisable.toggle span.toggleleft {width: 30px;}
+        button.cDisable.toggle span.toggleright {width: 30px;}
 
-		td.stationNumber, td.stationShow, td.stationIgnore, td.stationMaster {text-align:center}
-		td.stationName {text-align:left; padding-left:1em;}
-	</style>
-	<script src="${gv.baseurl}/static/scripts/jquery-1.8.2.min.js"></script>
-	<script>
-		// Variables set server-side
-		var devt = ${gv.gmtnow}*1000;
-		var timeFormat = ${gv.sd["tf"]};
+        button#tooltip {height:24px;}
+        .tooltip {background-color:#FFF2B8; display:none; font-size:10pt; margin-left:4px;}
+        .label {font-weight:bold; float:left; width:160px; text-align:right; padding-right:4px;}
+        .option {margin: 6px 0px; clear:both;}
 
-		var cputemp = "${gv.cputemp}";
-		var tempunit = "${gv.sd['tu']}";
+        td.stationNumber, td.stationShow, td.stationIgnore, td.activateMaster {text-align:center}
+        td.stationName {text-align:left; padding-left:1em;}
+
+        table td.shrink {
+            width: 1px;
+            white-space:nowrap
+        }
+        table td.expand {
+            width: 99%
+        }
+    </style>
+    <script src="/static/scripts/jquery-1.8.2.min.js"></script>
+    <script>
+        // Server provides local timestamp, adjust it such that JS dates will also use the server's local time
+        var device_time = ${now} * 1000 + (new Date()).getTimezoneOffset() * 60 * 1000;
+        var to_device_time = (new Date()).getTimezoneOffset() * 60 * 1000 + (${now} * 1000 - (new Date).getTime());
+
+        var timeFormat = ${str(options.time_format).lower()};
+
+        var cputemp = "${cpu_temp}";
+        var tempunit = "${options.temp_unit}";
 
         $if content.page != 'login':
-            var snames = $:{[s.encode('utf-8') for s in snames]};
-            var lrun = ${gv.lrun};
-            var rdst = ${gv.sd['rdst']}*1000;
-            var ipas = ${gv.sd['ipas']};
-            var en = ${gv.sd['en']};
-            var mm = ${gv.sd['mm']};
-            var rd = ${gv.sd['rd']};
-            var wl = ${gv.sd['wl']};
-            var wlx = ${plugin_adjustment()};
-            var mas = ${gv.sd['mas']};
-            var nbrd = ${gv.sd['nbrd']};
-            var plugins = $:{gv.plugin_menu}
-            var progs = $:{gv.pd};
-            var nprogs = ${len(gv.pd)};
-            var sdt = ${gv.sd['sdt']};
-            var seq = ${gv.sd['seq']};
+            var scheduler_enabled = ${str(options.scheduler_enabled).lower()};
+            var manual_mode = ${str(options.manual_mode).lower()};
+            var level_adjustment = ${options.level_adjustment};
+            var rain_block = ${max(0, (options.rain_block - datetime.datetime.now()).total_seconds())};
 
             jQuery(document).ready(function(){
-                $if len(gv.plugin_menu) > 0:
+                $if len(plugins) > 0:
                     jQuery.each(plugins, function() {
                         jQuery('#pluginMenu').append('<button class="execute" type="button" onclick="window.location.href=\''+this[1]+'\'">'+this[0]+'</button><br/>');
                     });
@@ -94,31 +87,31 @@ $code:
                     jQuery("#pluginMenu").slideUp();
                 });
             });
-	</script>
-	<script src="${gv.baseurl}/static/scripts/behaviors.js"></script>
-	<script src="${gv.baseurl}/static/scripts/schedule.js"></script>
-	<script src="${gv.baseurl}/static/scripts/intervalSelect.js"></script>
+    </script>
+    <script src="/static/scripts/behaviors.js"></script>
+    <script src="/static/scripts/schedule.js"></script>
+    <script src="/static/scripts/intervalSelect.js"></script>
 </head>
 <body>
-	<div class="content">
-		<form name="tt" action="ttu" method="get">
-			<input type="hidden" name="tunit">
-		</form>
+    <div class="content">
+        <form name="tt" action="ttu" method="get">
+            <input type="hidden" name="tunit">
+        </form>
 
-		<div id="pluginMenu">
-	    </div>
+        <div id="pluginMenu">
+        </div>
 
-		<div class="header">
-			<div class="title">${gv.sd['name'] if gv.sd['name'] != "OpenSprinkler Pi" else ""}</div>
-		</div>
-		
-		<div class="body">
-			<div id="status">
-				<p id="deviceTime"><span class="hour"></span><span class="sep">:</span><span class="minute"></span><span class="second"></span><span class="ampm"></span></p>
-				<p id="deviceDate"></p>
-			</div>
-	
-			<div class="panel">
+        <div class="header">
+            <div class="title">${options.name if options.name != "OpenSprinkler Pi" else ""}</div>
+        </div>
+
+        <div class="body">
+            <div id="status">
+                <p id="deviceTime"><span class="hour"></span><span class="sep">:</span><span class="minute"></span><span class="second"></span><span class="ampm"></span></p>
+                <p id="deviceDate"></p>
+            </div>
+
+            <div class="panel">
 
                 $if content.page != 'login':
                     <div id="nav">
@@ -129,19 +122,19 @@ $code:
                         <button id="bLog" class="log${' here' if content.page=='log' else ''}" title="View Log">Log</button>
                         <button id="bOptions" class="options${' here' if content.page=='options' else ''}" title="Options">Options</button>
                         <button id="bStations" class="stations${' here' if content.page=='stations' else ''}" title="Configure Stations">Stations</button>
-                        $if not(gv.sd['ipas']):
+                        $if not options.no_password:
                             <button id="bLogout" class="logout" title="Logout">Logout</button>
                     </div>
-								
+
                 $:content
 
-			</div>
-		</div>
-		
-		<div class="footer">
-			<p>CPU Temp: <b><span id="heat" style="cursor:pointer" title="Click to toggle Celsius &lt;&gt; Fahrenheit"></span></b></p>
-			<p><a href="https://github.com/Rimco/OSPy">Software</a> version: <b>${gv.ver_str} (${gv.ver_date})</b></p>
-		</div>
-	</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>CPU Temp: <b><span id="heat" style="cursor:pointer" title="Click to toggle Celsius &lt;&gt; Fahrenheit"></span></b></p>
+            <p><a href="https://github.com/Rimco/OSPy">Software</a> version: <b>${version.ver_str} (${version.ver_date})</b></p>
+        </div>
+    </div>
 </body>
 </html>

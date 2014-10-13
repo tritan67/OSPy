@@ -44,7 +44,7 @@ class monthly_percent(ProtectedPage):
     def GET(self):
         with open('./data/levels.json', 'r') as f:  # Read the monthly percentages from file
             levels = json.load(f)
-        return template_render.monthly(levels)
+        return self.template_render.monthly(levels)
 
 
 class update_percents(ProtectedPage):

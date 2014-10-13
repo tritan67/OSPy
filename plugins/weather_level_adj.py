@@ -12,6 +12,7 @@ import os
 import urllib
 import urllib2
 import errno
+from options import options
 
 import web
 import gv  # Get access to ospy's settings
@@ -79,7 +80,7 @@ class WeatherLevelChecker(Thread):
                         del gv.sd['wl_weather']
                 else:
 
-                    print "Checking weather status..."
+                    logging.debug("Checking weather status...")
                     remove_data(['history_', 'conditions_', 'forecast10day_'])
 
                     history = history_info()
@@ -161,7 +162,7 @@ class settings(ProtectedPage):
     """Load an html page for entering weather-based irrigation adjustments"""
 
     def GET(self):
-        return template_render.weather_level_adj(options_data())
+        return self.template_render.weather_level_adj(options_data())
 
 
 class settings_json(ProtectedPage):
@@ -214,10 +215,10 @@ def options_data():
 
 # Resolve location to LID
 def get_wunderground_lid():
-    if re.search("pws:", gv.sd['loc']):
-        lid = gv.sd['loc']
+    if re.search("pws:", options.location):
+        lid = options.location
     else:
-        data = urllib2.urlopen("http://autocomplete.wunderground.com/aq?h=0&query="+urllib.quote_plus(gv.sd['loc']))
+        data = urllib2.urlopen("http://autocomplete.wunderground.com/aq?h=0&query="+urllib.quote_plus(options.location))
         data = json.load(data)
         if data is None:
             return ""
