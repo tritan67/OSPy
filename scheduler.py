@@ -51,7 +51,7 @@ def predicted_schedule(start_time, end_time):
             new_schedule = {
                 'active': None,
                 'program': -1,
-                'program_name': "Run-Once", # Save it because programs can be reordered
+                'program_name': "Run-Once",
                 'manual': True,
                 'blocked': False,
                 'start': interval['start'],
@@ -61,6 +61,31 @@ def predicted_schedule(start_time, end_time):
                 'usage': 1.0  # FIXME
             }
             station_schedules[station.index].append(new_schedule)
+
+    # Get run-now information:
+    if programs.run_now_program is not None:
+        run_now_intervals = programs.run_now_program.active_intervals(start_time, end_time)
+        for station in sorted(programs.run_now_program.stations):
+            for interval in run_now_intervals:
+                if station >= stations.count() or stations.master == station or not stations[station].enabled:
+                    continue
+
+                if station not in station_schedules:
+                    station_schedules[station] = []
+
+                new_schedule = {
+                    'active': None,
+                    'program': -1,
+                    'program_name': "Run-Now",
+                    'manual': True,
+                    'blocked': False,
+                    'start': interval['start'],
+                    'original_start': interval['start'],
+                    'end': interval['end'],
+                    'uid': '%s-%s-%d' % (str(interval['start']), "Run-Now", station),
+                    'usage': 1.0  # FIXME
+                }
+                station_schedules[station].append(new_schedule)
 
     # Aggregate per station:
     for program in programs.get():
@@ -148,12 +173,12 @@ def predicted_schedule(start_time, end_time):
 
             # Check if we can add it now
             if current_usage + interval['usage'] <= max_usage:
-                if not options.scheduler_enabled:
+                if not interval['manual'] and not options.scheduler_enabled:
                     interval['blocked'] = 'disabled scheduler'
-                elif not stations.get(interval['station']).ignore_rain and \
+                elif not interval['manual'] and not stations.get(interval['station']).ignore_rain and \
                         rain_block_start <= interval['start'] < rain_block_end:
                     interval['blocked'] = 'rain delay'
-                elif not stations.get(interval['station']).ignore_rain and inputs.rain_sensed():
+                elif not interval['manual'] and not stations.get(interval['station']).ignore_rain and inputs.rain_sensed():
                     interval['blocked'] = 'rain sensor'
                 else:
                     current_usage += interval['usage']
@@ -229,7 +254,7 @@ class _Scheduler(Thread):
         active = log.active_runs()
         for entry in active:
             ignore_rain = stations.get(entry['station']).ignore_rain
-            if entry['end'] <= current_time or (rain and not ignore_rain and not entry['blocked']):
+            if entry['end'] <= current_time or (rain and not ignore_rain and not entry['blocked'] and not entry['manual']):
                 log.finish_run(entry)
                 stations.deactivate(entry['station'])
 
