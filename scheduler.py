@@ -64,8 +64,9 @@ def predicted_schedule(start_time, end_time):
 
     # Get run-now information:
     if programs.run_now_program is not None:
-        run_now_intervals = programs.run_now_program.active_intervals(start_time, end_time)
-        for station in sorted(programs.run_now_program.stations):
+        program = programs.run_now_program
+        run_now_intervals = program.active_intervals(start_time, end_time)
+        for station in sorted(program.stations):
             for interval in run_now_intervals:
                 if station >= stations.count() or stations.master == station or not stations[station].enabled:
                     continue
@@ -73,16 +74,18 @@ def predicted_schedule(start_time, end_time):
                 if station not in station_schedules:
                     station_schedules[station] = []
 
+                program_name = "%s (Run-Now)" % program.name
+
                 new_schedule = {
                     'active': None,
                     'program': -1,
-                    'program_name': "Run-Now",
+                    'program_name': program_name,
                     'manual': True,
                     'blocked': False,
                     'start': interval['start'],
                     'original_start': interval['start'],
                     'end': interval['end'],
-                    'uid': '%s-%s-%d' % (str(interval['start']), "Run-Now", station),
+                    'uid': '%s-%s-%d' % (str(interval['start']), program_name, station),
                     'usage': 1.0  # FIXME
                 }
                 station_schedules[station].append(new_schedule)
