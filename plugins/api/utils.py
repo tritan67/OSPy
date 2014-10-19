@@ -75,37 +75,44 @@ def does_json(func):
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        # Take care of jsonp
+        # Take care of JSONP
         params = web.input(callback=None)
 
         # Set headers
         web.header('Cache-Control', 'no-cache')
         web.header('Content-Type', 'application/json')
+        web.header('Access-Control-Allow-Origin', '*')
 
         # This calls the decorated method
         try:
             r = func(self, *args, **kwargs)
             if r:
                 if params.callback:
-                    return "{callback}({json});".format(callback=params.callback,
-                                                        json=_json_dumps(r))
+                    # Take care of JSONP requests
+                    r = "{callback}({json});".format(callback=params.callback,
+                                                     json=_json_dumps(r))
+                    return r
+
                 else:
                     return _json_dumps(r)
             else:
                 return ''
 
         except IndexError:  # No such item
-            raise web.notfound()
-            # FIXME: Make up mind on exceptions
+            raise web.badrequest()
+            # FIXME: for some reason raising notfound here results in a redirect chain
+            # raise web.notfound()
+            # FIXME: Make up mind on exceptions and error reporting
             # result['http_status_code'] = 404
         except ValueError:  # json errors
             raise web.badrequest()
-            # FIXME: Make up mind on exceptions
+            # FIXME: Make up mind on exceptions and error reporting
             # result['http_status_code'] = 406
 
     return wrapper
 
 
+# FIXME: Bind user authentication to ospy users and drop the 'dummy' part
 dummy_users = (
     ('',      'long_password'),  # Since 'admin' is implied
     ('admin', 'password'),
