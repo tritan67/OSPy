@@ -63,7 +63,8 @@ $code:
             <p class="stationList">$:{program.details()}</p>
 
         <p>
-            <button class="cRunNow" data="${program.index}">Run Now</button>
+            $if program.type != ProgramType.WEEKLY_ADVANCED and program.type != ProgramType.CUSTOM:
+                <button class="cRunNow" data="${program.index}">Run Now</button>
             <button class="cModify" data="${program.index}">Edit</button>
             <button class="cDelete danger" data="${program.index}">Delete</button>
         </p>

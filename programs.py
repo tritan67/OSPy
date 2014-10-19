@@ -390,11 +390,14 @@ class _Program(object):
 
     def active_intervals(self, date_time_start, date_time_end):
         result = []
-        start_delta = date_time_start - self.start
-        start_minutes = (start_delta.days*24*60 + int(start_delta.seconds/60)) % self.modulo
-        current_date_time = date_time_start - datetime.timedelta(minutes=start_minutes,
-                                                                 seconds=date_time_start.second,
-                                                                 microseconds=date_time_start.microsecond)
+        if self.manual:
+            current_date_time = self.start
+        else:
+            start_delta = date_time_start - self.start
+            start_minutes = (start_delta.days*24*60 + int(start_delta.seconds/60)) % self.modulo
+            current_date_time = date_time_start - datetime.timedelta(minutes=start_minutes,
+                                                                     seconds=date_time_start.second,
+                                                                     microseconds=date_time_start.microsecond)
 
         while current_date_time < date_time_end:
             for entry in self.schedule:
@@ -446,6 +449,7 @@ class _Program(object):
 class _Programs(object):
     def __init__(self):
         self._programs = []
+        self.run_now_program = None
 
         i = 0
         while options.available(_Program, i):
@@ -477,6 +481,17 @@ class _Programs(object):
             options.save(self._programs[i], i)  # Save programs using new indices
 
         options.erase(_Program, len(self._programs))  # Remove info in last index
+
+    def run_now(self, index):
+        if 0 <= index < len(self._programs):
+            program = self._programs[index]
+            if program.type != ProgramType.WEEKLY_ADVANCED and program.type != ProgramType.CUSTOM:
+                if len(program.schedule) > 0:
+                    run_now_p = _Program(self, index)  # Create a copy using the information saved in options
+                    run_now_p.manual = True
+                    first_offset = datetime.timedelta(minutes=run_now_p.schedule[0][0])
+                    run_now_p.start = datetime.datetime.now() - first_offset  # Make sure the first interval starts now
+                    self.run_now_program = run_now_p
 
     def count(self):
         return len(self._programs)
