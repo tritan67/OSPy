@@ -138,7 +138,7 @@ class program_page(ProtectedPage):
                 programs.remove_program(index)
                 raise web.seeother('/programs')
             elif 'runnow' in qdict and qdict['runnow'] == '1':
-                # TODO: Create temporary manual program?
+                programs.run_now(index)
                 raise web.seeother('/programs')
             elif 'enable' in qdict:
                 programs[index].enabled = (qdict['enable'] == '1')
