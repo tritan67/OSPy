@@ -13,7 +13,7 @@ import json
 import logging
 
 import web
-from plugins.api.utils import does_json, auth
+from plugins.api.utils import does_json, auth, http_status_codes
 from programs import programs
 from stations import stations
 from log import log
@@ -43,20 +43,32 @@ urls.extend([
 ])
 
 
-# FIXME: make this global. web.py catch-all url handling ?
-# Ugly hack
-def OPTIONS(*args):
-    web.header('Access-Control-Allow-Origin', '*')
-    web.header('Access-Control-Allow-Headers', 'Content-Type')
-    web.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-
-
 class Stations(object):
 
-    # TODO: Maybe this needs to go to stations as a to_dict() method or something
-    # TODO: Exchange index for URI ?
     def _station_to_dict(self, station):
-        return {k: getattr(station, k) for k in dir(station) if not k.startswith('_') and k is not 'SAVE_EXCLUDE'}
+        # This is automatic and over all the keys that a _Station has
+        # return {k: getattr(station, k) for k in dir(station) if not k.startswith('_') and k is not 'SAVE_EXCLUDE'}
+
+        return {
+            'id': station.index,  # TODO: Exchange index for URI ?
+            'name': station.name,
+            'enabled': station.enabled,
+            'ignore_rain': station.ignore_rain,
+            'is_master': station.is_master,
+            'activate_master': station.activate_master,
+            'remaining_seconds': station.remaining_seconds,
+            'running': station.active
+        }
+
+    def _dict_to_station(self, sid, data):
+        for k, v in data.iteritems():
+            logger.debug('sid:{} key:{} val:{}'.format(sid, k, v))
+            try:
+                stations[sid].__setattr__(k, v)
+            except:
+                #  Skip uneditable items silently
+                pass
+                logger.debug('except', k)
 
     @does_json
     def GET(self, station_id):
@@ -72,90 +84,47 @@ class Stations(object):
     # @auth
     @does_json
     def POST(self, station_id):
-        logger.debug('POST stations')
-        update = json.loads(web.data())
-        if station_id:
-            pass
+        logger.debug('POST /stations/{}'.format(station_id if station_id else ''))
+
+        action = web.input().get('do', '').lower()
+        station_id = int(station_id)
+        if action == 'start':
+            logger.debug('Starting station {id} ("{name}")'.format(id=station_id, name=stations[station_id].name))
+            stations.activate(station_id)
+        elif action == 'stop':
+            logger.debug('Stopping station {id} ("{name}")'.format(id=station_id, name=stations[station_id].name))
+            stations.deactivate(station_id)
         else:
-            for s in update:
-                for k, v in s.iteritems():
-                    print k, ':', v
-                    try:
-                        stations[s['index']].__setattr__(k, v)
-                    except:
-                        #  Skip uneditable items silently
-                        pass
-                        print 'except', k
+            web.ctx.status = http_status_codes[400]  # FIXME
+            return
 
-        # raise web.forbidden()
-        # web.ctx.status = '300 Multiple Choices'
-        return
+        # web.ctx.status = '204 No Content'
+        return self._station_to_dict(stations[station_id])
 
-    @auth
+    #@auth
     @does_json
     def PUT(self, station_id):
-        logger.debug('PUT stations')
-        raise web.forbidden()
+        logger.debug('PUT /stations/{}'.format(station_id if station_id else ''))
+        update = json.loads(web.data())
+        if station_id:
+            station_id = int(station_id)
+            self._dict_to_station(station_id, update)
+            return self._station_to_dict(stations[station_id])
+        else:
+            for sid, upd in enumerate(update):
+                self._dict_to_station(sid, upd)
+            return [self._station_to_dict(s) for s in stations]
 
     @auth
     @does_json
     def DELETE(self, station_id):
-        logger.debug('DELETE stations')
-        raise web.forbidden()
+        logger.debug('DELETE /stations/{}'.format(station_id if station_id else ''))
+        raise web.nomethod()
 
-    OPTIONS = OPTIONS
-
-
-# def dummy_start(id):
-#     logger.debug('would start %d' % id)
-#
-#
-# def dummy_stop(id):
-#     logger.debug('would stop %d' % id)
-#
-#
-# class Station(object):
-#     editable_keys = ('name', 'enabled', 'ignore_rain', 'is_master')
-#     all_keys = ('id',) + editable_keys
-#
-#     #
-#     actions = {
-#         'start': dummy_start,
-#         'stop': dummy_stop,
-#     }
-#
-#     @does_json
-#     def GET(self, station_id):
-#         logger.debug('GET station:%s' % station_id)
-#
-#
-#
-#     @auth
-#     @does_json
-#     def POST(self, station_id):
-#         logger.debug('POST station:%s' % station_id)
-#         station_id = int(station_id)
-#
-#         try:
-#             action_func = Station.actions[web.input().get('do', '').lower()]
-#             action_func(station_id)
-#         except:
-#             raise web.badrequest()
-#
-#     @auth
-#     @does_json
-#     def PUT(self, station_id):
-#         logger.debug('PUT station:%s' % station_id)
-#         station_id = int(station_id)
-#         s = dummy_stations[station_id]
-#         update = json.loads(web.data())
-#
-#         # Only apply values to editable fields
-#         for k in list(set(update)):  # remove dupes
-#             if k in Station.editable_keys:
-#                 s[k] = update[k]
-#         dummy_stations[station_id] = s
-#         return s
+    def OPTIONS(self):
+        web.header('Access-Control-Allow-Origin', '*')
+        web.header('Access-Control-Allow-Headers', 'Content-Type')
+        web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
 
 
 class Programs(object):
@@ -175,84 +144,127 @@ class Programs(object):
 
     @auth
     @does_json
-    def POST(self):
-        logger.debug('POST programs')
-        raise web.forbidden()
+    def POST(self, program_id):
+        logger.debug('POST /programs/{}'.format(program_id if program_id else ''))
+        raise web.nomethod()
 
     @auth
     @does_json
-    def PUT(self):
-        logger.debug('PUT programs')
-        raise web.forbidden()
+    def PUT(self, program_id):
+        logger.debug('PUT /programs/{}'.format(program_id if program_id else ''))
+        raise web.nomethod()
 
     @auth
     @does_json
-    def DELETE(self):
-        logger.debug('DELETE programs')
-        raise web.forbidden()
+    def DELETE(self, program_id):
+        logger.debug('DELETE /programs/{}'.format(program_id if program_id else ''))
+        raise web.nomethod()
 
-    OPTIONS = OPTIONS
+    def OPTIONS(self):
+        web.header('Access-Control-Allow-Origin', '*')
+        web.header('Access-Control-Allow-Headers', 'Content-Type')
+        web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
 
 
 class Options(object):
-    @does_json
-    def GET(self):
-        logger.debug('GET options')
-        return options.OPTIONS
+
+    """
+    Options array in the format
+      <option_key> : {
+                        'name': OPTIONS[option_key]['name']
+                        'help': OPTIONS[option_key][help']
+                        .
+                        .
+                     }
+    """
+    ANNOTATED_OPTIONS = {
+        key: {
+            okey: options.OPTIONS[i].get(okey, '')
+            for okey in ['name', 'help', 'category', 'default', 'min', 'max']
+        }
+        for i, key in enumerate(options.get_options())
+    }
 
     @does_json
-    def POST(self):
-        logger.debug('POST options')
-        web.ctx.status = '403 Forbidden'  # FIXME
-        # raise web.forbidden()
+    def GET(self):
+        logger.debug('GET ' + self.__class__.__name__)
+        a = web.input().get('annotated', '').lower()
+        if a in ['true', 'yes', 'annotated', '1']:
+            opts = {o: {'value': options[o]} for o in options.get_options()}
+            for k in opts.iterkeys():
+                opts[k].update(self.ANNOTATED_OPTIONS[k])
+            return opts
+        else:
+            return {o: options[o] for o in options.get_options()}
 
     @does_json
     def PUT(self):
-        logger.debug('PUT options')
-        raise web.forbidden()
+        logger.debug('PUT ' + self.__class__.__name__)
+        update = json.loads(web.data())
+        for key, val in update:
+            if key in options.get_options():
+                logger.debug("Updating '{}' to '{}'".format(key, val))
+                options[key] = val
+            else:
+                logger.debug('Unknown key {}'.format(key))
+
+        return options.get_options()
+
+    @does_json
+    def POST(self):
+        logger.debug('POST ' + self.__class__.__name__)
+        raise web.nomethod()
 
     @does_json
     def DELETE(self):
-        logger.debug('DELETE options')
-        raise web.forbidden()
+        logger.debug('DELETE ' + self.__class__.__name__)
+        raise web.nomethod()
 
-    OPTIONS = OPTIONS
+    def OPTIONS(self):
+        web.header('Access-Control-Allow-Origin', '*')
+        web.header('Access-Control-Allow-Headers', 'Content-Type')
+        web.header('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS')
 
 
 class Logs(object):
+
+    def _runlog_to_dict(self, log_entry):
+        return {
+            'start': log_entry['start'],
+            'end': log_entry['end'],
+            'manual': log_entry['manual'],
+            'station': log_entry['station'],
+            'station_name': stations[log_entry['station']].name,
+            'program_id': log_entry['program'],
+            'program_name': log_entry['program_name'],
+        }
+
     @does_json
     def GET(self):
-        logger.debug('GET logs')
+        logger.debug('GET logs ' + self.__class__.__name__)
 
-        log_entries = []
-        for run in log.finished_runs():
-            entry = {
-                'start': run['start'],
-                'end': run['end'],
-                'manual': run['manual'],
-                'station': run['station'],
-                'station_name': stations[run['station']].name,
-                'program_id': run['program'],
-                'program_name': run['program_name'],
-            }
-            log_entries.append(entry)
-        # return {'logs': log_entries}
-        return log_entries
+        return [self._runlog_to_dict(fr) for fr in log.finished_runs()]
 
     @does_json
     def POST(self):
-        logger.debug('POST logs')
-        raise web.forbidden()
+        logger.debug('POST ' + self.__class__.__name__)
+        raise web.nomethod()
 
     @does_json
     def PUT(self):
-        logger.debug('PUT logs')
-        raise web.forbidden()
+        logger.debug('PUT ' + self.__class__.__name__)
+        raise web.nomethod()
 
+    # @auth
     @does_json
     def DELETE(self):
-        logger.debug('DELETE logs')
-        raise web.forbidden()
+        logger.debug('DELETE ' + self.__class__.__name__)
+        log.clear_runs()
+
+    def OPTIONS(self):
+        web.header('Access-Control-Allow-Origin', '*')
+        web.header('Access-Control-Allow-Headers', 'Content-Type')
+        web.header('Access-Control-Allow-Methods', 'GET, DELETE, OPTIONS')
 
 
 class System(object):
@@ -264,6 +276,7 @@ class System(object):
     @does_json
     def POST(self):
         logger.debug('POST ' + self.__class__.__name__)
+        raise web.forbidden()
 
     @does_json
     def PUT(self):
@@ -274,3 +287,9 @@ class System(object):
     def DELETE(self):
         logger.debug('DELETE ' + self.__class__.__name__)
         raise web.forbidden()
+
+
+    def OPTIONS(self):
+        web.header('Access-Control-Allow-Origin', '*')
+        web.header('Access-Control-Allow-Headers', 'Content-Type')
+        web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
