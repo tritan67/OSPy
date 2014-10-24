@@ -62,16 +62,16 @@ class Stations(object):
 
     def _dict_to_station(self, sid, data):
         for k, v in data.iteritems():
-            logger.debug('sid:{} key:{} val:{}'.format(sid, k, v))
+            # logger.debug('sid:{} key:{} val:{}'.format(sid, k, v))
             try:
                 stations[sid].__setattr__(k, v)
             except:
                 #  Skip uneditable items silently
                 pass
-                logger.debug('except', k)
+                # logger.debug('except', k)
 
     @does_json
-    def GET(self, station_id):
+    def GET(self, station_id=None):
         logger.debug('GET /stations/{}'.format(station_id if station_id else ''))
         if station_id:
             return self._station_to_dict(stations[int(station_id)])
@@ -83,7 +83,7 @@ class Stations(object):
 
     # @auth
     @does_json
-    def POST(self, station_id):
+    def POST(self, station_id=None):
         logger.debug('POST /stations/{}'.format(station_id if station_id else ''))
 
         action = web.input().get('do', '').lower()
@@ -103,7 +103,7 @@ class Stations(object):
 
     #@auth
     @does_json
-    def PUT(self, station_id):
+    def PUT(self, station_id=None):
         logger.debug('PUT /stations/{}'.format(station_id if station_id else ''))
         update = json.loads(web.data())
         if station_id:
@@ -115,13 +115,13 @@ class Stations(object):
                 self._dict_to_station(sid, upd)
             return [self._station_to_dict(s) for s in stations]
 
-    @auth
+    # @auth
     @does_json
-    def DELETE(self, station_id):
+    def DELETE(self, station_id=None):
         logger.debug('DELETE /stations/{}'.format(station_id if station_id else ''))
         raise web.nomethod()
 
-    def OPTIONS(self):
+    def OPTIONS(self, station_id=None):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Access-Control-Allow-Headers', 'Content-Type')
         web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
@@ -142,19 +142,19 @@ class Programs(object):
             return [self._program_to_dict(p) for p in programs]
         # return {'programs': l}
 
-    @auth
+    # @auth
     @does_json
     def POST(self, program_id):
         logger.debug('POST /programs/{}'.format(program_id if program_id else ''))
         raise web.nomethod()
 
-    @auth
+    # @auth
     @does_json
     def PUT(self, program_id):
         logger.debug('PUT /programs/{}'.format(program_id if program_id else ''))
         raise web.nomethod()
 
-    @auth
+    # @auth
     @does_json
     def DELETE(self, program_id):
         logger.debug('DELETE /programs/{}'.format(program_id if program_id else ''))
@@ -172,7 +172,7 @@ class Options(object):
     Options array in the format
       <option_key> : {
                         'name': OPTIONS[option_key]['name']
-                        'help': OPTIONS[option_key][help']
+                        'help': OPTIONS[option_key]['help']
                         .
                         .
                      }
@@ -197,6 +197,7 @@ class Options(object):
         else:
             return {o: options[o] for o in options.get_options()}
 
+    # @auth
     @does_json
     def PUT(self):
         logger.debug('PUT ' + self.__class__.__name__)
@@ -210,11 +211,13 @@ class Options(object):
 
         return options.get_options()
 
+    # @auth
     @does_json
     def POST(self):
         logger.debug('POST ' + self.__class__.__name__)
         raise web.nomethod()
 
+    # @auth
     @does_json
     def DELETE(self):
         logger.debug('DELETE ' + self.__class__.__name__)
@@ -232,6 +235,7 @@ class Logs(object):
         return {
             'start': log_entry['start'],
             'end': log_entry['end'],
+            'duration': str(log_entry['end'] - log_entry['start']).split('.')[0],  # pass it as a baked string to the client
             'manual': log_entry['manual'],
             'station': log_entry['station'],
             'station_name': stations[log_entry['station']].name,
@@ -242,18 +246,11 @@ class Logs(object):
     @does_json
     def GET(self):
         logger.debug('GET logs ' + self.__class__.__name__)
-
         return [self._runlog_to_dict(fr) for fr in log.finished_runs()]
-
-    @does_json
-    def POST(self):
-        logger.debug('POST ' + self.__class__.__name__)
-        raise web.nomethod()
-
-    @does_json
-    def PUT(self):
-        logger.debug('PUT ' + self.__class__.__name__)
-        raise web.nomethod()
+        # web.header('Cache-Control', 'no-cache')
+        # web.header('Content-Type', 'application/json')
+        # web.header('Access-Control-Allow-Origin', '*')
+        # return '[{"start": "2014-10-23T21:25:25", "station": 2, "end": "2014-10-23T21:25:30", "duration": "0:00:05", "station_name": "Station 03ttt", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": "2014-10-23T21:25:30", "station": 3, "end": "2014-10-23T21:25:35", "duration": "0:00:05", "station_name": "Station 04 dest", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": "2014-10-23T21:25:35", "station": 4, "end": "2014-10-23T21:25:40", "duration": "0:00:05", "station_name": "Station 05", "manual": true, "program_name": "Run-Once", "program_id": -1}]'
 
     # @auth
     @does_json
@@ -273,21 +270,23 @@ class System(object):
         logger.debug('GET ' + self.__class__.__name__)
         raise web.forbidden()
 
+    # @auth
     @does_json
     def POST(self):
         logger.debug('POST ' + self.__class__.__name__)
         raise web.forbidden()
 
+    # @auth
     @does_json
     def PUT(self):
         logger.debug('PUT ' + self.__class__.__name__)
         raise web.forbidden()
 
+    # @auth
     @does_json
     def DELETE(self):
         logger.debug('DELETE ' + self.__class__.__name__)
         raise web.forbidden()
-
 
     def OPTIONS(self):
         web.header('Access-Control-Allow-Origin', '*')

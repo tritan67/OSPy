@@ -1,5 +1,7 @@
 import base64
 from functools import wraps, partial
+from datetime import datetime
+import time
 import json
 import re
 import logging
@@ -61,9 +63,25 @@ http_status_codes = {
     507: '507 Insufficient Storage',
 }
 
+
+#  Converts local time to UTC time
+def local_to_utc(dt):
+    try:
+        TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+        local = dt.strftime(TIME_FORMAT)
+        # print "local_to_utc: before convert:", local
+        timestamp = str(time.mktime(datetime.strptime(local, TIME_FORMAT).timetuple()))[:-2]
+        utc = datetime.utcfromtimestamp(int(timestamp))
+        # print "local_to_utc: after convert:", utc
+        return utc
+    except:
+        return dt
+
+
 # jsonify dates
 _json_dumps = partial(json.dumps,
-                      default=lambda x: x.isoformat() if hasattr(x, 'isoformat') else str(x),
+                      # default=lambda x: x.isoformat() if hasattr(x, 'isoformat') else str(x),
+                      default=lambda x: local_to_utc(x).isoformat() if hasattr(x, 'isoformat') else str(x),
                       sort_keys=False)
 
 
