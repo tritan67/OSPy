@@ -39,8 +39,5 @@ if __name__ == '__main__':
     #for name in plugins.__all__:
     #    print ' ', name
 
-    import plugins.api
-
-
     scheduler.start()
     app.run()

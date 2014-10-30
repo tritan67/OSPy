@@ -91,7 +91,7 @@ function displaySchedule(schedule) {
 
 function displayProgram() {
     var visibleDate = toXSDate(displayScheduleDate);
-    jQuery.getJSON("/api/log?date=" + visibleDate, function(log) {
+    jQuery.getJSON("/log.json?date=" + visibleDate, function(log) {
         for (var l in log) {
             log[l].duration = fromClock(log[l].duration);
             log[l].start = fromClock(log[l].start)/60;

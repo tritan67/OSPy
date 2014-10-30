@@ -1,7 +1,6 @@
 """
-API
+REST API for OSPy
 """
-from options import options
 
 __author__ = [
     'Teodor Yantcheff',
@@ -9,16 +8,18 @@ __author__ = [
 
 __version__ = '0.3 pre aplha'
 
+
 import json
 import logging
 
 import web
-from plugins.api.utils import does_json, auth, http_status_codes
+
+from utils import does_json, http_status_codes
+from options import options
 from programs import programs
 from stations import stations
 from log import log
-from urls import urls  # Gain access to ospy's URL list
-
+# from urls import urls  # Gain access to ospy's URL list
 
 logger = logging.getLogger('API')
 logger.setLevel(logging.DEBUG)
@@ -29,18 +30,18 @@ h.setFormatter(logging.Formatter('%(name)s:%(levelname)s:%(message)s'))
 logger.addHandler(h)
 
 
-urls.extend([
+urls = (
     # Stations
-    r'/rapi/1.0/stations(?:/(?P<station_id>\d+))?/?', 'plugins.api.Stations',
+    r'/stations(?:/(?P<station_id>\d+))?/?', 'Stations',
     # Programs
-    r'/rapi/1.0/programs(?:/(?P<program_id>\d+))?/?', 'plugins.api.Programs',
+    r'/programs(?:/(?P<program_id>\d+))?/?', 'Programs',
     # Options
-    r'/rapi/1.0/options/?', 'plugins.api.Options',
+    r'/options/?', 'Options',
     # Logs
-    r'/rapi/1.0/logs/?', 'plugins.api.Logs',
+    r'/logs/?', 'Logs',
     # System
-    r'/rapi/1.0/system/?', 'plugins.api.System',
-])
+    r'/system/?', 'System',
+)
 
 
 class Stations(object):
@@ -296,3 +297,5 @@ class System(object):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Access-Control-Allow-Headers', 'Content-Type')
         web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+
+app_OSPyAPI = web.application(urls, locals())
