@@ -8,7 +8,7 @@ import logging
 
 import web
 
-logger = logging.getLogger('API')
+logger = logging.getLogger(__name__)
 
 
 http_status_codes = {
