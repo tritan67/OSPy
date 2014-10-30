@@ -64,6 +64,13 @@ http_status_codes = {
 }
 
 
+def to_timestamp(dt):
+    try:
+        return int(time.mktime(dt.timetuple()))
+    except:
+        return 0
+
+
 #  Converts local time to UTC time
 def local_to_utc(dt):
     try:
@@ -81,7 +88,8 @@ def local_to_utc(dt):
 # jsonify dates
 _json_dumps = partial(json.dumps,
                       # default=lambda x: x.isoformat() if hasattr(x, 'isoformat') else str(x),
-                      default=lambda x: local_to_utc(x).isoformat() if hasattr(x, 'isoformat') else str(x),
+                      # default=lambda x: local_to_utc(x).isoformat() if hasattr(x, 'isoformat') else str(x),
+                      default=lambda x: to_timestamp(x) if hasattr(x, 'isoformat') else str(x),
                       sort_keys=False)
 
 
@@ -161,21 +169,21 @@ def auth(func):
     return wrapper
 
 
-class JSONAppBrowser(web.browser.AppBrowser):
-    """
-    JSON-ified AppBrowser
-    """
-    # TODO: tests
-
-    headers = {'Accept': 'application/json'}
-
-    def json_open(self, url, data=None, headers={}, method='GET'):
-        headers = headers or self.headers
-        url = urllib.basejoin(self.url, url)
-        req = urllib2.Request(url, json.dumps(data), headers)
-        req.get_method = lambda: method  # Fake urllub's get_method
-        return self.do_request(req)
-
-    @property
-    def json_data(self):
-        return json.loads(self.data)
+# class JSONAppBrowser(web.browser.AppBrowser):
+#     """
+#     JSON-ified AppBrowser
+#     """
+#     # TODO: tests
+#
+#     headers = {'Accept': 'application/json'}
+#
+#     def json_open(self, url, data=None, headers={}, method='GET'):
+#         headers = headers or self.headers
+#         url = urllib.basejoin(self.url, url)
+#         req = urllib2.Request(url, json.dumps(data), headers)
+#         req.get_method = lambda: method  # Fake urllub's get_method
+#         return self.do_request(req)
+#
+#     @property
+#     def json_data(self):
+#         return json.loads(self.data)

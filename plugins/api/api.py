@@ -198,18 +198,19 @@ class Options(object):
             return {o: options[o] for o in options.get_options()}
 
     # @auth
-    @does_json
+    # @does_json
     def PUT(self):
         logger.debug('PUT ' + self.__class__.__name__)
         update = json.loads(web.data())
-        for key, val in update:
+        for key, val in update.iteritems():
             if key in options.get_options():
                 logger.debug("Updating '{}' to '{}'".format(key, val))
                 options[key] = val
             else:
                 logger.debug('Unknown key {}'.format(key))
 
-        return options.get_options()
+        # return options.get_options()
+        return self.GET()
 
     # @auth
     @does_json
@@ -250,7 +251,10 @@ class Logs(object):
         # web.header('Cache-Control', 'no-cache')
         # web.header('Content-Type', 'application/json')
         # web.header('Access-Control-Allow-Origin', '*')
+        # import datetime
+        # return datetime.datetime.now()
         # return '[{"start": "2014-10-23T21:25:25", "station": 2, "end": "2014-10-23T21:25:30", "duration": "0:00:05", "station_name": "Station 03ttt", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": "2014-10-23T21:25:30", "station": 3, "end": "2014-10-23T21:25:35", "duration": "0:00:05", "station_name": "Station 04 dest", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": "2014-10-23T21:25:35", "station": 4, "end": "2014-10-23T21:25:40", "duration": "0:00:05", "station_name": "Station 05", "manual": true, "program_name": "Run-Once", "program_id": -1}]'
+        # return '[{"start": 1414605866, "station": 0, "end": 1414605881, "duration": "0:00:15", "station_name": "Station 01", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": 1414605881, "station": 2, "end": 1414605896, "duration": "0:00:15", "station_name": "Station 03", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": 1414605896, "station": 5, "end": 1414605911, "duration": "0:00:15", "station_name": "Station 06", "manual": true, "program_name": "Run-Once", "program_id": -1}]'
 
     # @auth
     @does_json
