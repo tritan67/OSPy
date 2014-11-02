@@ -1,9 +1,4 @@
-__author__ = 'Jailbreaker'
-
-import logging
-import json
-
-import web
+__author__ = 'Teodor Yantcheff'
 
 from utils import *
 
@@ -201,14 +196,16 @@ class Options(object):
     def PUT(self):
         logger.debug('PUT ' + self.__class__.__name__)
         update = json.loads(web.data())
+        all_options = options.get_options()
         for key, val in update.iteritems():
-            if key in options.get_options() and key not in self.EXCLUDED_OPTIONS:
+            if key in all_options and key not in self.EXCLUDED_OPTIONS:
                 logger.debug("Updating '{}' to '{}'".format(key, val))
-                options[key] = val  # TODO: input validation ?
+                try:
+                    options[key] = val
+                except:
+                    raise api_badrequest('{"error": "Error setting option \'{}\' to \'{}\'"}'.format(key, val))
             else:
                 logger.debug('Skipping key {}'.format(key))
-
-        # return options.get_options()
         return self.GET()
 
     def OPTIONS(self):
