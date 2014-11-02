@@ -153,7 +153,7 @@ class Programs(object):
         logger.debug('DELETE /programs/{}'.format(program_id if program_id else ''))
         raise web.nomethod()
 
-    def OPTIONS(self):
+    def OPTIONS(self, program_id):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Access-Control-Allow-Headers', 'Content-Type')
         web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -161,34 +161,39 @@ class Programs(object):
 
 class Options(object):
 
-    """
-    Options array in the format
-      <option_key> : {
-                        'name': OPTIONS[option_key]['name']
-                        'help': OPTIONS[option_key]['help']
-                        .
-                        .
-                     }
-    """
-    ANNOTATED_OPTIONS = {
-        key: {
-            okey: options.OPTIONS[i].get(okey, '')
-            for okey in ['name', 'help', 'category', 'default', 'min', 'max']
+    def __init__(self):
+        """ Stuff that is not to be sent over the API, assuming it's of no interest to potential clients"""
+        self.EXCLUDED_OPTIONS = [
+            'password_hash', 'password_salt', 'theme', 'logged_runs', 'time_format'
+        ]
+
+        """ Options array in the format
+          <option_key> : {
+                            'name': OPTIONS[option_key]['name']
+                            'help': OPTIONS[option_key]['help']
+                            .
+                            .
+                         }
+        """
+        self.ANNOTATED_OPTIONS = {
+            key: {
+                opt_key: options.OPTIONS[i].get(opt_key, '')
+                for opt_key in ['name', 'help', 'category', 'default', 'min', 'max']
+            }
+            for i, key in enumerate(options.get_options()) if key not in self.EXCLUDED_OPTIONS
         }
-        for i, key in enumerate(options.get_options())
-    }
 
     @does_json
     def GET(self):
         logger.debug('GET ' + self.__class__.__name__)
         a = web.input().get('annotated', '').lower()
         if a in ['true', 'yes', 'annotated', '1']:
-            opts = {o: {'value': options[o]} for o in options.get_options()}
+            opts = {o: {'value': options[o]} for o in self.ANNOTATED_OPTIONS}
             for k in opts.iterkeys():
                 opts[k].update(self.ANNOTATED_OPTIONS[k])
             return opts
         else:
-            return {o: options[o] for o in options.get_options()}
+            return {opt: options[opt] for opt in options.get_options() if opt not in self.EXCLUDED_OPTIONS}
 
     # @auth
     # @does_json
@@ -196,26 +201,14 @@ class Options(object):
         logger.debug('PUT ' + self.__class__.__name__)
         update = json.loads(web.data())
         for key, val in update.iteritems():
-            if key in options.get_options():
+            if key in options.get_options() and key not in self.EXCLUDED_OPTIONS:
                 logger.debug("Updating '{}' to '{}'".format(key, val))
-                options[key] = val
+                options[key] = val  # TODO: input validation ?
             else:
-                logger.debug('Unknown key {}'.format(key))
+                logger.debug('Skipping key {}'.format(key))
 
         # return options.get_options()
         return self.GET()
-
-    # @auth
-    @does_json
-    def POST(self):
-        logger.debug('POST ' + self.__class__.__name__)
-        raise web.nomethod()
-
-    # @auth
-    @does_json
-    def DELETE(self):
-        logger.debug('DELETE ' + self.__class__.__name__)
-        raise web.nomethod()
 
     def OPTIONS(self):
         web.header('Access-Control-Allow-Origin', '*')
