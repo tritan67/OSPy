@@ -88,8 +88,8 @@ class Stations(object):
             logger.debug('Stopping station {id} ("{name}")'.format(id=station_id, name=stations[station_id].name))
             stations.deactivate(station_id)
         else:
-            web.ctx.status = http_status_codes[400]  # FIXME
-            return
+            raise api_badrequest()
+            # return
 
         # web.ctx.status = '204 No Content'
         return self._station_to_dict(stations[station_id])

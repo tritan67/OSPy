@@ -7,11 +7,12 @@ import re
 import logging
 
 import web
+from web import HTTPError
 
 logger = logging.getLogger(__name__)
 
 
-http_status_codes = {
+HTTP_STATUS_CODES = {
     100: '100 Continue',
     101: '101 Switching Protocols',
 
@@ -64,6 +65,34 @@ http_status_codes = {
 }
 
 
+class API_BadRequest(HTTPError):
+    """`400 Bad Request` error."""
+    message = '{"error": "Bad Request"}'
+
+    def __init__(self, message=None):
+        status = HTTP_STATUS_CODES[400]
+        headers = {'Cache-Control': 'no-cache',
+                   'Content-Type': 'application/json'}
+
+        HTTPError.__init__(self, status, headers, message or self.message)
+
+api_badrequest = API_BadRequest
+
+
+class API_Unauthorized(HTTPError):
+    """`401 Unauthorized` error."""
+    message = '{"error": "Unauthorized"}'
+
+    def __init__(self):
+        status = HTTP_STATUS_CODES[401]
+        headers = {'Cache-Control': 'no-cache',
+                   'Content-Type': 'application/json'}
+        HTTPError.__init__(self, status, headers, self.message)
+
+api_unauthorized = API_Unauthorized
+
+
+# datetime to timestamp conversion function
 def to_timestamp(dt):
     try:
         return int(time.mktime(dt.timetuple()))
@@ -118,22 +147,17 @@ def does_json(func):
                     r = "{callback}({json});".format(callback=params.callback,
                                                      json=_json_dumps(r))
                     return r
-
                 else:
                     return _json_dumps(r)
             else:
                 return ''
 
         except IndexError:  # No such item
-            raise web.badrequest()
-            # FIXME: for some reason raising notfound here results in a redirect chain
-            # raise web.notfound()
-            # FIXME: Make up mind on exceptions and error reporting
-            # result['http_status_code'] = 404
+            raise api_badrequest('{"error": "Index out of bounds (IndexError)"}')
+
         except ValueError:  # json errors
-            raise web.badrequest()
-            # FIXME: Make up mind on exceptions and error reporting
-            # result['http_status_code'] = 406
+            raise api_badrequest('{"error": "Inappropriate argument value (ValueError)"}')
+
 
     return wrapper
 
@@ -164,7 +188,7 @@ def auth(func):
         except:
             # no or worng auth provided
             web.header('WWW-Authenticate', 'Basic realm="OSPy"')
-            raise web.unauthorized()
+            raise api_unauthorized()
         return func(self, *args, **kwargs)
     return wrapper
 
