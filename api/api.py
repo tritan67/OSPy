@@ -29,11 +29,11 @@ urls = (
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-h = logging.StreamHandler()
-h.setLevel(logging.DEBUG)
-h.setFormatter(logging.Formatter('%(name)s:%(levelname)s:%(message)s'))
-#h.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
-logger.addHandler(h)
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+handler.setFormatter(logging.Formatter('%(name)s:%(levelname)s:%(message)s'))
+#handler.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
+logger.addHandler(handler)
 
 
 class Stations(object):
@@ -55,13 +55,13 @@ class Stations(object):
 
     def _dict_to_station(self, sid, data):
         for k, v in data.iteritems():
-            # logger.debug('sid:{} key:{} val:{}'.format(sid, k, v))
+            logger.debug('stationid:{} key:\'{}\' value:\'{}\''.format(sid, k, v))
             try:
                 stations[sid].__setattr__(k, v)
             except:
                 #  Skip uneditable items silently
-                pass
-                # logger.debug('except', k)
+                logger.error('Error setting station %d, \'%s\' to \'%s\'', sid, k, v)
+                # pass
 
     @does_json
     def GET(self, station_id=None):
@@ -190,6 +190,7 @@ class Options(object):
         if a in ['true', 'yes', 'annotated', '1']:
             opts = {o: {'value': options[o]} for o in self.ANNOTATED_OPTIONS}
             for k in opts.iterkeys():
+                # "inject" current option value into the dictionary under "value"
                 opts[k].update(self.ANNOTATED_OPTIONS[k])
             return opts
         else:

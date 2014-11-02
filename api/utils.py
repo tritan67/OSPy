@@ -159,7 +159,7 @@ def auth(func):
             username, password = base64.decodestring(http_auth).split(':')
             logger.debug('Auth Attempt with: u:\'%s\' p:\'%s\'', username, password)
 
-            if (username, password) not in dummy_users:  # FIXME: subsitute dummy users for real ones
+            if (username, password) not in dummy_users:
                 raise  # essentially a goto :P
         except:
             # no or worng auth provided
