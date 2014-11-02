@@ -13,7 +13,6 @@ from inputs import inputs
 from log import log
 from options import level_adjustments
 from options import options
-from options import plugins
 from options import rain_blocks
 from programs import programs
 from programs import ProgramType
@@ -21,10 +20,12 @@ from runonce import run_once
 from stations import stations
 import scheduler
 import version
+import plugins
 
 
 class WebPage(object):
     def __init__(self):
+        import plugins
         template_globals = {
             'str': str,
             'bool': bool,
@@ -35,6 +36,7 @@ class WebPage(object):
             'json': json,
             'isinstance': isinstance,
             'sorted': sorted,
+            'hasattr': hasattr,
 
             'inputs': inputs,
             'log': log,
@@ -278,6 +280,8 @@ class options_page(ProtectedPage):
                     raise web.seeother('/options?errorCode=pw_wrong')
             except KeyError:
                 pass
+
+        plugins.start_enabled_plugins()
 
         raise web.seeother('/')
 

@@ -66,12 +66,12 @@ $def with (content)
             var rain_block = ${max(0, (options.rain_block - datetime.datetime.now()).total_seconds())};
 
             jQuery(document).ready(function(){
-                $if len(plugins) > 0:
-                    jQuery.each(plugins, function() {
-                        jQuery('#pluginMenu').append('<button class="execute" type="button" onclick="window.location.href=\''+this[1]+'\'">'+this[0]+'</button><br/>');
-                    });
+                $if len(plugins.running()) > 0:
+                    $for plugin in plugins.running():
+                        $if plugins.get(plugin).LINK:
+                            jQuery('#pluginMenu').append('<button class="execute" type="button" onclick="window.location.href=\'${plugins.get(plugin).LINK}\'">${plugins.get(plugin).NAME}</button><br/>');
                 $else:
-                    jQuery('#pluginMenu').append('None<br/>');
+                    jQuery('#pluginMenu').append('No plug-ins loaded.<br/>');
 
                 jQuery("#bPlugins").click(function(e) {
                     var btn = jQuery("#bPlugins");

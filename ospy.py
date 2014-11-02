@@ -7,7 +7,9 @@ from log import hook_logging
 from options import options
 from scheduler import scheduler
 from urls import urls
+
 import web
+import plugins
 
 
 class OSPyApp(web.application):
@@ -40,4 +42,5 @@ if __name__ == '__main__':
     #    print ' ', name
 
     scheduler.start()
+    plugins.start_enabled_plugins()
     app.run()

@@ -11,9 +11,9 @@ import sys
 import traceback
 
 import web
-import gv  # Get access to ospi's settings
+
 from urls import urls  # Get access to ospi's URLs
-from ospy import template_render
+
 from webpages import ProtectedPage
 from helpers import uptime, get_ip, get_cpu_temp, get_rpi_revision
 

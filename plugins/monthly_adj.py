@@ -5,9 +5,9 @@ import json
 import time
 
 import web
-import gv  # Get access to ospy's settings
+
 from urls import urls  # Get access to ospy's URLs
-from ospy import template_render
+
 from webpages import ProtectedPage
 
 

@@ -61,6 +61,11 @@ $var page: options
                 tooltip = option['help']
                 value = options[option['key']]
                 enum = option.get('options')
+                if hasattr(enum, '__call__'):
+                    enum = enum()
+                multi_enum = option.get('multi_options')
+                if hasattr(multi_enum, '__call__'):
+                    multi_enum = multi_enum()
                 minv = " min='" + str(option['min']) + "'" if 'min' in option else ""
                 maxv = " max='" + str(option['max']) + "'" if 'max' in option else ""
 
@@ -90,6 +95,12 @@ $var page: options
                         sel = " selected='selected'" if value == e else ""
                         output += "<option value='" + e + "'" + sel + ">" + e + "</option>"
                     output += "</select>\n"
+                elif multi_enum:
+                    output += "<div style='display: inline-block'>\n"
+                    for e in multi_enum:
+                        sel = " checked" if e in value else ""
+                        output += "<input name='" + name + "_" + e + "' type='checkbox'" + sel + ">" + e + "<br>\n"
+                    output += "</div>\n"
                 elif isinstance(value, bool):
                     output += "<input name='" + name + "' type='checkbox' " + ("checked" if value>0 else "") + ">\n"
                 elif isinstance(value, int):
