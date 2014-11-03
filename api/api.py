@@ -4,7 +4,7 @@ from utils import *
 
 from stations import stations
 from options import options
-from programs import programs
+from programs import programs, ProgramType
 from log import log
 
 
@@ -86,7 +86,6 @@ class Stations(object):
             raise api_badrequest()
             # return
 
-        # web.ctx.status = '204 No Content'
         return self._station_to_dict(stations[station_id])
 
     #@auth
@@ -118,7 +117,21 @@ class Stations(object):
 class Programs(object):
 
     def _program_to_dict(self, program):
-        return {k: getattr(program, k) for k in dir(program) if not k.startswith('_') and k is not 'SAVE_EXCLUDE'}
+        # return {k: getattr(program, k) for k in dir(program) if not k.startswith('_') and k is not 'SAVE_EXCLUDE'}
+        return {
+            'id': program.index,
+            'name': program.name,
+            'stations': program.stations,
+            'enabled': program.enabled,
+            'type': program.type,
+            'type_name': ProgramType.NAMES.get(program.type, ''),
+            'type_data': program.type_data,
+            'summary': program.summary(),
+            'schedule': program.schedule,
+            'modulo': program.modulo,
+            'is_manual': program.manual,
+            'start': program.start,
+        }
 
     @does_json
     def GET(self, program_id):
