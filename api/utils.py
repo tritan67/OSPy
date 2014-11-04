@@ -56,9 +56,6 @@ def does_json(func):
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        # Take care of JSONP
-        params = web.input(callback=None)
-
         # Set headers
         web.header('Cache-Control', 'no-cache')
         web.header('Content-Type', 'application/json')
@@ -68,12 +65,15 @@ def does_json(func):
         try:
             r = func(self, *args, **kwargs)
             if r:
+                # Take care of JSONP
+                params = web.input(callback=None)
                 if params.callback:
-                    # Take care of JSONP requests
+                    # Wrap the response in JSONP format
                     r = "{callback}({json});".format(callback=params.callback,
                                                      json=_json_dumps(r))
                     return r
                 else:
+                    # Just jsonify the response
                     return _json_dumps(r)
             else:
                 return ''
@@ -99,7 +99,7 @@ dummy_users = (
 
 def auth(func):
     """
-    Basic auth wrapper
+    HTTP Basic authentication wrapper
     """
 
     @wraps(func)
@@ -113,10 +113,11 @@ def auth(func):
             if (username, password) not in dummy_users:
                 raise  # essentially a goto :P
         except:
-            # no or worng auth provided
+            # no or wrong auth provided
             logger.exception('Unauthorized attempt "%s"', username)
             web.header('WWW-Authenticate', 'Basic realm="OSPy"')
             raise unauthorized()
+
         return func(self, *args, **kwargs)
     return wrapper
 

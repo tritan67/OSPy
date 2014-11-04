@@ -53,9 +53,7 @@ class Stations(object):
             try:
                 stations[sid].__setattr__(k, v)
             except:
-                #  Skip uneditable items silently
-                logger.error('Error setting station %d, \'%s\' to \'%s\'', sid, k, v)
-                # pass
+                logger.exception('Error setting station %d, \'%s\' to \'%s\'', sid, k, v)
 
     @does_json
     def GET(self, station_id=None):
@@ -147,7 +145,9 @@ class Programs(object):
     @does_json
     def POST(self, program_id):
         logger.debug('POST /programs/{}'.format(program_id if program_id else ''))
-        raise web.nomethod()
+        p = programs.create_program()
+        return self._program_to_dict(p)
+        # raise web.nomethod()
 
     # @auth
     @does_json
@@ -159,7 +159,11 @@ class Programs(object):
     @does_json
     def DELETE(self, program_id):
         logger.debug('DELETE /programs/{}'.format(program_id if program_id else ''))
-        raise web.nomethod()
+        if program_id:
+            programs.remove_program(int(program_id))
+        else:
+            while programs.count() > 0:
+                programs.remove_program(programs.count()-1)
 
     def OPTIONS(self, program_id):
         web.header('Access-Control-Allow-Origin', '*')
