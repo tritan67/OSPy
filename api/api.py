@@ -83,7 +83,7 @@ class Stations(object):
             logger.debug('Stopping station {id} ("{name}")'.format(id=station_id, name=stations[station_id].name))
             stations.deactivate(station_id)
         else:
-            raise api_badrequest()
+            raise badrequest()
             # return
 
         return self._station_to_dict(stations[station_id])
@@ -216,7 +216,7 @@ class Options(object):
                 try:
                     options[key] = val
                 except:
-                    raise api_badrequest('{"error": "Error setting option \'{}\' to \'{}\'"}'.format(key, val))
+                    raise badrequest('{"error": "Error setting option \'{}\' to \'{}\'"}'.format(key, val))
             else:
                 logger.debug('Skipping key {}'.format(key))
         return self.GET()

@@ -6,7 +6,7 @@ __author__ = [
     'Teodor Yantcheff',
 ]
 
-__version__ = '0.3 pre aplha'
+__version__ = '0.4 aplha'
 
-from api import urls
-from api import app_OSPyAPI
+from api import urls, app_OSPyAPI
+from errors import unauthorized, badrequest

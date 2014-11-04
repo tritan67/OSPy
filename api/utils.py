@@ -10,7 +10,7 @@ import logging
 
 import web
 
-from errors import api_badrequest, api_unauthorized
+from errors import badrequest, unauthorized
 
 
 logger = logging.getLogger(__name__)
@@ -76,11 +76,13 @@ def does_json(func):
             else:
                 return ''
 
-        except IndexError:  # No such item
-            raise api_badrequest('{"error": "Index out of bounds (IndexError)"}')
+        except IndexError, e:  # No such item
+            logger.exception(e)
+            raise badrequest('{"error": "Index out of bounds (IndexError)"}')
 
-        except ValueError:  # json errors
-            raise api_badrequest('{"error": "Inappropriate argument value (ValueError)"}')
+        except ValueError, e:  # json errors
+            logger.exception(e)
+            raise badrequest('{"error": "Inappropriate argument value (ValueError)"}')
 
     return wrapper
 
@@ -111,7 +113,7 @@ def auth(func):
         except:
             # no or worng auth provided
             web.header('WWW-Authenticate', 'Basic realm="OSPy"')
-            raise api_unauthorized()
+            raise unauthorized()
         return func(self, *args, **kwargs)
     return wrapper
 

@@ -66,7 +66,7 @@ class API_BadRequest(HTTPError):
 
         HTTPError.__init__(self, status, headers, message or self.message)
 
-api_badrequest = API_BadRequest
+badrequest = API_BadRequest
 
 
 class API_Unauthorized(HTTPError):
@@ -79,4 +79,4 @@ class API_Unauthorized(HTTPError):
                    'Content-Type': 'application/json'}
         HTTPError.__init__(self, status, headers, self.message)
 
-api_unauthorized = API_Unauthorized
+unauthorized = API_Unauthorized
