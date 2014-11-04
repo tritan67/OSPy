@@ -1,3 +1,5 @@
+import sys
+
 __author__ = 'Teodor Yantcheff'
 
 import base64
@@ -13,7 +15,7 @@ import web
 from errors import badrequest, unauthorized
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('OSPyAPI')
 
 
 # datetime to timestamp conversion function
@@ -76,12 +78,12 @@ def does_json(func):
             else:
                 return ''
 
-        except IndexError, e:  # No such item
-            logger.exception(e)
+        except IndexError:  # No such item
+            logger.exception('IndexError')
             raise badrequest('{"error": "Index out of bounds (IndexError)"}')
 
-        except ValueError, e:  # json errors
-            logger.exception(e)
+        except ValueError:  # json errors
+            logger.exception('ValueError JSON')
             raise badrequest('{"error": "Inappropriate argument value (ValueError)"}')
 
     return wrapper
@@ -112,6 +114,7 @@ def auth(func):
                 raise  # essentially a goto :P
         except:
             # no or worng auth provided
+            logger.exception('Unauthorized attempt "%s"', username)
             web.header('WWW-Authenticate', 'Basic realm="OSPy"')
             raise unauthorized()
         return func(self, *args, **kwargs)

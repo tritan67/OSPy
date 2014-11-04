@@ -21,8 +21,7 @@ urls = (
     r'/system/?', 'System',
 )
 
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('OSPyAPI')
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
@@ -83,6 +82,7 @@ class Stations(object):
             logger.debug('Stopping station {id} ("{name}")'.format(id=station_id, name=stations[station_id].name))
             stations.deactivate(station_id)
         else:
+            logger.error('Unknown action: "%s"', action)
             raise badrequest()
             # return
 
@@ -212,10 +212,10 @@ class Options(object):
         all_options = options.get_options()
         for key, val in update.iteritems():
             if key in all_options and key not in self.EXCLUDED_OPTIONS:
-                logger.debug("Updating '{}' to '{}'".format(key, val))
                 try:
                     options[key] = val
                 except:
+                    logger.error('Error updating \'{}\' to \'{}\''.format(key, val))
                     raise badrequest('{"error": "Error setting option \'{}\' to \'{}\'"}'.format(key, val))
             else:
                 logger.debug('Skipping key {}'.format(key))
