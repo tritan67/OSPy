@@ -1,3 +1,6 @@
+from helpers import get_cpu_temp
+import version
+
 __author__ = 'Teodor Yantcheff'
 
 from utils import *
@@ -80,7 +83,7 @@ class Stations(object):
             logger.debug('Stopping station {id} ("{name}")'.format(id=station_id, name=stations[station_id].name))
             stations.deactivate(station_id)
         else:
-            logger.error('Unknown action: "%s"', action)
+            logger.error('Unknown station action: "%s"', action)
             raise badrequest()
             # return
 
@@ -111,6 +114,13 @@ class Stations(object):
         web.header('Access-Control-Allow-Headers', 'Content-Type')
         web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
 
+# m = {
+#     ProgramType.DAYS_SIMPLE: ['start_min', 'duration_min', 'pause_min', 'repeat_times', '[days]']
+# }
+#
+#  - simple / advanced
+#  - list days / repeat days
+
 
 class Programs(object):
 
@@ -131,29 +141,95 @@ class Programs(object):
             'start': program.start,
         }
 
+    def _dict_to_program(self, prog, data):
+        set_method_table = {
+            ProgramType.DAYS_SIMPLE: prog.set_days_simple,
+            ProgramType.REPEAT_SIMPLE: prog.set_repeat_simple,
+            ProgramType.DAYS_ADVANCED: prog.set_days_advanced,
+            ProgramType.REPEAT_ADVANCED: prog.set_repeat_advanced,
+            ProgramType.WEEKLY_ADVANCED: prog.set_weekly_advanced
+        }
+
+        for k, v in data.iteritems():
+            logger.debug('Setting program property key:\'%s\' to value:\'%s\'', k, v)
+            try:
+                if k not in self.EXLUDED_KEYS:
+                    prog.__setattr__(k, v)
+            except:
+                logger.exception('Error setting program property key:\'%s\' to value:\'%s\'', k, v)
+
+            if prog.type is ProgramType.CUSTOM:
+                # CUSTOM
+                prog.modulo = data['modulo']
+                prog.manual = False
+                prog.start = datetime.fromtimestamp(data['start'])
+                prog.schedule = data['schedule']
+            else:
+                # All other types
+                program_set = set_method_table[prog.type]
+                program_set(*data['type_data'])
+
+
+    def __init__(self):
+        self.EXLUDED_KEYS = [
+            'type_name', 'summary', 'schedule'
+        ]
+
+
     @does_json
     def GET(self, program_id):
         logger.debug('GET /programs/{}'.format(program_id if program_id else ''))
 
         if program_id:
-            return self._program_to_dict(programs[int(program_id)])
+            program_id = int(program_id)
+            return self._program_to_dict(programs[program_id])
         else:
             return [self._program_to_dict(p) for p in programs]
-        # return {'programs': l}
 
     # @auth
     @does_json
     def POST(self, program_id):
         logger.debug('POST /programs/{}'.format(program_id if program_id else ''))
-        p = programs.create_program()
-        return self._program_to_dict(p)
+
+        if program_id:
+            action = web.input().get('do', '').lower()
+            program_id = int(program_id)
+            if action == 'runnow':
+                logger.debug('Starting program {id} ("{name}")'.format(id=program_id, name=programs[program_id].name))
+                programs.run_now(program_id)
+            elif action == 'stop':
+                pass  # TODO
+            else:
+                logger.error('Unknown program action: "%s"', action)
+                raise badrequest()
+            return self._program_to_dict(programs[program_id])
+        else:
+            program_data = json.loads(web.data())
+
+            p = programs.create_program()
+            p.type = program_data.get('type', ProgramType.DAYS_SIMPLE)
+            if p.type == ProgramType.DAYS_SIMPLE:
+                p.set_days_simple(0, 30, 0, 0, [])  # some sane defaults
+
+            self._dict_to_program(p, program_data)  # some sane defaults
+
+            # p.enabled = False
+            programs.add_program(p)
+            return self._program_to_dict(programs.get(p.index))
         # raise web.nomethod()
 
     # @auth
     @does_json
     def PUT(self, program_id):
         logger.debug('PUT /programs/{}'.format(program_id if program_id else ''))
-        raise web.nomethod()
+        if program_id:
+            program_id = int(program_id)
+            program_data = json.loads(web.data())
+            self._dict_to_program(programs[program_id], program_data)
+
+            return self._program_to_dict(programs[program_id])
+        else:
+            raise badrequest()
 
     # @auth
     @does_json
@@ -273,25 +349,27 @@ class System(object):
     @does_json
     def GET(self):
         logger.debug('GET ' + self.__class__.__name__)
-        raise web.forbidden()
+        return {
+            'CPU_temperature': get_cpu_temp(),
+            'version': version.ver_str,
+            'release_date': version.ver_str
+        }
 
     # @auth
     @does_json
     def POST(self):
         logger.debug('POST ' + self.__class__.__name__)
-        raise web.forbidden()
+        action = web.input().get('do', '').lower()
 
-    # @auth
-    @does_json
-    def PUT(self):
-        logger.debug('PUT ' + self.__class__.__name__)
-        raise web.forbidden()
+        if action == 'reboot':
+            logger.debug('System reboot requested via API')
+            pass  # TODO system reboot
 
-    # @auth
-    @does_json
-    def DELETE(self):
-        logger.debug('DELETE ' + self.__class__.__name__)
-        raise web.forbidden()
+        elif action == 'other action':
+            logger.debug('Other action requested via API')
+        else:
+            logger.error('Unknown system action: "%s"', action)
+            raise badrequest()
 
     def OPTIONS(self):
         web.header('Access-Control-Allow-Origin', '*')

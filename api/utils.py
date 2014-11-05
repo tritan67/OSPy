@@ -12,7 +12,7 @@ import logging
 
 import web
 
-from errors import badrequest, unauthorized
+from errors import badrequest, unauthorized, notacceptable
 
 
 logger = logging.getLogger('OSPyAPI')
@@ -78,13 +78,19 @@ def does_json(func):
             else:
                 return ''
 
-        except IndexError:  # No such item
+        except IndexError, e:  # No such item
             logger.exception('IndexError')
-            raise badrequest('{"error": "Index out of bounds (IndexError)"}')
+            raise badrequest('{"error": "(IndexError) Index out of bounds - ' + e.message + '"}')
 
-        except ValueError:  # json errors
+        except ValueError, e:  # json errors
             logger.exception('ValueError JSON')
-            raise badrequest('{"error": "Inappropriate argument value (ValueError)"}')
+            raise badrequest('{"error": "(ValueError) Inappropriate argument value - ' + e.message + '"}')
+            # raise badrequest(format(e.message))
+
+        except KeyError, e:  # missing attribute names
+            logger.exception('KeyError')
+            raise badrequest('{"error": "(KeyError) Missging key - ' + e.message + '"}')
+            # raise badrequest(format(e.message))
 
     return wrapper
 

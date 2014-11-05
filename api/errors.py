@@ -80,3 +80,16 @@ class API_Unauthorized(HTTPError):
         HTTPError.__init__(self, status, headers, self.message)
 
 unauthorized = API_Unauthorized
+
+
+class API_NotAcceptable(HTTPError):
+    """`406 Not Acceptable` error."""
+    message = '{"error": "not acceptable"}'
+
+    def __init__(self):
+        status = status = HTTP_STATUS_CODES[406]
+        headers = {'Cache-Control': 'no-cache',
+                   'Content-Type': 'application/json'}
+        HTTPError.__init__(self, status, headers, self.message)
+
+notacceptable = API_NotAcceptable

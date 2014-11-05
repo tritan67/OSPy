@@ -6,3 +6,10 @@ DAYS_ADVANCED   |list of intervals [start, end]|list days to run|               
 REPEAT_ADVANCED |list of intervals [start, end]|repeat days     |                |               |                | 
 WEEKLY_ADVANCED |list of intervals [start, end]|                |                |               |                |   
 CUSTOM          |list of intervals [start, end]|                |                |               |                |   
+
+
+        set_days_simple start_min, duration_min, pause_min, repeat_times, [days] 
+      set_repeat_simple start_min, duration_min, pause_min, repeat_times, repeat_days, start_date 
+      set_days_advanced [schedule], [days] 
+    set_repeat_advanced [schedule], repeat_days, start_date 
+    set_weekly_advanced [schedule] 
