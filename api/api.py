@@ -374,6 +374,6 @@ class System(object):
     def OPTIONS(self):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Access-Control-Allow-Headers', 'Content-Type')
-        web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        web.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
 
 app_OSPyAPI = web.application(urls, locals())
