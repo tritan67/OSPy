@@ -1,6 +1,5 @@
-import sys
-
 __author__ = 'Teodor Yantcheff'
+
 
 import base64
 from functools import wraps, partial
@@ -12,8 +11,10 @@ import logging
 
 import web
 
-from errors import badrequest, unauthorized, notacceptable
+from errors import badrequest, unauthorized
 
+from helpers import test_password
+from options import options
 
 logger = logging.getLogger('OSPyAPI')
 
@@ -95,14 +96,6 @@ def does_json(func):
     return wrapper
 
 
-# FIXME: Bind user authentication to ospy users and drop the 'dummy' part
-dummy_users = (
-    ('',      'long_password'),  # Since 'admin' is implied
-    ('admin', 'password'),
-    ('user',  'otherpassword')
-)
-
-
 def auth(func):
     """
     HTTP Basic authentication wrapper
@@ -110,19 +103,24 @@ def auth(func):
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        try:
-            http_auth = re.sub('^Basic ', '', web.ctx.env.get('HTTP_AUTHORIZATION'))
+        if not options.no_password:
+            username = password = ''
+            try:
+                auth_data = web.ctx.env.get('HTTP_AUTHORIZATION')
+                assert auth_data, 'No authentication data provided'
 
-            username, password = base64.decodestring(http_auth).split(':')
-            logger.debug('Auth Attempt with: u:\'%s\' p:\'%s\'', username, password)
+                http_auth = re.sub('^Basic ', '', auth_data)
+                username, password = base64.decodestring(http_auth).split(':')
+                logger.debug('Auth Attempt with: user:\'%s\' password:\'%s\'', username, password)
 
-            if (username, password) not in dummy_users:
-                raise  # essentially a goto :P
-        except:
-            # no or wrong auth provided
-            logger.exception('Unauthorized attempt "%s"', username)
-            web.header('WWW-Authenticate', 'Basic realm="OSPy"')
-            raise unauthorized()
+                assert test_password(password), 'Wrong password'
+                # if (username, password) not in dummy_users:
+                #     raise  # essentially a goto :P
+            except:
+                # no or wrong auth provided
+                logger.exception('Unauthorized attempt user:\'%s\' password:\'%s\'', username, password)
+                web.header('WWW-Authenticate', 'Basic realm="OSPy"')
+                raise unauthorized()
 
         return func(self, *args, **kwargs)
     return wrapper

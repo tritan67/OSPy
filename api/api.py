@@ -1,15 +1,14 @@
-from helpers import get_cpu_temp
-import version
 
 __author__ = 'Teodor Yantcheff'
 
 from utils import *
 
+import version
 from stations import stations
 from options import options
 from programs import programs, ProgramType
 from log import log
-
+import helpers
 
 urls = (
     # Stations
@@ -69,7 +68,7 @@ class Stations(object):
             # return {'type': stations_type, 'stations': l}
             return l
 
-    # @auth
+    @auth
     @does_json
     def POST(self, station_id=None):
         logger.debug('POST /stations/{}'.format(station_id if station_id else ''))
@@ -85,11 +84,10 @@ class Stations(object):
         else:
             logger.error('Unknown station action: "%s"', action)
             raise badrequest()
-            # return
 
         return self._station_to_dict(stations[station_id])
 
-    #@auth
+    @auth
     @does_json
     def PUT(self, station_id=None):
         logger.debug('PUT /stations/{}'.format(station_id if station_id else ''))
@@ -103,7 +101,7 @@ class Stations(object):
                 self._dict_to_station(sid, upd)
             return [self._station_to_dict(s) for s in stations]
 
-    # @auth
+    @auth
     @does_json
     def DELETE(self, station_id=None):
         logger.debug('DELETE /stations/{}'.format(station_id if station_id else ''))
@@ -113,13 +111,6 @@ class Stations(object):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Access-Control-Allow-Headers', 'Content-Type')
         web.header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
-
-# m = {
-#     ProgramType.DAYS_SIMPLE: ['start_min', 'duration_min', 'pause_min', 'repeat_times', '[days]']
-# }
-#
-#  - simple / advanced
-#  - list days / repeat days
 
 
 class Programs(object):
@@ -137,7 +128,7 @@ class Programs(object):
             'summary': program.summary(),
             'schedule': program.schedule,
             'modulo': program.modulo,
-            'is_manual': program.manual,
+            'manual': program.manual,
             'start': program.start,
         }
 
@@ -153,7 +144,7 @@ class Programs(object):
         for k, v in data.iteritems():
             logger.debug('Setting program property key:\'%s\' to value:\'%s\'', k, v)
             try:
-                if k not in self.EXLUDED_KEYS:
+                if k not in self.EXCLUDED_KEYS:
                     prog.__setattr__(k, v)
             except:
                 logger.exception('Error setting program property key:\'%s\' to value:\'%s\'', k, v)
@@ -162,19 +153,20 @@ class Programs(object):
                 # CUSTOM
                 prog.modulo = data['modulo']
                 prog.manual = False
-                prog.start = datetime.fromtimestamp(data['start'])
+                try:
+                    prog.start = datetime.fromtimestamp(data['start'])
+                except:
+                    prog.start = datetime.now()
                 prog.schedule = data['schedule']
             else:
                 # All other types
                 program_set = set_method_table[prog.type]
                 program_set(*data['type_data'])
 
-
     def __init__(self):
-        self.EXLUDED_KEYS = [
+        self.EXCLUDED_KEYS = [
             'type_name', 'summary', 'schedule'
         ]
-
 
     @does_json
     def GET(self, program_id):
@@ -186,7 +178,7 @@ class Programs(object):
         else:
             return [self._program_to_dict(p) for p in programs]
 
-    # @auth
+    @auth
     @does_json
     def POST(self, program_id):
         logger.debug('POST /programs/{}'.format(program_id if program_id else ''))
@@ -216,9 +208,8 @@ class Programs(object):
             # p.enabled = False
             programs.add_program(p)
             return self._program_to_dict(programs.get(p.index))
-        # raise web.nomethod()
 
-    # @auth
+    @auth
     @does_json
     def PUT(self, program_id):
         logger.debug('PUT /programs/{}'.format(program_id if program_id else ''))
@@ -231,7 +222,7 @@ class Programs(object):
         else:
             raise badrequest()
 
-    # @auth
+    @auth
     @does_json
     def DELETE(self, program_id):
         logger.debug('DELETE /programs/{}'.format(program_id if program_id else ''))
@@ -284,7 +275,7 @@ class Options(object):
         else:
             return {opt: options[opt] for opt in options.get_options() if opt not in self.EXCLUDED_OPTIONS}
 
-    # @auth
+    @auth
     # @does_json
     def PUT(self):
         logger.debug('PUT ' + self.__class__.__name__)
@@ -295,7 +286,7 @@ class Options(object):
                 try:
                     options[key] = val
                 except:
-                    logger.error('Error updating \'{}\' to \'{}\''.format(key, val))
+                    logger.error('Error updating \'%s\' to \'%s\'', key, val)
                     raise badrequest('{"error": "Error setting option \'{}\' to \'{}\'"}'.format(key, val))
             else:
                 logger.debug('Skipping key {}'.format(key))
@@ -333,7 +324,7 @@ class Logs(object):
         # return '[{"start": "2014-10-23T21:25:25", "station": 2, "end": "2014-10-23T21:25:30", "duration": "0:00:05", "station_name": "Station 03ttt", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": "2014-10-23T21:25:30", "station": 3, "end": "2014-10-23T21:25:35", "duration": "0:00:05", "station_name": "Station 04 dest", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": "2014-10-23T21:25:35", "station": 4, "end": "2014-10-23T21:25:40", "duration": "0:00:05", "station_name": "Station 05", "manual": true, "program_name": "Run-Once", "program_id": -1}]'
         # return '[{"start": 1414605866, "station": 0, "end": 1414605881, "duration": "0:00:15", "station_name": "Station 01", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": 1414605881, "station": 2, "end": 1414605896, "duration": "0:00:15", "station_name": "Station 03", "manual": true, "program_name": "Run-Once", "program_id": -1}, {"start": 1414605896, "station": 5, "end": 1414605911, "duration": "0:00:15", "station_name": "Station 06", "manual": true, "program_name": "Run-Once", "program_id": -1}]'
 
-    # @auth
+    @auth
     @does_json
     def DELETE(self):
         logger.debug('DELETE ' + self.__class__.__name__)
@@ -350,23 +341,32 @@ class System(object):
     def GET(self):
         logger.debug('GET ' + self.__class__.__name__)
         return {
-            'CPU_temperature': get_cpu_temp(),
             'version': version.ver_str,
-            'release_date': version.ver_str
+            'CPU_temperature': helpers.get_cpu_temp(),
+            'release_date': version.ver_str,
+            'uptime': helpers.uptime(),
+            'platform': helpers.determine_platform(),
+            'rpi_revision': helpers.get_rpi_revision()
         }
 
-    # @auth
+    @auth
     @does_json
     def POST(self):
         logger.debug('POST ' + self.__class__.__name__)
         action = web.input().get('do', '').lower()
 
         if action == 'reboot':
-            logger.debug('System reboot requested via API')
-            pass  # TODO system reboot
+            logger.info('System reboot requested via API')
+            helpers.reboot()
 
-        elif action == 'other action':
-            logger.debug('Other action requested via API')
+        elif action == 'restart':
+            logger.info('OSPy service restart requested via API')
+            helpers.restart()
+
+        elif action == 'poweroff':
+            logger.info('System poweroff requested via API')
+            helpers.poweroff()
+
         else:
             logger.error('Unknown system action: "%s"', action)
             raise badrequest()
