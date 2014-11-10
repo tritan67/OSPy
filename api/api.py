@@ -343,7 +343,7 @@ class System(object):
         return {
             'version': version.ver_str,
             'CPU_temperature': helpers.get_cpu_temp(),
-            'release_date': version.ver_str,
+            'release_date': version.ver_date,
             'uptime': helpers.uptime(),
             'platform': helpers.determine_platform(),
             'rpi_revision': helpers.get_rpi_revision()
