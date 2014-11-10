@@ -90,7 +90,7 @@ def does_json(func):
 
         except KeyError, e:  # missing attribute names
             logger.exception('KeyError')
-            raise badrequest('{"error": "(KeyError) Missging key - ' + e.message + '"}')
+            raise badrequest('{"error": "(KeyError) Missing key - ' + e.message + '"}')
             # raise badrequest(format(e.message))
 
     return wrapper
