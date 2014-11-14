@@ -77,7 +77,7 @@ $code:
         }
     }
     function statusTimer() {
-        jQuery.getJSON("/api/status", updateStatus)
+        jQuery.getJSON("/status.json", updateStatus)
     }
 
     function countdownTimer(el) {
@@ -212,7 +212,7 @@ $if options.manual_mode:
                             <td class="master station_off" colspan="6">Off (Master)</td>
                     $else:
                         $if station.active:
-                            $ rem = station.remaining_seconds()
+                            $ rem = station.remaining_seconds
                             <td class="shrink station_running"><button class='toggle manual narrow on' id='${station.index}'>
                             <span class='toggleleft'>On</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Off</span></button></td>
                             $if rem >= 0:

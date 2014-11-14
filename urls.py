@@ -3,6 +3,8 @@
 
 # urls is used by web.py. When a GET request is received, the corresponding class is executed.
 
+import api
+
 urls = [
     '/login', 'webpages.login_page',
     '/logout', 'webpages.logout_page',
@@ -23,6 +25,8 @@ urls = [
     '/rev', 'webpages.show_revision_page',
     '/wl', 'webpages.water_log_page',
 
-    '/api/status', 'webpages.api_status_page',
-    '/api/log', 'webpages.api_log_page',
+    '/status.json', 'webpages.api_status_page',
+    '/log.json', 'webpages.api_log_page',
+
+    '/api', api.app_OSPyAPI,
 ]

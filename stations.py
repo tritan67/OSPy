@@ -11,7 +11,7 @@ from options import options
 
 
 class _Station(object):
-    SAVE_EXCLUDE = ['SAVE_EXCLUDE', 'index', 'active']
+    SAVE_EXCLUDE = ['SAVE_EXCLUDE', 'index', 'active', 'remaining_seconds']
 
     def __init__(self, stations_instance, index):
         self._stations = stations_instance
@@ -49,6 +49,7 @@ class _Station(object):
         else:
             self._stations.deactivate(self.index)
 
+    @property
     def remaining_seconds(self):
         """Tries to figure out how long this output will be active.
         Returns 0 if no corresponding interval was found.
