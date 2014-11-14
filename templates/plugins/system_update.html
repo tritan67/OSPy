@@ -1,4 +1,4 @@
-$def with(m_vals)
+$def with(stat, events)
 
 $var title: System update from GitHub
 $var page: plugins
@@ -28,25 +28,25 @@ $var page: plugins
             <tr>
                 <td style='text-transform: none;'><b>Remote repository:</b></td>
                 <td>
-                     $m_vals["remote"]
+                     $stat["remote"]
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'><b>Local OSPy version:</b></td>
                 <td>
-                     $m_vals["ver_str"]
+                     $stat["ver_str"]
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'><b>Local OSPy date:</b></td>
                 <td>
-                     $m_vals["ver_date"]
+                     $stat["ver_date"]
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Status:</td>
                 <td>
-                    <textarea style="font-family: monospace;" rows="7" cols="100" readonly>$m_vals['status']</textarea><br/>
+                    <textarea style="font-family: monospace;" rows="7" cols="100" readonly>$'\n'.join(events)</textarea><br/>
                     <button id="cRefresh" class="refresh">Update Status</button>
                 </td>
             </tr>
@@ -55,7 +55,7 @@ $var page: plugins
     </form>
 </div>
 <div id="controls">
-    $if m_vals['can_update']:
+    $if stat['can_update']:
         <button id="cUpdate" class="options"><b>Update OSPy</b></button>
     $else:
         <button id="cUpToDate" class="cancel"><b>Up-to-date</b></button>
