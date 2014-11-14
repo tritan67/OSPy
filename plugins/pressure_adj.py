@@ -32,7 +32,7 @@ from gpio_pins import GPIO as GPIO
 
 try:
     if gv.platform == 'pi':  # If this will run on Raspberry Pi:
-        pin_pressure = 22
+        pin_pressure = 12
     elif gv.platform == 'bo':  # If this will run on Beagle Bone Black:
         pin_pressure = "P9_17"
 except AttributeError:
@@ -84,11 +84,16 @@ class PressureSender(Thread):
             try:
                 datapressure = get_pressure_options()                             # load data from file
                 if datapressure['press'] != 'off':                                # if pressure plugin is enabled
-                    if (gv.sd['mas'] != 0) and not (options.manual_mode):                   # if is use master station and not manual control
-                        if gv.srvals[gv.sd['mas']] != 0:                              # if master station is ON
-                            if GPIO.input(pin_pressure) == 0:                           # if sensor is open
-                                self._sleep(int(datapressure['time']))                   # wait to activated pressure sensor
-                                if GPIO.input(pin_pressure) == 0:                        # if sensor is current open
+                    if (gv.sd['mas'] != 0) and not (gv.sd['mm']):                 # if is use master station and not manual control
+                        if gv.srvals[gv.sd['mas']] != 0:                          # if master station is ON
+                            if GPIO.input(pin_pressure) == 0:                     # if sensor is open
+                                self._sleep(int(datapressure['time']))            # wait to activated pressure sensor
+                                if GPIO.input(pin_pressure) == 0:                 # if sensor is current open
+                    if (gv.sd['mas'] != 0) and not (options.manual_mode):         # if is use master station and not manual control
+                        if gv.srvals[gv.sd['mas']] != 0:                          # if master station is ON
+                            if GPIO.input(pin_pressure) == 0:                     # if sensor is open
+                                self._sleep(int(datapressure['time']))            # wait to activated pressure sensor
+                                if GPIO.input(pin_pressure) == 0:                 # if sensor is current open
                                     stop_stations()
                                     self.add_status('Pressure sensor is not activated in time -> stops all stations and sends email.')
                                     if datapressure['sendeml'] != 'off':  # if enabled send email
@@ -108,7 +113,7 @@ class PressureSender(Thread):
                         send = False
                     except Exception as err:
                         self.add_status('Email was not sent! ' + str(err))
-
+               
                 self._sleep(1)
 
             except Exception:
@@ -128,10 +133,11 @@ checker = PressureSender()
 def get_pressure_options():
     """Returns the data form file."""
     datapressure = {
-        'time': 20,
+        'time': 10,
         'press': 'off',
+        'normally': 'on',
         'sendeml': 'off',
-        'sensor': get_pressure_sensor(),
+        'sensor': get_pressure_sensor_str(),
         'status': checker.status
     }
     try:
@@ -146,13 +152,30 @@ def get_pressure_options():
     return datapressure
 
 
-def get_pressure_sensor():
-    if GPIO.input(pin_pressure) != 1:
-        press = ('Pressure sensor is not active.')  # sensor pin is connected to ground
+def get_pressure_sensor_str():
+    if GPIO.input(pin_pressure) == 0:
+        press = ('GPIO Pin = 0 is closed.')  
     else:
-        press = ('Pressure sensor is active - pressure in pipeline is OK.')  # sensor pin is unconnected
-
+        press = ('GPIO Pin = 1 is open.')  
     return str(press)
+
+def get_check_pressure():
+    datapressure = get_pressure_options()
+    try:
+        if datapressure['normally'] != 'off':
+            if GPIO.input(pin_pressure):  # pressure detected
+                press = 1
+            else:
+                press = 0
+        elif datapressure['normally'] != 'on':
+            if not GPIO.input(pin_pressure):
+                press = 1
+            else:
+                press = 0
+        return press
+    except NameError:
+        pass
+
 
 ################################################################################
 # Web pages:                                                                   #
@@ -184,6 +207,8 @@ class update(ProtectedPage):
             qdict['press'] = 'off'
         if 'sendeml' not in qdict:
             qdict['sendeml'] = 'off'
+        if 'normally' not in qdict:
+            qdict['normally'] = 'off'
         with open('./data/pressure_adj.json', 'w') as f:  # write the settings to file
             json.dump(qdict, f)
         checker.update()

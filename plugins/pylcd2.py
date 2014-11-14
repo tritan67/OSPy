@@ -58,7 +58,7 @@ class lcd:
         self.lcd_write(0x01)
         self.lcd_write(0x06)
         self.lcd_write(0x0C)
-        self.lcd_write(0x0F)
+        #self.lcd_write(0x0F) # disable blink cursor
 
     # clocks EN to latch command
     def lcd_strobe(self):
