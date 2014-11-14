@@ -25,9 +25,16 @@ $var page: plugins
             <tr>
                 <td style='text-transform: none;'>Use pressure sensor for master station:</td>
                 <td>
-                    <input name='press' type='checkbox'${" checked" if m_vals['press'] == "on" else ""}> (Pressure sensor is connected between GPIO pin 22 and ground)  
+                    <input name='press' type='checkbox'${" checked" if m_vals['press'] == "on" else ""}> (Pressure sensor is connected between GPIO 18 - pin 12 and ground)  
                 </td>
             </tr>
+            <tr>
+                <td style='text-transform: none;'>Normally open:</td>
+                <td>
+                    <input name='normally' type='checkbox'${" checked" if m_vals['normally'] == "on" else ""}>  
+                </td>
+            </tr>
+
             <tr>
                 <td style='text-transform: none;'>Send email with error:</td>
                 <td>
@@ -41,7 +48,7 @@ $var page: plugins
                 </td>
             </tr>
             <tr>
-                <td style='text-transform: none;'>Pressure sensor:</td>
+                <td style='text-transform: none;'>GPIO state:</td>
                 <td>
                    $m_vals['sensor']
                 </td>

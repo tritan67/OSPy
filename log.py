@@ -5,7 +5,8 @@ __author__ = 'Rimco'
 # System imports
 import datetime
 import logging
-import time
+import traceback
+from os import path
 
 # Local imports
 from options import options
@@ -83,7 +84,7 @@ class _Log(logging.Handler):
         })
 
         fmt_dict = interval.copy()
-        fmt_dict['asctime'] = time.strftime("%Y-%m-%d %H:%M:%S") + ',000'
+        fmt_dict['asctime'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
         fmt_dict['start'] = fmt_dict['start'].strftime("%Y-%m-%d %H:%M:%S")
         fmt_dict['end'] = fmt_dict['end'].strftime("%Y-%m-%d %H:%M:%S")
 
@@ -106,7 +107,7 @@ class _Log(logging.Handler):
                 entry['data']['active'] = False
 
                 fmt_dict = entry['data'].copy()
-                fmt_dict['asctime'] = time.strftime("%Y-%m-%d %H:%M:%S") + ',000'
+                fmt_dict['asctime'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
                 fmt_dict['start'] = fmt_dict['start'].strftime("%Y-%m-%d %H:%M:%S")
                 fmt_dict['end'] = fmt_dict['end'].strftime("%Y-%m-%d %H:%M:%S")
 
@@ -130,6 +131,21 @@ class _Log(logging.Handler):
                 'level': level,
                 'data': message
             })
+            if options.debug_log:
+                tb = traceback.extract_stack()[-2]
+                filename = path.basename(tb[0])
+                lineno = tb[1]
+                fmt_dict = {
+                    'asctime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3],
+                    'levelname': logging.getLevelName(level),
+                    'event_type': event_type,
+                    'filename': filename,
+                    'lineno': lineno,
+                    'message': message
+                }
+
+                message = EVENT_FORMAT % fmt_dict
+
             self._save_log(message, level, event_type)
             self._prune(event_type)
 
