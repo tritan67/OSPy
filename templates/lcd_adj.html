@@ -19,7 +19,7 @@ $var page: plugins
 
 <div id="plugin">
     <div class="title">LCD settings</div>
-    <p>This plugin sends data to I2C for LCD 16x2 char with PCF8574. Visit for more: www.pihrt.com/elektronika/258-moje-rapsberry-pi-i2c-lcd-16x2.</p>
+    <p>This plugin sends data to I2C for LCD 16x2 (16x1) char with PCF8574(A). Automatically detects i2c at: 0x20-0x27, 0x38-0x3F. Compatible with HD44780 controller.</p>
     <form id="pluginForm" action="/lcda" method="get">
         <table class="optionList">
             <tr>
@@ -29,15 +29,9 @@ $var page: plugins
                 </td>
             </tr>
             <tr>
-                <td style='text-transform: none;'>Adress for PCF8574:</td>
+                <td style='text-transform: none;'>2 or 1 line display</td>
                 <td>
-                    <input name='adress' type='text' value=$m_vals["adress"]> (default 0x20)
-                </td>
-            </tr>
-            <tr>
-                <td style='text-transform: none;'>Range adress: </td>
-                <td>
-                    PCF8574 = 0x20-0x27, PCF8574A = 0x38-0x3F
+                    <input name='line' type='checkbox'${" checked" if m_vals['line'] == "on" else ""}> (default 2 line display)
                 </td>
             </tr>
             <tr>
@@ -48,7 +42,7 @@ $var page: plugins
             </tr>
         </table>
     </form>
-<p>Compatible with HD44780 LCD 16x2 controller.</p>
+<p>Visit for more: www.pihrt.com/elektronika/258-moje-rapsberry-pi-i2c-lcd-16x2.</p>
 </div>
 <div id="controls">
     <button id="cSubmit" class="submit"><b>Submit</b></button>
