@@ -9,21 +9,26 @@ import sys
 import traceback
 
 import web
-import gv  # Get access to ospy's settings
-from urls import urls  # Get access to ospy's URLsimport errno
-from ospy import template_render
 from webpages import ProtectedPage
 from helpers import restart
 
 
-# Add a new url to open the data entry page.
-urls.extend(['/UPs', 'plugins.system_update.status_page',
-             '/UPsr', 'plugins.system_update.refresh_page',
-             '/UPu', 'plugins.system_update.update_page',
-             '/UPr', 'plugins.system_update.restart_page'])
+NAME = 'System Update'
+LINK = '/UPs'
+URLS = [
+    '/UPs', 'plugins.system_update.status_page',
+    '/UPsr', 'plugins.system_update.refresh_page',
+    '/UPu', 'plugins.system_update.update_page',
+    '/UPr', 'plugins.system_update.restart_page'
+]
 
-# Add this plugin to the home page plugins menu
-gv.plugin_menu.append(['System update', '/UPs'])
+
+def start():
+    pass
+
+
+def stop():
+    pass
 
 
 class StatusChecker(Thread):
@@ -121,12 +126,11 @@ class StatusChecker(Thread):
                 self.add_status('System update plug-in encountered error:\n' + err_string)
                 self._sleep(60)
 
-checker = StatusChecker()
+#checker = StatusChecker()
 
 ################################################################################
 # Helper functions:                                                            #
 ################################################################################
-
 
 def perform_update():
     # ignore local chmod permission

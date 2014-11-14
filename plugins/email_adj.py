@@ -10,9 +10,9 @@ import sys
 import traceback
 
 import web
-import gv  # Get access to ospy's settings
+
 from urls import urls  # Get access to ospy's URLs
-from ospy import template_render
+
 from webpages import ProtectedPage
 from helpers import duration_str
 

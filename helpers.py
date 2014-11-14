@@ -172,6 +172,7 @@ def save_to_options(qdict):
 
     for option in options.OPTIONS:
         key = option['key']
+        multi_enum = option.get('multi_options')
         if 'category' in option:
             if key in qdict:
                 value = qdict[key]
@@ -185,6 +186,16 @@ def save_to_options(qdict):
                     options[key] = int(qdict[key])
                 else:
                     options[key] = qdict[key]
+            elif multi_enum:
+                if hasattr(multi_enum, '__call__'):
+                    multi_enum = multi_enum()
+
+                value = []
+                for name in multi_enum:
+                    v_name = key + '_' + name
+                    if v_name in qdict and qdict[v_name] and qdict[v_name] != "off":
+                        value.append(name)
+                options[key] = value
             else:
                 if isinstance(option['default'], bool):
                     options[key] = False

@@ -9,10 +9,10 @@ import sys
 import traceback
 
 import web
-import gv  # Get access to ospy's settings
+
 from helpers import get_ip, uptime, reboot, poweroff, duration_str, jsave, restart
 from urls import urls  # Get access to ospy's URLs
-from ospy import template_render
+
 from webpages import ProtectedPage
 
 

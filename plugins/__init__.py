@@ -1,42 +1,58 @@
-from glob import glob
-import keyword
-import re
-import sys
-import os
-import stat
-from os.path import dirname, join, split, splitext
 
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+import pkgutil
+import traceback
+
+__all__ = [] # No modules should be accessed statically
+__running = {}
 
 
-def isidentifier(s):  # to make this work with Python 2.7.
-    if s in keyword.kwlist:
-        return False
-    return re.match(r'^[a-z_][a-z0-9_]*$', s, re.I) is not None
+def available():
+    plugins = []
+    for imp, module, is_pkg in pkgutil.iter_modules(['plugins']):
+        plugins.append(module)
+    return plugins
 
-basedir = dirname(__file__)
-os_name = os.name
 
-__all__ = []
-for name in glob(join(basedir, '*.py')):
-    module = splitext(split(name)[-1])[0]
-    if not module.startswith('_') and isidentifier(module) and not keyword.iskeyword(module):
-        if os_name == "posix":
-            st = os.stat(name)
-            if bool(st.st_mode & stat.S_IXGRP) or module == 'mobile_app':  # Load plugin if group permission is executable.
-                try:
-                    __import__(__name__+'.'+module)
-                except Exception as e:
-                    print 'Ignoring exception while loading the {} plug-in.'.format(module)
-                    print e  # Provide feedback for plugin development
-                else:
-                    __all__.append(module)       
-        elif os_name == "nt":
+def start_enabled_plugins():
+    from options import options
+    from urls import urls
+    for module in available():
+        if module in options.enabled_plugins and module not in __running:
+            plugin_name = module
+            import_name = __name__+'.'+module
             try:
-                __import__(__name__+'.'+module)
+                plugin = getattr(__import__(import_name), module)
+                plugin_name = plugin.NAME
+                plugin_link = plugin.LINK
+                plugin_urls = plugin.URLS
+                urls += plugin_urls
+                __running[module] = plugin
+                plugin.start()
+                print 'Started the {} plug-in.'.format(plugin_name)
             except Exception as e:
-                print 'Ignoring exception while loading the {} plug-in.'.format(module)
-                print e  # Provide feedback for plugin development
-            else:
-                __all__.append(module)
-__all__.sort()
+                print 'Failed to load the {} plug-in:'.format(plugin_name)
+                traceback.print_exc()
+                options.enabled_plugins.remove(module)
+
+    for module, plugin in __running.copy().iteritems():
+        if module not in options.enabled_plugins:
+            plugin_name = plugin.NAME
+            plugin_urls = plugin.URLS
+            try:
+                for url in plugin_urls:
+                    if url in urls:
+                        urls.remove(url)
+                plugin.stop()
+                del __running[module]
+                print 'Stopped the {} plug-in.'.format(plugin_name)
+            except Exception as e:
+                print 'Failed to stop the {} plug-in:'.format(plugin_name)
+                traceback.print_exc()
+
+
+def running():
+    return __running.keys()
+
+
+def get(name):
+    return __running[name]

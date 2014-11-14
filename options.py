@@ -8,6 +8,8 @@ from threading import Timer
 import logging
 import shelve
 
+import plugins
+
 OPTIONS_FILE = './data/options.db'
 
 
@@ -53,6 +55,14 @@ class _Options(object):
             "category": "System",
             "min": 1,
             "max": 65535
+        },
+        {
+            "key": "enabled_plugins",
+            "name": "Enabled plug-ins",
+            "default": [],
+            "multi_options": plugins.available,
+            "help": "Only the plug-ins that have been enabled will be loaded.",
+            "category": "System"
         },
 
         #######################################################################
@@ -376,12 +386,3 @@ class _RainBlocks(dict):
         return max(0, (self.block_end() - datetime.now()).total_seconds())
 
 rain_blocks = _RainBlocks()
-
-
-class _Plugins(dict):
-    def __init__(self):
-        super(_Plugins, self).__init__()
-
-    # TODO
-
-plugins = _Plugins()

@@ -2,7 +2,7 @@
 
 import time
 
-import gv
+
 from gpio_pins import GPIO, pin_relay
 from urls import urls
 import web
