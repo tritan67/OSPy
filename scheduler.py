@@ -122,6 +122,10 @@ def predicted_schedule(start_time, end_time):
                 }
                 station_schedules[station].append(new_schedule)
 
+    # Make lists sorted on start time
+    for station in station_schedules:
+        station_schedules[station].sort(key=lambda inter: inter['start'])
+
     all_intervals = []
     # Adjust for weather and remove overlap:
     for station, schedule in station_schedules.iteritems():

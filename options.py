@@ -357,7 +357,7 @@ class _Options(object):
             for attr in [att for att in dir(obj) if not att.startswith('_') and att not in exclude]:
                 if not hasattr(getattr(obj, attr), '__call__'):
                     values[attr] = getattr(obj, attr)
-            print cls, values
+
             setattr(self, cls, values)
 
     def erase(self, obj, key=""):
