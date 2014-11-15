@@ -61,6 +61,7 @@ class _Options(object):
             "name": "Enabled plug-ins",
             "default": [],
             "multi_options": plugins.available,
+            "multi_options_names": plugins.plugin_names,
             "help": "Only the plug-ins that have been enabled will be loaded.",
             "category": "System"
         },
@@ -217,6 +218,7 @@ class _Options(object):
         self._values = {}
         self._write_timer = None
         self._callbacks = {}
+        self._block = []
 
         for info in self.OPTIONS:
             self._values[info["key"]] = info["default"]
@@ -332,34 +334,39 @@ class _Options(object):
     def get_info(self, option):
         return self.OPTIONS[option]
 
-    def load(self, obj, key=""):
-        cls = 'Cls' + (obj if isinstance(obj, type) else type(obj)).__name__ + str(key)
+    def cls_name(self, obj, key=""):
+        tpy = (obj if isinstance(obj, type) else type(obj))
+        return 'Cls_' + tpy.__module__ + '_' + tpy.__name__ + '_' + str(key).replace(' ', '_')
 
+    def load(self, obj, key=""):
+        cls = self.cls_name(obj, key)
+        self._block.append(cls)
         try:
             values = getattr(self, cls)
             for name, value in values.iteritems():
                 setattr(obj, name, value)
         except KeyError:
             pass
+        self._block.remove(cls)
 
     def save(self, obj, key=""):
-        cls = 'Cls' + (obj if isinstance(obj, type) else type(obj)).__name__ + str(key)
-
-        values = {}
-        exclude = obj.SAVE_EXCLUDE if hasattr(obj, 'SAVE_EXCLUDE') else []
-        for attr in [att for att in dir(obj) if not att.startswith('_') and att not in exclude]:
-            if not hasattr(getattr(obj, attr), '__call__'):
-                values[attr] = getattr(obj, attr)
-
-        setattr(self, cls, values)
+        cls = self.cls_name(obj, key)
+        if cls not in self._block:
+            values = {}
+            exclude = obj.SAVE_EXCLUDE if hasattr(obj, 'SAVE_EXCLUDE') else []
+            for attr in [att for att in dir(obj) if not att.startswith('_') and att not in exclude]:
+                if not hasattr(getattr(obj, attr), '__call__'):
+                    values[attr] = getattr(obj, attr)
+            print cls, values
+            setattr(self, cls, values)
 
     def erase(self, obj, key=""):
-        cls = 'Cls' + (obj if isinstance(obj, type) else type(obj)).__name__ + str(key)
+        cls = self.cls_name(obj, key)
         if hasattr(self, cls):
             delattr(self, cls)
 
     def available(self, obj, key=""):
-        cls = 'Cls' + (obj if isinstance(obj, type) else type(obj)).__name__ + str(key)
+        cls = self.cls_name(obj, key)
         return hasattr(self, cls)
 
 options = _Options()

@@ -2,7 +2,6 @@
 # this plugins check sha on github and update ospy file from github
 
 from threading import Thread, Event, Condition
-from random import randint
 import time
 import subprocess
 import sys
@@ -13,17 +12,12 @@ import web
 from webpages import ProtectedPage
 from helpers import restart
 from log import log
+from plugins import plugin_url
 import version
 
 
 NAME = 'System Update'
-LINK = '/UPs'
-URLS = [
-    '/UPs', 'plugins.system_update.status_page',
-    '/UPsr', 'plugins.system_update.refresh_page',
-    '/UPu', 'plugins.system_update.update_page',
-    '/UPr', 'plugins.system_update.restart_page'
-]
+LINK = 'status_page'
 
 
 class StatusChecker(Thread):
@@ -82,18 +76,18 @@ class StatusChecker(Thread):
         changes = '  ' + '\n  '.join(subprocess.check_output(command.split()).split('\n'))
 
         if new_revision == version.revision and new_date == version.ver_date:
-            log.log_event(NAME, 'Up-to-date.')
+            log.info(NAME, 'Up-to-date.')
             self.status['can_update'] = False
         elif new_revision > version.revision:
-            log.log_event(NAME, 'New version is available!')
-            log.log_event(NAME, 'Currently running revision: %d (%s)' % (version.revision, version.ver_date))
-            log.log_event(NAME, 'Available revision: %d (%s)' % (new_revision, new_date))
-            log.log_event(NAME, 'Changes:\n' + changes)
+            log.info(NAME, 'New version is available!')
+            log.info(NAME, 'Currently running revision: %d (%s)' % (version.revision, version.ver_date))
+            log.info(NAME, 'Available revision: %d (%s)' % (new_revision, new_date))
+            log.info(NAME, 'Changes:\n' + changes)
             self.status['can_update'] = True
         else:
-            log.log_event(NAME, 'Running unknown version!')
-            log.log_event(NAME, 'Currently running revision: %d (%s)' % (version.revision, version.ver_date))
-            log.log_event(NAME, 'Available revision: %d (%s)' % (new_revision, new_date))
+            log.info(NAME, 'Running unknown version!')
+            log.info(NAME, 'Currently running revision: %d (%s)' % (version.revision, version.ver_date))
+            log.info(NAME, 'Available revision: %d (%s)' % (new_revision, new_date))
             self.status['can_update'] = False
 
         self._done.acquire()
@@ -101,8 +95,6 @@ class StatusChecker(Thread):
         self._done.release()
 
     def run(self):
-        self._sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-
         while not self._stop.is_set():
             try:
                 log.clear(NAME)
@@ -114,7 +106,7 @@ class StatusChecker(Thread):
                 self.started.set()
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 err_string = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-                log.log_event(NAME, 'System update plug-in encountered error:\n' + err_string)
+                log.info(NAME, 'System update plug-in encountered error:\n' + err_string)
                 self._sleep(60)
 
 checker = None
@@ -131,7 +123,7 @@ def perform_update():
     command = "git pull"
     output = subprocess.check_output(command.split())
 
-    log.log_event(NAME, 'Update result: ' + output, logging.DEBUG)
+    log.debug(NAME, 'Update result: ' + output)
     restart(3)
 
 
@@ -165,7 +157,7 @@ class refresh_page(ProtectedPage):
 
     def GET(self):
         checker.update_wait()
-        raise web.seeother('/UPs')
+        raise web.seeother(plugin_url(status_page))
 
 
 class update_page(ProtectedPage):
@@ -173,7 +165,7 @@ class update_page(ProtectedPage):
 
     def GET(self):
         perform_update()
-        return self.template_render.restarting('/UPs')
+        return self.template_render.restarting(plugin_url(status_page))
 
 
 class restart_page(ProtectedPage):
@@ -181,4 +173,4 @@ class restart_page(ProtectedPage):
 
     def GET(self):
         restart(3)
-        return self.template_render.restarting('/UPs')
+        return self.template_render.restarting(plugin_url(status_page))

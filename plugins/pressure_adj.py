@@ -75,7 +75,7 @@ class PressureSender(Thread):
 
     def run(self):
         time.sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-        logging.debug("Pressure plugin is active")
+        log.debug(NAME, "Pressure plugin is active")
         send = False
         SUBJ = "Reporting from OSPy"  # Subject in email
         self.add_status('Waiting...')

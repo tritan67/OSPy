@@ -69,7 +69,7 @@ $def with (content)
                 $if len(plugins.running()) > 0:
                     $for plugin in plugins.running():
                         $if plugins.get(plugin).LINK:
-                            jQuery('#pluginMenu').append('<button class="execute" type="button" onclick="window.location.href=\'${plugins.get(plugin).LINK}\'">${plugins.get(plugin).NAME}</button><br/>');
+                            jQuery('#pluginMenu').append('<button class="execute" type="button" onclick="window.location.href=\'${plugins.plugin_url(plugins.get(plugin).LINK)}\'">${plugins.get(plugin).NAME}</button><br/>');
                 $else:
                     jQuery('#pluginMenu').append('No plug-ins loaded.<br/>');
 

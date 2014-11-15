@@ -356,7 +356,7 @@ $code:
             $for station in stations.enabled_stations():
                 <div style="padding: 0; white-space: nowrap;">
                     <div class="program_label">${station.name}:</div>
-                    <div style="display: inline-block; padding: 2px 0">
+                    <div style="display: inline-block;">
                         <button id="station${station.index}" class="station toggle narrow ${'on' if station.index in program.stations else 'off'}">
                             <span class="toggleleft">On</span>
                             <span class="togglesep">&nbsp;</span>

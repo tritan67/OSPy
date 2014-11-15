@@ -63,9 +63,16 @@ $var page: options
                 enum = option.get('options')
                 if hasattr(enum, '__call__'):
                     enum = enum()
-                multi_enum = option.get('multi_options')
+                multi_enum = option.get('multi_options', [])
                 if hasattr(multi_enum, '__call__'):
                     multi_enum = multi_enum()
+                multi_enum_names = option.get('multi_options_names')
+                if hasattr(multi_enum_names, '__call__'):
+                    multi_enum_names = multi_enum_names()
+                if multi_enum and not multi_enum_names:
+                    multi_enum_names = {}
+                    for opt in multi_enum:
+                        multi_enum_names[opt] = opt
                 minv = " min='" + str(option['min']) + "'" if 'min' in option else ""
                 maxv = " max='" + str(option['max']) + "'" if 'max' in option else ""
 
@@ -99,7 +106,7 @@ $var page: options
                     output += "<div style='display: inline-block'>\n"
                     for e in multi_enum:
                         sel = " checked" if e in value else ""
-                        output += "<input name='" + name + "_" + e + "' type='checkbox'" + sel + ">" + e + "<br>\n"
+                        output += "<input name='" + name + "_" + e + "' type='checkbox'" + sel + ">" + multi_enum_names[e] + "<br>\n"
                     output += "</div>\n"
                 elif isinstance(value, bool):
                     output += "<input name='" + name + "' type='checkbox' " + ("checked" if value>0 else "") + ">\n"

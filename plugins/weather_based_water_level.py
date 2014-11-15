@@ -1,7 +1,9 @@
 # !/usr/bin/env python
+
+
 import datetime
 from random import randint
-from threading import Thread
+from threading import Thread, Event
 import sys
 import traceback
 import shutil
@@ -11,76 +13,97 @@ import re
 import os
 import urllib
 import urllib2
-import errno
-from options import options
 
 import web
-
-from urls import urls  # Get access to ospy's URLs
-
+from log import log
+from options import options
+from options import level_adjustments
+from helpers import mkdir_p
 from webpages import ProtectedPage
 
 
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
+NAME = 'Weather-based Water Level'
+LINK = 'settings_page'
+
+
+class _Options(object):
+    def __init__(self):
+        self.enabled = False
+        self.wl_min = 0
+        self.wl_max = 200
+        self.days_history = 3
+        self.days_forecast = 3
+        self.wapikey = ''
+
+        options.load(self)
+        self._loaded = True
+
+    def __setattr__(self, key, value):
+        try:
+            super(_Options, self).__setattr__(key, value)
+            if not key.startswith('_') and hasattr(self, '_loaded'):
+                options.save(self)
+        except ValueError:  # No index available yet
             pass
-        else:
-            raise
 
-# Add a new url to open the data entry page.
-urls.extend(['/lwa',  'plugins.weather_level_adj.settings',
-             '/lwj',  'plugins.weather_level_adj.settings_json',
-             '/luwa', 'plugins.weather_level_adj.update'])
+    def update(self, qdict):
+        for attr in [att for att in dir(self) if not att.startswith('_')]:
+            old_value = getattr(self, attr)
+            if isinstance(old_value, bool):
+                setattr(self, attr, True if qdict.get(attr, 'off') == 'on' else False)
+            elif isinstance(old_value, int):
+                setattr(self, attr, int(qdict.get(attr, old_value)))
+            elif isinstance(old_value, float):
+                setattr(self, attr, float(qdict.get(attr, old_value)))
+            elif isinstance(old_value, str):
+                setattr(self, attr, qdict.get(attr, old_value))
 
-# Add this plugin to the home page plugins menu
-gv.plugin_menu.append(['Weather-based Water Level', '/lwa'])
+    def json_dict(self):
+        result = {}
+        for attr in [att for att in dir(self) if not att.startswith('_')]:
+            value = getattr(self, attr)
+            if not hasattr(value, '__call__'):
+                result[attr] = value
+        return result
+
+
+plugin_options = _Options()
 
 
 ################################################################################
 # Main function loop:                                                          #
 ################################################################################
-
 class WeatherLevelChecker(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
-        self.start()
-        self.status = ''
+        self._stop = Event()
 
         self._sleep_time = 0
+        self.start()
 
-    def add_status(self, msg):
-        if self.status:
-            self.status += '\n' + msg
-        else:
-            self.status = msg
-        print msg
+    def stop(self):
+        self._stop.set()
 
     def update(self):
         self._sleep_time = 0
 
     def _sleep(self, secs):
         self._sleep_time = secs
-        while self._sleep_time > 0:
+        while self._sleep_time > 0 and not self._stop.is_set():
             time.sleep(1)
             self._sleep_time -= 1
 
     def run(self):
-        time.sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-
-        while True:
+        while not self._stop.is_set():
             try:
-                self.status = ''
-                options = options_data()
-                if options["auto_wl"] == "off":
-                    if 'wl_weather' in gv.sd:
-                        del gv.sd['wl_weather']
+                log.clear(NAME)
+                if not plugin_options.enabled:
+                    if NAME in level_adjustments:
+                        del level_adjustments[NAME]
+                    self._sleep(5)
                 else:
-
-                    logging.debug("Checking weather status...")
+                    log.debug(NAME, "Checking weather status...")
                     remove_data(['history_', 'conditions_', 'forecast10day_'])
 
                     history = history_info()
@@ -105,12 +128,12 @@ class WeatherLevelChecker(Thread):
                         info[0]['rain_mm'] = info[0]['rain_mm'] * day_left + today['rain_mm']
 
                     if not info:
-                        self.add_status(str(history))
-                        self.add_status(str(today))
-                        self.add_status(str(forecast))
+                        log.info(NAME, str(history))
+                        log.info(NAME, str(today))
+                        log.info(NAME, str(forecast))
                         raise Exception('No information available!')
 
-                    self.add_status('Using %d days of information.' % len(info))
+                    log.info(NAME, 'Using %d days of information.' % len(info))
 
                     total_info = {
                         'temp_c': sum([val['temp_c'] for val in info.values()])/len(info),
@@ -133,86 +156,29 @@ class WeatherLevelChecker(Thread):
 
                     water_adjustment = round((water_left / (4 * len(info))) * 100, 1)
 
-                    water_adjustment = max(float(options['wl_min']), min(float(options['wl_max']), water_adjustment))
+                    water_adjustment = float(max(plugin_options.wl_min, min(plugin_options.wl_max, water_adjustment)))
 
-                    self.add_status('Water needed (%d days): %.1fmm' % (len(info), water_needed))
-                    self.add_status('Total rainfall       : %.1fmm' % total_info['rain_mm'])
-                    self.add_status('_______________________________-')
-                    self.add_status('Irrigation needed    : %.1fmm' % water_left)
-                    self.add_status('Weather Adjustment   : %.1f%%' % water_adjustment)
+                    log.info(NAME, 'Water needed (%d days): %.1fmm' % (len(info), water_needed))
+                    log.info(NAME, 'Total rainfall       : %.1fmm' % total_info['rain_mm'])
+                    log.info(NAME, '_______________________________-')
+                    log.info(NAME, 'Irrigation needed    : %.1fmm' % water_left)
+                    log.info(NAME, 'Weather Adjustment   : %.1f%%' % water_adjustment)
 
-                    gv.sd['wl_weather'] = water_adjustment
+                    level_adjustments[NAME] = water_adjustment
 
                     self._sleep(3600)
 
             except Exception:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                err_string = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-                self.add_status('Weather-base water level encountered error:\n' + err_string)
+                err_string = ''.join(traceback.format_exc())
+                log.info(NAME, 'Weather-base water level encountered error:\n' + err_string)
                 self._sleep(60)
 
-checker = WeatherLevelChecker()
-
-
-################################################################################
-# Web pages:                                                                   #
-################################################################################
-
-class settings(ProtectedPage):
-    """Load an html page for entering weather-based irrigation adjustments"""
-
-    def GET(self):
-        return self.template_render.weather_level_adj(options_data())
-
-
-class settings_json(ProtectedPage):
-    """Returns plugin settings in JSON format"""
-
-    def GET(self):
-        web.header('Access-Control-Allow-Origin', '*')
-        web.header('Content-Type', 'application/json')
-        return json.dumps(options_data())
-
-
-class update(ProtectedPage):
-    """Save user input to weather_level_adj.json file"""
-    def GET(self):
-        qdict = web.input()
-        if 'auto_wl' not in qdict:
-            qdict['auto_wl'] = 'off'
-        with open('./data/weather_level_adj.json', 'w') as f:  # write the settings to file
-            json.dump(qdict, f)
-        checker.update()
-        raise web.seeother('/')
+checker = None
 
 
 ################################################################################
 # Helper functions:                                                            #
 ################################################################################
-
-def options_data():
-    # Defaults:
-    result = {
-        'auto_wl': 'off',
-        'wl_min': 0,
-        'wl_max': 200,
-        'days_history': 3,
-        'days_forecast': 3,
-        'wapikey': '',
-        'status': checker.status
-    }
-    try:
-        with open('./data/weather_level_adj.json', 'r') as f:  # Read the settings from file
-            file_data = json.load(f)
-        for key, value in file_data.iteritems():
-            if key in result:
-                result[key] = value
-    except Exception:
-        pass
-
-    return result
-
-
 # Resolve location to LID
 def get_wunderground_lid():
     if re.search("pws:", options.location):
@@ -230,16 +196,16 @@ def get_wunderground_lid():
 def get_data(suffix, name=None, force=False):
     if name is None:
         name = suffix
-    options = options_data()
     path = os.path.join('.', 'data', 'weather_level_history', name)
     directory = os.path.dirname(path)
     mkdir_p(directory)
     try_nr = 1
+    data = {}
     while try_nr <= 2:
         try:
             if not os.path.exists(path) or force:
                 with open(path, 'wb') as fh:
-                    req = urllib2.urlopen("http://api.wunderground.com/api/"+options['wapikey']+"/" + suffix)
+                    req = urllib2.urlopen("http://api.wunderground.com/api/"+plugin_options.wapikey+"/" + suffix)
                     while True:
                         chunk = req.read(20480)
                         if not chunk:
@@ -254,13 +220,13 @@ def get_data(suffix, name=None, force=False):
 
             if data is not None:
                 if 'error' in data['response']:
-                    raise Exception(str(data['response']['error']))
+                    raise Exception(path + ': ' + str(data['response']['error']))
             else:
                 raise Exception('JSON decoding failed.')
 
         except Exception as err:
             if try_nr < 2:
-                print str(err), 'Retrying.'
+                log.debug(str(err), 'Retrying.')
                 os.remove(path)
             else:
                 raise
@@ -287,10 +253,8 @@ def remove_data(prefixes):
 ################################################################################
 # Info queries:                                                                #
 ################################################################################
-
 def history_info():
-    options = options_data()
-    if int(options['days_history']) == 0:
+    if plugin_options.days_history == 0:
         return {}
 
     lid = get_wunderground_lid()
@@ -301,7 +265,7 @@ def history_info():
     day_delta = datetime.timedelta(days=1)
 
     info = {}
-    for index in range(-1, -1 - int(options['days_history']), -1):
+    for index in range(-1, -1 - plugin_options.days_history, -1):
         check_date -= day_delta
         datestring = check_date.strftime('%Y%m%d')
         request = "history_"+datestring+"/q/"+lid+".json"
@@ -347,8 +311,6 @@ def today_info():
 
 
 def forecast_info():
-    options = options_data()
-
     lid = get_wunderground_lid()
     if lid == "":
         raise Exception('No Location ID found!')
@@ -365,7 +327,9 @@ def forecast_info():
 
     result = {}
     for index, day_info in info.iteritems():
-        if index <= int(options['days_forecast']):
+        if index <= plugin_options.days_forecast:
+            if day_info['qpf_allday']['mm'] is None:
+                day_info['qpf_allday']['mm'] = 0
             result[index] = {
                 'temp_c': float(day_info['high']['celsius']),
                 'rain_mm': float(day_info['qpf_allday']['mm']),
@@ -374,3 +338,43 @@ def forecast_info():
             }
 
     return result
+
+
+def start():
+    global checker
+    if checker is None:
+        checker = WeatherLevelChecker()
+
+
+def stop():
+    global checker
+    if checker is not None:
+        checker.stop()
+        checker.join()
+        checker = None
+
+
+################################################################################
+# Web pages:                                                                   #
+################################################################################
+class settings_page(ProtectedPage):
+    """Load an html page for entering weather-based irrigation adjustments"""
+
+    def GET(self):
+        return self.template_render.plugins.weather_based_water_level(plugin_options, log.events(NAME))
+
+
+class update_page(ProtectedPage):
+    """Save user input."""
+    def GET(self):
+        plugin_options.update(web.input())
+        raise web.seeother('/')
+
+
+class settings_json(ProtectedPage):
+    """Returns plugin settings in JSON format"""
+
+    def GET(self):
+        web.header('Access-Control-Allow-Origin', '*')
+        web.header('Content-Type', 'application/json')
+        return json.dumps(plugin_options.json_dict())

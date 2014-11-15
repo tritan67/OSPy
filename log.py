@@ -132,9 +132,15 @@ class _Log(logging.Handler):
                 'data': message
             })
             if options.debug_log:
-                tb = traceback.extract_stack()[-2]
-                filename = path.basename(tb[0])
-                lineno = tb[1]
+                stack = traceback.extract_stack()
+                filename = ''
+                lineno = 0
+                for tb in reversed(stack):
+                    filename = path.basename(tb[0])
+                    lineno = tb[1]
+                    if filename != path.basename(__file__):
+                        break
+
                 fmt_dict = {
                     'asctime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3],
                     'levelname': logging.getLevelName(level),
@@ -148,6 +154,18 @@ class _Log(logging.Handler):
 
             self._save_log(message, level, event_type)
             self._prune(event_type)
+
+    def debug(self, event_type, message):
+        self.log_event(event_type, message, logging.DEBUG)
+
+    def info(self, event_type, message):
+        self.log_event(event_type, message, logging.INFO)
+
+    def warning(self, event_type, message):
+        self.log_event(event_type, message, logging.WARNING)
+
+    def error(self, event_type, message):
+        self.log_event(event_type, message, logging.ERROR)
 
     def clear_runs(self, all=True):
         if all:
