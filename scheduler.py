@@ -187,6 +187,8 @@ def predicted_schedule(start_time, end_time):
                     interval['blocked'] = 'rain delay'
                 elif not interval['manual'] and not stations.get(interval['station']).ignore_rain and inputs.rain_sensed():
                     interval['blocked'] = 'rain sensor'
+                elif not interval['manual'] and interval['adjustment'] < options.adjustment_cutoff/100.0:
+                    interval['blocked'] = 'cut-off'
                 else:
                     current_usage += interval['usage']
                     # Add the newly "activated" station to the active list

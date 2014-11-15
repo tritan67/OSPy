@@ -103,6 +103,15 @@ class _Options(object):
             "min": 0,
             "max": 3600
         },
+        {
+            "key": "adjustment_cutoff",
+            "name": "Adjustment cut-off",
+            "default": 0,
+            "help": "Water-Level percentage under which the outputs are not activated anymore.",
+            "category": "Station Handling",
+            "min": 0,
+            "max": 100
+        },
 
         #######################################################################
         # Configure Master ####################################################
@@ -377,7 +386,7 @@ class _LevelAdjustments(dict):
         super(_LevelAdjustments, self).__init__()
 
     def total_adjustment(self):
-        return reduce(lambda x, y: x * y, self.values(), options.level_adjustment)
+        return max(0.0, min(5.0, reduce(lambda x, y: x * y, self.values(), options.level_adjustment)))
 
 level_adjustments = _LevelAdjustments()
 

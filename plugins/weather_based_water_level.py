@@ -164,7 +164,7 @@ class WeatherLevelChecker(Thread):
                     log.info(NAME, 'Irrigation needed    : %.1fmm' % water_left)
                     log.info(NAME, 'Weather Adjustment   : %.1f%%' % water_adjustment)
 
-                    level_adjustments[NAME] = water_adjustment
+                    level_adjustments[NAME] = water_adjustment/100
 
                     self._sleep(3600)
 

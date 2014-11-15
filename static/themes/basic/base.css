@@ -441,6 +441,21 @@ table.logList th {
     border-bottom: 2px solid #2E3959;
 }
 
+table.adjustmentList {
+    padding: 8px 0px;
+}
+table.adjustmentList td {
+    padding: 2px;
+}
+table.adjustmentList td.adjValue {
+    text-align: right;
+}
+table.adjustmentList th {
+    padding: 2px;
+    border-top: 2px solid #2E3959;
+    text-align: left;
+}
+
 /******** Interval Selector Styles **********/
 
 .animatedSelector {

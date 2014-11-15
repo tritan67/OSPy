@@ -6,7 +6,6 @@ import time
 import subprocess
 import sys
 import traceback
-import logging
 
 import web
 from webpages import ProtectedPage
@@ -59,7 +58,7 @@ class StatusChecker(Thread):
         """Returns the update revision data."""
 
         command = 'git remote update'
-        subprocess.call(command.split())
+        subprocess.check_output(command.split())
 
         command = 'git config --get remote.origin.url'
         remote = subprocess.check_output(command.split()).strip()
@@ -118,7 +117,7 @@ checker = None
 def perform_update():
     # ignore local chmod permission
     command = "git config core.filemode false"  # http://superuser.com/questions/204757/git-chmod-problem-checkout-screws-exec-bit
-    subprocess.call(command.split())
+    subprocess.check_output(command.split())
 
     command = "git pull"
     output = subprocess.check_output(command.split())

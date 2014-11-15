@@ -178,7 +178,7 @@ $code:
         }
     }
 </script>
-<div id="options">
+<div id="options" style="display: inline-block; box-sizing: border-box; vertical-align: top; min-width: 50%">
     <button id="cWaterLevel" class="toggle choice ${'on' if options.level_adjustment==1.0 else 'off'}"><span class='toggleleft'>Normal</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>${'Water Level' if options.level_adjustment==1.0 else str(round(options.level_adjustment*100)) + '% Level'}</span></button>
     <br>
     <button id="cRainDelay" class="toggle ${'off' if rain_blocks.seconds_left() else 'on'}"><span class='toggleleft'>Active</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Rain Delay</span></button>
@@ -194,7 +194,27 @@ $code:
         <button id="cStartStop" class="toggle ${'on' if options.scheduler_enabled else 'off'}"><span class='toggleleft'>Enabled</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Disabled</span></button>
     <br>&nbsp;
 </div>
-
+<div style="display: inline-block; box-sizing: border-box; vertical-align: top;">
+    $if len([v for v in level_adjustments.values() if abs(v-1) > 0.001]) > 0:
+        <b>Water Level adjustments</b>
+        <table class="adjustmentList">
+            $if abs(options.level_adjustment-1) > 0.001:
+                <tr>
+                    <td>User</td>
+                    <td class="adjValue">$(options.level_adjustment*100)%</td>
+                </tr>
+            $for name, adj in level_adjustments.iteritems():
+                $if abs(adj-1) > 0.001:
+                    <tr>
+                        <td>$name</td>
+                        <td class="adjValue">$(adj*100)%</td>
+                    </tr>
+            <tr>
+                <th>Total</th>
+                <th>$(level_adjustments.total_adjustment()*100)%</th>
+            </tr>
+        </table>
+</div>
 <div id="stationsdiv">
 
 $if options.manual_mode:
