@@ -329,11 +329,10 @@ class settings_page(ProtectedPage):
     def GET(self):
         return self.template_render.plugins.weather_based_water_level(plugin_options, log.events(NAME))
 
-
-class update_page(ProtectedPage):
-    """Save user input."""
-    def GET(self):
+    def POST(self):
         plugin_options.web_update(web.input())
+        if checker is not None:
+            checker.update()
         raise web.seeother('/')
 
 

@@ -1,6 +1,6 @@
-$def with(m_vals)
+$def with(plugin_options)
 
-$var title: Weather-based Water Level
+$var title: Monthly Water Level
 $var page: plugins
 <script>
     // Initialize behaviors
@@ -17,57 +17,57 @@ $var page: plugins
 </script>
 
 <div id="plugin">
-    <div class="title">Monthly Irrigation Adjustments</div>
+    <div class="title">Monthly Water Level</div>
     <p>Enter an adjustment for each month (% irrigation time)</p>
-    <form id="pluginForm" action="/uma" method="get">
+    <form id="pluginForm" action="$plugins.plugin_url('monthly_water_level.settings_page')" method="post">
         <table class="optionList">
             <tr>
                 <td style='text-transform: none;'>January:</td>
-                <td><input type="text" name="jan" value=$m_vals[0]></td>
+                <td><input type="text" name="jan" value=$plugin_options[0]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>February:</td>
-                <td><input type="text" name="feb" value=$m_vals[1]></td>
+                <td><input type="text" name="feb" value=$plugin_options[1]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>March:</td>
-                <td><input type="text" name="mar" value=$m_vals[2]></td>
+                <td><input type="text" name="mar" value=$plugin_options[2]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>April:</td>
-                <td><input type="text" name="apr" value=$m_vals[3]></td>
+                <td><input type="text" name="apr" value=$plugin_options[3]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>May:</td>
-                <td><input type="text" name="may" value=$m_vals[4]></td>
+                <td><input type="text" name="may" value=$plugin_options[4]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>June:</td>
-                <td><input type="text" name="jun" value=$m_vals[5]></td>
+                <td><input type="text" name="jun" value=$plugin_options[5]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>July:</td>
-                <td><input type="text" name="jul" value=$m_vals[6]></td>
+                <td><input type="text" name="jul" value=$plugin_options[6]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>August:</td>
-                <td><input type="text" name="aug" value=$m_vals[7]></td>
+                <td><input type="text" name="aug" value=$plugin_options[7]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>September:</td>
-                <td><input type="text" name="sep" value=$m_vals[8]></td>
+                <td><input type="text" name="sep" value=$plugin_options[8]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>October:</td>
-                <td><input type="text" name="oct" value=$m_vals[9]></td>
+                <td><input type="text" name="oct" value=$plugin_options[9]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>November:</td>
-                <td><input type="text" name="nov" value=$m_vals[10]></td>
+                <td><input type="text" name="nov" value=$plugin_options[10]></td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>December:</td>
-                <td><input type="text" name="dec" value=$m_vals[11]></td>
+                <td><input type="text" name="dec" value=$plugin_options[11]></td>
             </tr>
         </table>
     </form>
