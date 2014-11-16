@@ -243,7 +243,6 @@ class _RPiStations(_ShiftStations):
 
         self._io = GPIO
         self._io.setwarnings(False)
-        self._io.cleanup()
         self._io.setmode(self._io.BOARD)  # IO channels are identified by header connector pin numbers. Pin numbers are always the same regardless of Raspberry Pi board revision.
 
         self._sr_dat = 13
@@ -260,7 +259,6 @@ class _BBBStations(_ShiftStations):
 
         self._io = GPIO
         self._io.setwarnings(False)
-        self._io.cleanup()
 
         self._sr_dat = "P9_11"
         self._sr_clk = "P9_13"

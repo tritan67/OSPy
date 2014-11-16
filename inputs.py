@@ -32,7 +32,6 @@ class _RPiInputs(_IOInputs, _RainSensorMixIn):
         super(_RPiInputs, self).__init__()
         self._io = GPIO
         self._io.setwarnings(False)
-        self._io.cleanup()
         self._io.setmode(self._io.BOARD)
 
         self._mapping = {
@@ -47,7 +46,6 @@ class _BBBInputs(_IOInputs, _RainSensorMixIn):
         super(_BBBInputs, self).__init__()
         self._io = GPIO
         self._io.setwarnings(False)
-        self._io.cleanup()
 
         self._mapping = {
             'rain_input': "P9_15"
