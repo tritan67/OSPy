@@ -8,11 +8,47 @@ __all__ = [] # No modules should be accessed statically
 __running = {}
 
 
+class PluginOptions(dict):
+    def __init__(self, plugin, defaults):
+        super(PluginOptions, self).__init__(defaults.iteritems())
+
+        from options import options
+        if plugin in options:
+            for key, value in options[plugin].iteritems():
+                self[key] = value
+
+        self._plugin = plugin
+
+    def __setitem__(self, key, value):
+        try:
+            super(PluginOptions, self).__setitem__(key, value)
+            if hasattr(self, '_plugin'):
+                from options import options
+                options[self._plugin] = self.copy()
+        except ValueError:  # No index available yet
+            pass
+
+    def web_update(self, qdict, skipped=None):
+        for key in self.keys():
+            if skipped is not None and key in skipped:
+                continue
+            old_value = self[key]
+            if isinstance(old_value, bool):
+                self[key] = True if qdict.get(key, 'off') == 'on' else False
+            elif isinstance(old_value, int):
+                self[key] = int(qdict.get(key, old_value))
+            elif isinstance(old_value, float):
+                self[key] = float(qdict.get(key, old_value))
+            elif isinstance(old_value, str) or isinstance(old_value, unicode):
+                self[key] = qdict.get(key, old_value)
+
+
 def available():
     plugins = []
     for imp, module, is_pkg in pkgutil.iter_modules(['plugins']):
         plugins.append(module)
     return plugins
+
 
 def plugin_name(plugin):
     '''Tries to find the name of the given plugin without importing it yet.'''

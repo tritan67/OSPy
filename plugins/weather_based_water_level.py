@@ -2,9 +2,7 @@
 
 
 import datetime
-from random import randint
 from threading import Thread, Event
-import sys
 import traceback
 import shutil
 import json
@@ -20,54 +18,22 @@ from options import options
 from options import level_adjustments
 from helpers import mkdir_p
 from webpages import ProtectedPage
-
+from plugins import PluginOptions
 
 NAME = 'Weather-based Water Level'
 LINK = 'settings_page'
 
 
-class _Options(object):
-    def __init__(self):
-        self.enabled = False
-        self.wl_min = 0
-        self.wl_max = 200
-        self.days_history = 3
-        self.days_forecast = 3
-        self.wapikey = ''
-
-        options.load(self)
-        self._loaded = True
-
-    def __setattr__(self, key, value):
-        try:
-            super(_Options, self).__setattr__(key, value)
-            if not key.startswith('_') and hasattr(self, '_loaded'):
-                options.save(self)
-        except ValueError:  # No index available yet
-            pass
-
-    def update(self, qdict):
-        for attr in [att for att in dir(self) if not att.startswith('_')]:
-            old_value = getattr(self, attr)
-            if isinstance(old_value, bool):
-                setattr(self, attr, True if qdict.get(attr, 'off') == 'on' else False)
-            elif isinstance(old_value, int):
-                setattr(self, attr, int(qdict.get(attr, old_value)))
-            elif isinstance(old_value, float):
-                setattr(self, attr, float(qdict.get(attr, old_value)))
-            elif isinstance(old_value, str):
-                setattr(self, attr, qdict.get(attr, old_value))
-
-    def json_dict(self):
-        result = {}
-        for attr in [att for att in dir(self) if not att.startswith('_')]:
-            value = getattr(self, attr)
-            if not hasattr(value, '__call__'):
-                result[attr] = value
-        return result
-
-
-plugin_options = _Options()
+plugin_options = PluginOptions(
+    NAME,
+    {
+        'enabled': False,
+        'wl_min': 0,
+        'wl_max': 200,
+        'days_history': 3,
+        'days_forecast': 3,
+        'wapikey': ''
+    })
 
 
 ################################################################################
@@ -98,7 +64,7 @@ class WeatherLevelChecker(Thread):
         while not self._stop.is_set():
             try:
                 log.clear(NAME)
-                if not plugin_options.enabled:
+                if not plugin_options['enabled']:
                     if NAME in level_adjustments:
                         del level_adjustments[NAME]
                     self._sleep(5)
@@ -156,7 +122,7 @@ class WeatherLevelChecker(Thread):
 
                     water_adjustment = round((water_left / (4 * len(info))) * 100, 1)
 
-                    water_adjustment = float(max(plugin_options.wl_min, min(plugin_options.wl_max, water_adjustment)))
+                    water_adjustment = float(max(plugin_options['wl_min'], min(plugin_options['wl_max'], water_adjustment)))
 
                     log.info(NAME, 'Water needed (%d days): %.1fmm' % (len(info), water_needed))
                     log.info(NAME, 'Total rainfall       : %.1fmm' % total_info['rain_mm'])
@@ -205,7 +171,7 @@ def get_data(suffix, name=None, force=False):
         try:
             if not os.path.exists(path) or force:
                 with open(path, 'wb') as fh:
-                    req = urllib2.urlopen("http://api.wunderground.com/api/"+plugin_options.wapikey+"/" + suffix)
+                    req = urllib2.urlopen("http://api.wunderground.com/api/"+plugin_options['wapikey']+"/" + suffix)
                     while True:
                         chunk = req.read(20480)
                         if not chunk:
@@ -254,7 +220,7 @@ def remove_data(prefixes):
 # Info queries:                                                                #
 ################################################################################
 def history_info():
-    if plugin_options.days_history == 0:
+    if plugin_options['days_history'] == 0:
         return {}
 
     lid = get_wunderground_lid()
@@ -265,7 +231,7 @@ def history_info():
     day_delta = datetime.timedelta(days=1)
 
     info = {}
-    for index in range(-1, -1 - plugin_options.days_history, -1):
+    for index in range(-1, -1 - plugin_options['days_history'], -1):
         check_date -= day_delta
         datestring = check_date.strftime('%Y%m%d')
         request = "history_"+datestring+"/q/"+lid+".json"
@@ -327,7 +293,7 @@ def forecast_info():
 
     result = {}
     for index, day_info in info.iteritems():
-        if index <= plugin_options.days_forecast:
+        if index <= plugin_options['days_forecast']:
             if day_info['qpf_allday']['mm'] is None:
                 day_info['qpf_allday']['mm'] = 0
             result[index] = {
@@ -367,7 +333,7 @@ class settings_page(ProtectedPage):
 class update_page(ProtectedPage):
     """Save user input."""
     def GET(self):
-        plugin_options.update(web.input())
+        plugin_options.web_update(web.input())
         raise web.seeother('/')
 
 
@@ -377,4 +343,4 @@ class settings_json(ProtectedPage):
     def GET(self):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
-        return json.dumps(plugin_options.json_dict())
+        return json.dumps(plugin_options)

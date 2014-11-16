@@ -316,6 +316,9 @@ class _Options(object):
     # Makes it possible to use this class like del options[<item>]
     __delitem__ = __delattr__
 
+    def __contains__(self, item):
+        return item in self._values
+
     def _write(self):
         """This function saves the current data to disk. Use a timer to limit the call rate."""
         db = shelve.open(OPTIONS_FILE)
