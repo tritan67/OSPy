@@ -10,6 +10,7 @@ import os
 import random
 import subprocess
 import time
+import errno
 
 # Local imports
 from web import form
@@ -121,6 +122,16 @@ def get_cpu_temp(unit=None):
             return temp
     except Exception:
         return '!!'
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 
 def duration_str(total_seconds):

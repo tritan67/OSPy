@@ -122,6 +122,10 @@ def predicted_schedule(start_time, end_time):
                 }
                 station_schedules[station].append(new_schedule)
 
+    # Make lists sorted on start time
+    for station in station_schedules:
+        station_schedules[station].sort(key=lambda inter: inter['start'])
+
     all_intervals = []
     # Adjust for weather and remove overlap:
     for station, schedule in station_schedules.iteritems():
@@ -183,6 +187,8 @@ def predicted_schedule(start_time, end_time):
                     interval['blocked'] = 'rain delay'
                 elif not interval['manual'] and not stations.get(interval['station']).ignore_rain and inputs.rain_sensed():
                     interval['blocked'] = 'rain sensor'
+                elif not interval['manual'] and interval['adjustment'] < options.adjustment_cutoff/100.0:
+                    interval['blocked'] = 'cut-off'
                 else:
                     current_usage += interval['usage']
                     # Add the newly "activated" station to the active list

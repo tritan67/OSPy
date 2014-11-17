@@ -25,8 +25,8 @@ urls = [
     '/rev', 'webpages.show_revision_page',
     '/wl', 'webpages.water_log_page',
 
-    '/status.json', 'webpages.api_status_page',
-    '/log.json', 'webpages.api_log_page',
+    '/status.json', 'webpages.api_status_json',
+    '/log.json', 'webpages.api_log_json',
 
     '/api', api.app_OSPyAPI,
 ]

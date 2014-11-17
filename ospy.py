@@ -32,15 +32,6 @@ if __name__ == '__main__':
                                                   initializer={'user': 'anonymous'})
     app.notfound = lambda: web.seeother('/')
 
-    #########################################################
-    #### Code to import all webpages and plugin webpages ####
-    #########################################################
-    #import plugins
-    #
-    #logging.debug("plugins loaded:")
-    #for name in plugins.__all__:
-    #    print ' ', name
-
     scheduler.start()
     plugins.start_enabled_plugins()
     app.run()

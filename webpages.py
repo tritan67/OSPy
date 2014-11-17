@@ -387,7 +387,7 @@ class toggle_temp_page(ProtectedPage):
 # APIs                                                                         #
 ################################################################################
 
-class api_status_page(ProtectedPage):
+class api_status_json(ProtectedPage):
     """Simple Status API"""
 
     def GET(self):
@@ -429,7 +429,7 @@ class api_status_page(ProtectedPage):
         return json.dumps(statuslist)
 
 
-class api_log_page(ProtectedPage):
+class api_log_json(ProtectedPage):
     """Simple Log API"""
 
     def GET(self):

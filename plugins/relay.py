@@ -1,26 +1,27 @@
 # !/usr/bin/env python
 
 import time
-
-
-from gpio_pins import GPIO, pin_relay
-from urls import urls
 import web
+
 from webpages import ProtectedPage
+from outputs import outputs
+
+NAME = 'Relay Test'
+LINK = 'test_page'
 
 
-urls.extend(['/tr', 'plugins.relay.toggle_relay'])  # Add a new url for this plugin.
-
-gv.plugin_menu.append(['Test Relay', '/tr'])  # Add this plugin to the home page plugins menu
-
-
-class toggle_relay(ProtectedPage):
+class test_page(ProtectedPage):
     """Test relay by turning it on for a short time, then off."""
     def GET(self):
         try:
-            GPIO.output(pin_relay, GPIO.HIGH)  # turn relay on
+            outputs.relay_output = True
             time.sleep(3)
-            GPIO.output(pin_relay, GPIO.LOW)  # Turn relay off
+            outputs.relay_output = False
         except Exception:
             pass
         raise web.seeother('/')  # return to home page
+
+
+def start():
+    pass
+stop = start

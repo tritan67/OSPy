@@ -121,7 +121,7 @@ class _Log(logging.Handler):
     def finished_runs(self):
         return [run['data'].copy() for run in self._log['Run'] if not run['data']['active']]
 
-    def log_event(self, event_type, message, level=logging.INFO):
+    def log_event(self, event_type, message, level=logging.INFO, format_msg=True):
         if level >= self.level:
             if event_type not in self._log:
                 self._log[event_type] = []
@@ -131,10 +131,16 @@ class _Log(logging.Handler):
                 'level': level,
                 'data': message
             })
-            if options.debug_log:
-                tb = traceback.extract_stack()[-2]
-                filename = path.basename(tb[0])
-                lineno = tb[1]
+            if options.debug_log and format_msg:
+                stack = traceback.extract_stack()
+                filename = ''
+                lineno = 0
+                for tb in reversed(stack):
+                    filename = path.basename(tb[0])
+                    lineno = tb[1]
+                    if filename != path.basename(__file__):
+                        break
+
                 fmt_dict = {
                     'asctime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3],
                     'levelname': logging.getLevelName(level),
@@ -148,6 +154,18 @@ class _Log(logging.Handler):
 
             self._save_log(message, level, event_type)
             self._prune(event_type)
+
+    def debug(self, event_type, message):
+        self.log_event(event_type, message, logging.DEBUG)
+
+    def info(self, event_type, message):
+        self.log_event(event_type, message, logging.INFO)
+
+    def warning(self, event_type, message):
+        self.log_event(event_type, message, logging.WARNING)
+
+    def error(self, event_type, message):
+        self.log_event(event_type, message, logging.ERROR)
 
     def clear_runs(self, all=True):
         if all:
@@ -184,7 +202,7 @@ class _Log(logging.Handler):
             record.event_type = 'Event'
 
         txt = self.format(record) if options.debug_log else record.getMessage()
-        self.log_event(record.event_type, txt, record.levelno)
+        self.log_event(record.event_type, txt, record.levelno, False)
 
 log = _Log()
 log.setFormatter(logging.Formatter(EVENT_FORMAT))
