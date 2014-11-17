@@ -13,7 +13,7 @@ $var page: stations
 
         jQuery("button#cResetNames").click(function(){
             jQuery("input[type='text']").each(function () {
-                jQuery(this).val("S" + (parseInt(jQuery(this).attr("name").substring(1)) + 1));
+                jQuery(this).val("Station " + (parseInt(jQuery(this).attr("name").split('_')[0]) + 1));
             });
             jQuery(".stationShow input").each(function () {
                 jQuery(this).prop('checked', true);
