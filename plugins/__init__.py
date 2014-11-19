@@ -51,7 +51,7 @@ def available():
 
 
 def plugin_name(plugin):
-    '''Tries to find the name of the given plugin without importing it yet.'''
+    """Tries to find the name of the given plugin without importing it yet."""
     filename = path.join(path.dirname(__file__), plugin + '.py')
     with open(filename) as fh:
         for line in fh:
