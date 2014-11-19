@@ -23,13 +23,14 @@ from plugins import PluginOptions, plugin_url
 from webpages import ProtectedPage
 
 
-NAME = 'LCD Settings'
+NAME = 'LCD Display'
 LINK = 'settings_page'
 
 lcd_options = PluginOptions(
     NAME,
     {
         "use_lcd": "off",
+        "line": "off",
         "address": "0x20"
     }
 )
@@ -42,10 +43,10 @@ class LCDSender(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
-        self.start()
         self.status = ''
 
         self._sleep_time = 0
+        self.start()
 
     def add_status(self, msg):
         if self.status:
@@ -371,6 +372,7 @@ def test_text_shift():
 
 def get_lcd_options():
     """Returns the data form file."""
+    print lcd_options
     datalcd = {
         'use_lcd': lcd_options['use_lcd'],
         'line': lcd_options['line'],
@@ -386,7 +388,13 @@ class settings_page(ProtectedPage):
     """Load an html page for entering lcd adjustments."""
 
     def GET(self):
-        return self.template_render.plugins.lcd_adj(get_lcd_options())
+        return self.template_render.plugins.lcd_display(get_lcd_options())
+
+    def POST(self):
+        lcd_options.web_update(web.input())
+
+        lcd_sender.update()
+        raise web.seeother(plugin_url(settings_page))
 
 
 class settings_json(ProtectedPage):
@@ -397,12 +405,3 @@ class settings_json(ProtectedPage):
         web.header('Content-Type', 'application/json')
         return json.dumps(get_lcd_options())
 
-
-class update_page(ProtectedPage):
-    """Save user input to lcd_adj.json file."""
-
-    def POST(self):
-        lcd_options.web_update(web.input())
-
-        lcd_sender.update()
-        raise web.seeother(plugin_url(settings_page))
