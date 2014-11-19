@@ -401,7 +401,7 @@ class settings_json(ProtectedPage):
 class update_page(ProtectedPage):
     """Save user input to lcd_adj.json file."""
 
-    def GET(self):
+    def POST(self):
         lcd_options.web_update(web.input())
 
         lcd_sender.update()
