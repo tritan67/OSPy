@@ -98,6 +98,7 @@ class LCDSender(Thread):
 
 lcd_sender = None
 
+
 ################################################################################
 # Helper functions:                                                            #
 ################################################################################
@@ -376,7 +377,8 @@ def get_lcd_options():
     datalcd = {
         'use_lcd': lcd_options['use_lcd'],
         'line': lcd_options['line'],
-        'status': lcd_sender.status}
+        'status': lcd_sender.status
+    }
 
     return datalcd
 
