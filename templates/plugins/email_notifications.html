@@ -1,6 +1,6 @@
 $def with(m_vals)
 
-$var title: Email adjustments
+$var title: Email Notifications
 $var page: plugins
 
 <script>
@@ -18,9 +18,9 @@ $var page: plugins
 </script>
 
 <div id="plugin">
-    <div class="title">Email adjustments</div>
+    <div class="title">Email Notifications</div>
     <p>This plugin can send E-mails. For this plugin you need a GMail account as provider.</p>
-    <form id="pluginForm" action="/uemla" method="get">
+    <form id="pluginForm" action="$plugins.plugin_url('email_notifications.settings_page')" method="post">
         <table class="optionList">
             <tr>
                 <td style='text-transform: none;'>Send email with file log.csv after power on:</td>

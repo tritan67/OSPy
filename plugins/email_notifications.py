@@ -1,40 +1,43 @@
 # !/usr/bin/env python
 # this plugins send email at google email
 
-from threading import Thread
-from random import randint
 import json
 import time
 import os
 import sys
 import traceback
-
-import web
-
-from urls import urls  # Get access to ospy's URLs
-
-from webpages import ProtectedPage
-from helpers import duration_str
-
-from email import Encoders
 import smtplib
+from threading import Thread
+from random import randint
+from email import Encoders
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 
-# Add a new url to open the data entry page.
-urls.extend(['/emla', 'plugins.email_adj.settings',
-             '/emlj', 'plugins.email_adj.settings_json',
-             '/uemla', 'plugins.email_adj.update'])
+import web
+import helpers
+from webpages import ProtectedPage
 
-# Add this plugin to the home page plugins menu
-gv.plugin_menu.append(['Email settings', '/emla'])
+
+NAME = 'Email Notifications'
+LINK = 'settings_page'
+
+email_options = PluginOptions(
+    NAME,
+    {
+        'emlusr': '',
+        'emlpwd': '',
+        'emladr': '',
+        'emllog': 'off',
+        'emlrain': 'off',
+        'emlrun': 'off'
+    }
+)
+
 
 ################################################################################
 # Main function loop:                                                          #
 ################################################################################
-
-
 class EmailSender(Thread):
     def __init__(self):
         Thread.__init__(self)
@@ -88,16 +91,17 @@ class EmailSender(Thread):
             try:
                 # send if rain detected
                 if dataeml["emlrain"] != "off":             # if eml_rain send email is enable (on)
-                    if gv.sd['rs'] != last_rain:            # send email only 1x if  gv.sd rs change
-                        last_rain = gv.sd['rs']
+                    if inputs.rain_sensed() != last_rain:            # send email only 1x if  gv.sd rs change
+                        last_rain = inputs.rain_sensed()
 
-                        if gv.sd['rs'] and gv.sd['urs']:    # if rain sensed and use rain sensor
+                        if inputs.rain_sensed() and options.rain_sensor_enabled:    # if rain sensed and use rain sensor
                             body = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) +
                                     ': System detected rain.')
                             self.try_mail(subject, body)    # send email without attachments
 
                 if dataeml["emlrun"] != "off":              # if eml_rain send email is enable (on)
                     running = False
+                    # TODO
                     for b in range(gv.sd['nbrd']):          # Check each station once a second
                         for s in range(8):
                             sid = b * 8 + s  # station index
@@ -134,33 +138,37 @@ class EmailSender(Thread):
                 self._sleep(60)
 
 
-checker = EmailSender()
+email_sender = None
+
 
 ################################################################################
 # Helper functions:                                                            #
 ################################################################################
+def start():
+    global email_sender
+    if email_sender is None:
+        email_sender = EmailSender()
+
+
+def stop():
+    global email_sender
+    if email_sender is not None:
+        email_sender.stop()
+        email_sender.join()
+        email_sender = None
 
 
 def get_email_options():
-    """Returns the defaults data form file."""
+    """Returns the defaults data from file."""
     dataeml = {
-        'emlusr': '',
-        'emlpwd': '',
-        'emladr': '',
-        'emllog': 'off',
-        'emlrain': 'off',
-        'emlrun': 'off',
-        'status': checker.status
+        'emlusr': email_options['emlusr'],
+        'emlpwd': email_options['emlpwd'],
+        'emladr': email_options['emladr'],
+        'emllog': email_options['emllog'],
+        'emlrain': email_options['emlrain'],
+        'emlrun': email_options['emlrun'],
+        'status': email_sender.status
     }
-    try:
-        with open('./data/email_adj.json', 'r') as f:  # Read the settings from file
-            file_data = json.load(f)
-        for key, value in file_data.iteritems():
-            if key in dataeml:
-                dataeml[key] = value
-    except Exception:
-        pass
-
     return dataeml
 
 
@@ -169,7 +177,7 @@ def email(subject, text, attach=None):
     dataeml = get_email_options()
     if dataeml['emlusr'] != '' and dataeml['emlpwd'] != '' and dataeml['emladr'] != '':
         gmail_user = dataeml['emlusr']          # User name
-        gmail_name = gv.sd['name']              # OSPi name
+        gmail_name = options.name               # OSPi name
         gmail_pwd = dataeml['emlpwd']           # User password
         #--------------
         msg = MIMEMultipart()
@@ -193,16 +201,21 @@ def email(subject, text, attach=None):
     else:
         raise Exception('E-mail plug-in is not properly configured!')
 
+
 ################################################################################
 # Web pages:                                                                   #
 ################################################################################
-
-
-class settings(ProtectedPage):
+class settings_page(ProtectedPage):
     """Load an html page for entering email adjustments."""
 
     def GET(self):
-        return self.template_render.email_adj(get_email_options())
+        return self.template_render.plugins.email_adj(get_email_options())
+
+    def POST(self):
+        email_options_options.web_update(web.input())
+
+        email_sender.update()
+        raise web.seeother(plugin_url(settings_page))
 
 
 class settings_json(ProtectedPage):
@@ -212,19 +225,3 @@ class settings_json(ProtectedPage):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
         return json.dumps(get_email_options())
-
-
-class update(ProtectedPage):
-    """Save user input to email_adj.json file."""
-
-    def GET(self):
-        qdict = web.input()
-        if 'emllog' not in qdict:
-            qdict['emllog'] = 'off'
-        if 'emlrain' not in qdict:
-            qdict['emlrain'] = 'off'
-        if 'emlrun' not in qdict:
-            qdict['emlrun'] = 'off'
-        with open('./data/email_adj.json', 'w') as f:  # write the settings to file
-            json.dump(qdict, f)
-        raise web.seeother('/')
