@@ -46,24 +46,28 @@ class PluginOptions(dict):
 def available():
     plugins = []
     for imp, module, is_pkg in pkgutil.iter_modules(['plugins']):
-        plugins.append(module)
+        if plugin_name(module) is not None:
+            plugins.append(module)
     return plugins
 
 
 def plugin_name(plugin):
     """Tries to find the name of the given plugin without importing it yet."""
     filename = path.join(path.dirname(__file__), plugin + '.py')
-    with open(filename) as fh:
-        for line in fh:
-            if 'NAME' in line:
-                match = re.search('NAME\\s=\\s("|\')([^"\']+)("|\')', line)
-                if match is not None:
-                    return match.group(2)
-    return plugin
+    try:
+        with open(filename) as fh:
+            for line in fh:
+                if 'NAME' in line:
+                    match = re.search('NAME\\s=\\s("|\')([^"\']+)("|\')', line)
+                    if match is not None:
+                        return match.group(2)
+    except Exception:
+        pass
+    return None
 
 
 def plugin_names():
-    return {plugin: plugin_name(plugin) for plugin in available()}
+    return {plugin: (plugin_name(plugin) or plugin) for plugin in available()}
 
 
 def plugin_url(cls):
