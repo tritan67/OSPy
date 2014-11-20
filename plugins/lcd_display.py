@@ -8,7 +8,6 @@ import json
 import time
 import sys
 import traceback
-import options
 from datetime import datetime
 
 from threading import Thread
@@ -18,6 +17,7 @@ import web
 import helpers
 import version
 from inputs import inputs
+from options import options
 from log import log
 from plugins import PluginOptions, plugin_url
 from webpages import ProtectedPage
@@ -97,6 +97,7 @@ class LCDSender(Thread):
 
 
 lcd_sender = None
+
 
 ################################################################################
 # Helper functions:                                                            #
@@ -376,7 +377,8 @@ def get_lcd_options():
     datalcd = {
         'use_lcd': lcd_options['use_lcd'],
         'line': lcd_options['line'],
-        'status': lcd_sender.status}
+        'status': lcd_sender.status
+    }
 
     return datalcd
 

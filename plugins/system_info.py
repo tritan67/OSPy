@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # this plugins print system info os on web 
 
-from threading import Thread
-from random import randint
-import time
 import sys
+import time
 import traceback
 import platform
+from threading import Thread
+from random import randint
 from collections import OrderedDict
 from collections import namedtuple
 
+import helpers
 from webpages import ProtectedPage
-from helpers import uptime, get_cpu_temp
 
 
 NAME = 'System Information'
@@ -25,19 +25,17 @@ class SystemInfoChecker(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
-        self.start()
         self.status = {
             'status': ''
         }
-
         self._sleep_time = 0
+        self.start()
 
     def add_status(self, msg):
         if self.status['status']:
             self.status['status'] += '\n' + msg
         else:
             self.status['status'] = msg
-        print msg
 
     def update(self):
         self._sleep_time = 0
@@ -69,8 +67,8 @@ class SystemInfoChecker(Thread):
                 self.add_status('{0}: {1} MiB {2} MiB'.format(dev, netdevs[dev].rx, netdevs[dev].tx))
         else:
             self.add_status('Unable to read network device data')
-        self.add_status('Uptime: ' + uptime())
-        self.add_status('CPU temp: ' + get_cpu_temp() + 'C')
+        self.add_status('Uptime: ' + helpers.uptime())
+        self.add_status('CPU temp: ' + helpers.get_cpu_temp() + 'C')
         self.add_status('MAC adress: ' + get_mac())
 
     def run(self):
@@ -88,18 +86,24 @@ class SystemInfoChecker(Thread):
                 self.add_status('System information plug-in encountered error:\n' + err_string)
                 self._sleep(3600)
 
-si_checker = SystemInfoChecker()
+si_checker = None
 
 
 ################################################################################
 # Helper functions:                                                            #
 ################################################################################
 def start():
-    pass
+    global si_checker
+    if si_checker is None:
+        si_checker = SystemInfoChecker()
 
 
 def stop():
-    pass
+    global si_checker
+    if si_checker is not None:
+        si_checker.stop()
+        si_checker.join()
+        si_checker = None
 
 
 def get_mac():
