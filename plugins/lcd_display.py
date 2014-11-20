@@ -373,7 +373,6 @@ def test_text_shift():
 
 def get_lcd_options():
     """Returns the data form file."""
-    print lcd_options
     datalcd = {
         'use_lcd': lcd_options['use_lcd'],
         'line': lcd_options['line'],

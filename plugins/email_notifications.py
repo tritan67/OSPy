@@ -10,13 +10,15 @@ import smtplib
 from threading import Thread
 from random import randint
 from email import Encoders
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
+from email import MIMEMultipart
+from email import MIMEBase
+from email import MIMEText
 
 import web
-import helpers
 from webpages import ProtectedPage
+from plugins import PluginOptions, plugin_url
+from options import options
+from inputs import inputs
 
 
 NAME = 'Email Notifications'
@@ -209,10 +211,10 @@ class settings_page(ProtectedPage):
     """Load an html page for entering email adjustments."""
 
     def GET(self):
-        return self.template_render.plugins.email_adj(get_email_options())
+        return self.template_render.plugins.email_notifications(get_email_options())
 
     def POST(self):
-        email_options_options.web_update(web.input())
+        email_options.web_update(web.input())
 
         email_sender.update()
         raise web.seeother(plugin_url(settings_page))
