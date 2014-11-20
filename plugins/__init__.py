@@ -113,6 +113,7 @@ def _get_urls(import_name, plugin):
 
 def start_enabled_plugins():
     from options import options
+    import logging
     from urls import urls
     for module in available():
         if module in options.enabled_plugins and module not in __running:
@@ -127,9 +128,9 @@ def start_enabled_plugins():
                 urls += plugin_urls
                 __running[module] = plugin
                 plugin.start()
-                print 'Started the {} plug-in.'.format(plugin_name)
+                logging.info('Started the {} plug-in.'.format(plugin_name))
             except Exception as e:
-                print 'Failed to load the {} plug-in:'.format(plugin_name)
+                logging.info('Failed to load the {} plug-in:'.format(plugin_name))
                 traceback.print_exc()
                 options.enabled_plugins.remove(module)
 
@@ -144,9 +145,9 @@ def start_enabled_plugins():
                         urls.remove(url)
                 plugin.stop()
                 del __running[module]
-                print 'Stopped the {} plug-in.'.format(plugin_name)
+                logging.info('Stopped the {} plug-in.'.format(plugin_name))
             except Exception as e:
-                print 'Failed to stop the {} plug-in:'.format(plugin_name)
+                logging.info('Failed to stop the {} plug-in:'.format(plugin_name))
                 traceback.print_exc()
 
 
