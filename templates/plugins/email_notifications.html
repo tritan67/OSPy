@@ -1,4 +1,4 @@
-$def with(m_vals)
+$def with(plugin_options, events)
 
 $var title: Email Notifications
 $var page: plugins
@@ -25,44 +25,44 @@ $var page: plugins
             <tr>
                 <td style='text-transform: none;'>Send email with file log.csv after power on:</td>
                 <td>
-                    <input name='emllog' type='checkbox'${" checked" if m_vals['emllog'] == "on" else ""}>   
+                    <input name='emllog' type='checkbox'${" checked" if plugin_options['emllog'] == "on" else ""}>   
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Send email if rain is detected:</td>
                 <td>
-                    <input name='emlrain' type='checkbox'${" checked" if m_vals['emlrain'] == "on" else ""}>   
+                    <input name='emlrain' type='checkbox'${" checked" if plugin_options['emlrain'] == "on" else ""}>   
                 </td>
             </tr>
 
             <tr>
                 <td style='text-transform: none;'>Sends email if program has run:</td>
                 <td>
-                    <input name='emlrun' type='checkbox'${" checked" if m_vals['emlrun'] == "on" else ""}> 
+                    <input name='emlrun' type='checkbox'${" checked" if plugin_options['emlrun'] == "on" else ""}> 
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Your GMail username:</td>
                 <td>
-                    <input name='emlusr' type='text' value=$m_vals["emlusr"]>
+                    <input name='emlusr' type='text' value=$plugin_options["emlusr"]>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Your GMail password:</td>
                 <td>
-                    <input name='emlpwd' type='password' value=$m_vals["emlpwd"]>
+                    <input name='emlpwd' type='password' value=$plugin_options["emlpwd"]>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Send mail to:</td>
                 <td>
-                    <input name='emladr' type='text' value=$m_vals["emladr"]>
+                    <input name='emladr' type='text' value=$plugin_options["emladr"]>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Status:</td>
                 <td>
-                    <textarea style="font-family: monospace;" rows="7" cols="35" readonly>$m_vals['status']</textarea>
+                    <textarea style="font-family: monospace;" rows="7" cols="35" readonly>$'\n'.join(events)</textarea>
                 </td>
             </tr>
         </table>

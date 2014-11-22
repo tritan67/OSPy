@@ -7,6 +7,8 @@ import datetime
 import logging
 import traceback
 from os import path
+import threading
+import time
 
 # Local imports
 from options import options
@@ -23,6 +25,8 @@ class _Log(logging.Handler):
         self._log = {
             'Run': options.logged_runs[:]
         }
+        self._lock = threading.RLock()
+        self._plugin_time = time.time() + 3
 
         # Remove old entries:
         self.clear_runs(False)
@@ -71,49 +75,50 @@ class _Log(logging.Handler):
 
     def start_run(self, interval):
         """Indicates a certain run has been started. The start time will be updated."""
+        with self._lock:
+            # Update time with current time
+            interval = interval.copy()
+            interval['start'] = datetime.datetime.now()
+            interval['active'] = True
 
-        # Update time with current time
-        interval = interval.copy()
-        interval['start'] = datetime.datetime.now()
-        interval['active'] = True
+            self._log['Run'].append({
+                'time': datetime.datetime.now(),
+                'level': logging.INFO,
+                'data': interval
+            })
 
-        self._log['Run'].append({
-            'time': datetime.datetime.now(),
-            'level': logging.INFO,
-            'data': interval
-        })
+            fmt_dict = interval.copy()
+            fmt_dict['asctime'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+            fmt_dict['start'] = fmt_dict['start'].strftime("%Y-%m-%d %H:%M:%S")
+            fmt_dict['end'] = fmt_dict['end'].strftime("%Y-%m-%d %H:%M:%S")
 
-        fmt_dict = interval.copy()
-        fmt_dict['asctime'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
-        fmt_dict['start'] = fmt_dict['start'].strftime("%Y-%m-%d %H:%M:%S")
-        fmt_dict['end'] = fmt_dict['end'].strftime("%Y-%m-%d %H:%M:%S")
-
-        self._save_log(RUN_START_FORMAT % fmt_dict, logging.DEBUG, 'Run')
-        self._prune('Run')
+            self._save_log(RUN_START_FORMAT % fmt_dict, logging.DEBUG, 'Run')
+            self._prune('Run')
 
     def finish_run(self, interval):
         """Indicates a certain run has been stopped. Use interval=None to stop all active runs.
         The stop time(s) will be updated with the current time."""
-        if isinstance(interval, str) or interval is None:
-            uid = interval
-        elif isinstance(interval, dict) and 'uid' in interval:
-            uid = interval['uid']
-        else:
-            raise ValueError
+        with self._lock:
+            if isinstance(interval, str) or interval is None:
+                uid = interval
+            elif isinstance(interval, dict) and 'uid' in interval:
+                uid = interval['uid']
+            else:
+                raise ValueError
 
-        for entry in self._log['Run']:
-            if (uid is None or entry['data']['uid'] == uid) and entry['data']['active']:
-                entry['data']['end'] = datetime.datetime.now()
-                entry['data']['active'] = False
+            for entry in self._log['Run']:
+                if (uid is None or entry['data']['uid'] == uid) and entry['data']['active']:
+                    entry['data']['end'] = datetime.datetime.now()
+                    entry['data']['active'] = False
 
-                fmt_dict = entry['data'].copy()
-                fmt_dict['asctime'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
-                fmt_dict['start'] = fmt_dict['start'].strftime("%Y-%m-%d %H:%M:%S")
-                fmt_dict['end'] = fmt_dict['end'].strftime("%Y-%m-%d %H:%M:%S")
+                    fmt_dict = entry['data'].copy()
+                    fmt_dict['asctime'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
+                    fmt_dict['start'] = fmt_dict['start'].strftime("%Y-%m-%d %H:%M:%S")
+                    fmt_dict['end'] = fmt_dict['end'].strftime("%Y-%m-%d %H:%M:%S")
 
-                self._save_log(RUN_FINISH_FORMAT % fmt_dict, logging.DEBUG, 'Run')
-                if uid is not None:
-                    break
+                    self._save_log(RUN_FINISH_FORMAT % fmt_dict, logging.DEBUG, 'Run')
+                    if uid is not None:
+                        break
 
     def active_runs(self):
         return [run['data'].copy() for run in self._log['Run'] if run['data']['active']]
@@ -122,38 +127,41 @@ class _Log(logging.Handler):
         return [run['data'].copy() for run in self._log['Run'] if not run['data']['active']]
 
     def log_event(self, event_type, message, level=logging.INFO, format_msg=True):
-        if level >= self.level:
-            if event_type not in self._log:
-                self._log[event_type] = []
+        if threading.current_thread().__class__.__name__ != '_MainThread' and time.time() < self._plugin_time:
+            time.sleep(self._plugin_time - time.time())
+        with self._lock:
+            if level >= self.level:
+                if event_type not in self._log:
+                    self._log[event_type] = []
 
-            self._log[event_type].append({
-                'time': datetime.datetime.now(),
-                'level': level,
-                'data': message
-            })
-            if options.debug_log and format_msg:
-                stack = traceback.extract_stack()
-                filename = ''
-                lineno = 0
-                for tb in reversed(stack):
-                    filename = path.basename(tb[0])
-                    lineno = tb[1]
-                    if filename != path.basename(__file__):
-                        break
+                self._log[event_type].append({
+                    'time': datetime.datetime.now(),
+                    'level': level,
+                    'data': message
+                })
+                if options.debug_log and format_msg:
+                    stack = traceback.extract_stack()
+                    filename = ''
+                    lineno = 0
+                    for tb in reversed(stack):
+                        filename = path.basename(tb[0])
+                        lineno = tb[1]
+                        if filename != path.basename(__file__):
+                            break
 
-                fmt_dict = {
-                    'asctime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3],
-                    'levelname': logging.getLevelName(level),
-                    'event_type': event_type,
-                    'filename': filename,
-                    'lineno': lineno,
-                    'message': message
-                }
+                    fmt_dict = {
+                        'asctime': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3],
+                        'levelname': logging.getLevelName(level),
+                        'event_type': event_type,
+                        'filename': filename,
+                        'lineno': lineno,
+                        'message': message
+                    }
 
-                message = EVENT_FORMAT % fmt_dict
+                    message = EVENT_FORMAT % fmt_dict
 
-            self._save_log(message, level, event_type)
-            self._prune(event_type)
+                self._save_log(message, level, event_type)
+                self._prune(event_type)
 
     def debug(self, event_type, message):
         self.log_event(event_type, message, logging.DEBUG)
