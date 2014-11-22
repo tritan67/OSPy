@@ -73,7 +73,7 @@ class EmailSender(Thread):
 
     def run(self):
         last_rain = False
-        finished_count = len(log.finished_runs())
+        finished_count = len([run for run in log.finished_runs() if not run['blocked']])
 
         if email_options["emllog"]:          # if eml_log send email is enable (on)
             body = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) +
@@ -92,7 +92,7 @@ class EmailSender(Thread):
 
                 # Send E-mail if a new finished run is found
                 if email_options["emlrun"]:
-                    finished = log.finished_runs()
+                    finished = [run for run in log.finished_runs() if not run['blocked']]
                     if len(finished) > finished_count:
                         body = time.strftime("On %d.%m.%Y at %H:%M:%S:\n", time.localtime(time.time()))
                         for run in finished[finished_count:]:

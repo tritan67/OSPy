@@ -98,7 +98,7 @@ def get_ip():
         ipaddr = split_data[split_data.index('src') + 1]
         return ipaddr
     except Exception:
-        return "No IP Settings"
+        return "IP unavailable"
 
 
 def get_cpu_temp(unit=None):

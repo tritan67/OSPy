@@ -61,7 +61,7 @@ function displaySchedule(schedule) {
                         programClassesUsed[schedule[s].program_name] = programClass;
                         var markerClass = (schedule[s].active == null ? "schedule" : "history");
                         if (schedule[s].blocked) {
-                            markerClass = "blocked"
+                            markerClass = 'blocked'
                         }
                         boxes.append("<div class='scheduleMarker " + programClass + " " + markerClass + "' style='left:" + barStart*100 + "%;width:" + barWidth*100 + "%' data='" + schedule[s].program_name + ": " + schedule[s].label + "'></div>");
                     }
