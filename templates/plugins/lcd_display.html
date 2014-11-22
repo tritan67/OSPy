@@ -21,7 +21,8 @@ $var page: plugins
     <div class="title">LCD settings</div>
     <p>This plugin shows information on a 16x2 or 16x1 character LCD with PCF8574(A).</p>
     <p>Automatically detects the display at the following I2C addresses: 0x20-0x27, 0x38-0x3F.</p>
-    <p>Compatible with the HD44780 controller.</p><br>
+    <p>Compatible with the HD44780 controller.</p>
+    <p>Visit <a href="http://www.pihrt.com/elektronika/258-moje-rapsberry-pi-i2c-lcd-16x2">Martin Pihrt's blog</a> for more information.</p><br>
     <form id="pluginForm" action="$plugins.plugin_url('lcd_display.settings_page')" method="post">
         <table class="optionList">
             <tr>
@@ -44,7 +45,6 @@ $var page: plugins
             </tr>
         </table>
     </form>
-<p>Visit for more: www.pihrt.com/elektronika/258-moje-rapsberry-pi-i2c-lcd-16x2.</p>
 </div>
 <div id="controls">
     <button id="cSubmit" class="submit"><b>Submit</b></button>
