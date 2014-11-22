@@ -18,7 +18,7 @@ from options import options
 from options import level_adjustments
 from helpers import mkdir_p
 from webpages import ProtectedPage
-from plugins import PluginOptions
+from plugins import PluginOptions, plugin_url
 
 NAME = 'Weather-based Water Level'
 LINK = 'settings_page'
@@ -136,7 +136,7 @@ class WeatherLevelChecker(Thread):
 
             except Exception:
                 err_string = ''.join(traceback.format_exc())
-                log.info(NAME, 'Weather-base water level encountered error:\n' + err_string)
+                log.error(NAME, 'Weather-based water level plug-in:\n' + err_string)
                 self._sleep(60)
 
 checker = None
@@ -333,7 +333,7 @@ class settings_page(ProtectedPage):
         plugin_options.web_update(web.input())
         if checker is not None:
             checker.update()
-        raise web.seeother('/')
+        raise web.seeother(plugin_url(settings_page))
 
 
 class settings_json(ProtectedPage):

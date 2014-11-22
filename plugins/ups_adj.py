@@ -153,7 +153,7 @@ class UPS_Sender(Thread):
             except Exception:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 err_string = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-                self.add_status('UPS plugin encountered error: ' + err_string)
+                self.add_status('UPS plug-in: ' + err_string)
                 self._sleep(60)
 
 

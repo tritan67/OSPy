@@ -23,40 +23,46 @@ $var page: plugins
     <form id="pluginForm" action="$plugins.plugin_url('email_notifications.settings_page')" method="post">
         <table class="optionList">
             <tr>
-                <td style='text-transform: none;'>Send email with file log.csv after power on:</td>
+                <td style='text-transform: none;'>Send E-mail with log file after power on:</td>
                 <td>
-                    <input name='emllog' type='checkbox'${" checked" if plugin_options['emllog'] == "on" else ""}>   
+                    <input name='emllog' type='checkbox'${" checked" if plugin_options['emllog'] else ""}>
                 </td>
             </tr>
             <tr>
-                <td style='text-transform: none;'>Send email if rain is detected:</td>
+                <td style='text-transform: none;'>Send E-mail if rain is detected:</td>
                 <td>
-                    <input name='emlrain' type='checkbox'${" checked" if plugin_options['emlrain'] == "on" else ""}>   
+                    <input name='emlrain' type='checkbox'${" checked" if plugin_options['emlrain'] else ""}>
                 </td>
             </tr>
 
             <tr>
-                <td style='text-transform: none;'>Sends email if program has run:</td>
+                <td style='text-transform: none;'>Send E-mail if a program has finished:</td>
                 <td>
-                    <input name='emlrun' type='checkbox'${" checked" if plugin_options['emlrun'] == "on" else ""}> 
+                    <input name='emlrun' type='checkbox'${" checked" if plugin_options['emlrun'] else ""}>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Your GMail username:</td>
                 <td>
-                    <input name='emlusr' type='text' value=$plugin_options["emlusr"]>
+                    <input name='emlusr' type='text' value='$plugin_options["emlusr"]'>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Your GMail password:</td>
                 <td>
-                    <input name='emlpwd' type='password' value=$plugin_options["emlpwd"]>
+                    <input name='emlpwd' type='password' value='$plugin_options["emlpwd"]'>
                 </td>
             </tr>
             <tr>
-                <td style='text-transform: none;'>Send mail to:</td>
+                <td style='text-transform: none;'>Send E-mail to:</td>
                 <td>
-                    <input name='emladr' type='text' value=$plugin_options["emladr"]>
+                    <input name='emladr' type='text' value='$plugin_options["emladr"]'>
+                </td>
+            </tr>
+            <tr>
+                <td style='text-transform: none;'>E-mail subject:</td>
+                <td>
+                    <input name='emlsubject' type='text' value='$plugin_options["emlsubject"]'>
                 </td>
             </tr>
             <tr>

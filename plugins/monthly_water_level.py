@@ -1,17 +1,14 @@
 # !/usr/bin/env python
 
 
-import json
 import time
 from threading import Thread, Event
 
 import web
 from log import log
-from options import options
 from options import level_adjustments
-from helpers import mkdir_p
 from webpages import ProtectedPage
-from plugins import PluginOptions
+from plugins import PluginOptions, plugin_url
 
 
 NAME = 'Monthly Water Level'
@@ -87,4 +84,4 @@ class settings_page(ProtectedPage):
         plugin_options.web_update(vals)
         if checker is not None:
             checker.update()
-        raise web.seeother('/')
+        raise web.seeother(plugin_url(settings_page))

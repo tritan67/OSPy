@@ -105,7 +105,7 @@ class StatusChecker(Thread):
                 self.started.set()
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 err_string = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-                log.info(NAME, 'System update plug-in encountered error:\n' + err_string)
+                log.error(NAME, 'System update plug-in:\n' + err_string)
                 self._sleep(60)
 
 checker = None

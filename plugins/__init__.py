@@ -15,7 +15,16 @@ class PluginOptions(dict):
         from options import options
         if plugin in options:
             for key, value in options[plugin].iteritems():
-                self[key] = value
+                if key in self:
+                    value_type = type(value)
+                    if value_type == unicode:
+                        value_type = str
+                    default_type = type(self[key])
+                    if default_type == unicode:
+                        default_type = str
+
+                    if value_type == default_type:
+                        self[key] = value
 
         self._plugin = plugin
 

@@ -53,37 +53,37 @@ $code:
             <tr>
                 <td style='text-transform: none;'>Maximum number of records:</td>
                 <td>
-                    <input name='records' type='number' value=$m_vals["records"]> (0 = unlimited)
+                    <input name='records' type='number' value='$m_vals["records"]'> (0 = unlimited)
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Time loop for logging:</td>
                 <td>
-                    <input name='time' type='number' value=$m_vals["time"]> minutes (0 = logging disabled)
+                    <input name='time' type='number' value='$m_vals["time"]'> minutes (0 = logging disabled)
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Label for input AD0:</td>
                 <td>
-                    <input name='ad0text' type='text' value=$m_vals["ad0text"]> measure as voltage <input name='ad0' type='checkbox'${" checked" if m_vals['ad0'] == "on" else ""}>  
+                    <input name='ad0text' type='text' value='$m_vals["ad0text"]'> measure as voltage <input name='ad0' type='checkbox'${" checked" if m_vals['ad0'] == "on" else ""}>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Label for input AD1:</td>
                 <td>
-                    <input name='ad1text' type='text' value=$m_vals["ad1text"]> measure as voltage <input name='ad1' type='checkbox'${" checked" if m_vals['ad1'] == "on" else ""}>    
+                    <input name='ad1text' type='text' value='$m_vals["ad1text"]'> measure as voltage <input name='ad1' type='checkbox'${" checked" if m_vals['ad1'] == "on" else ""}>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Label for input AD2:</td>
                 <td>
-                    <input name='ad2text' type='text' value=$m_vals["ad2text"]> measure as voltage <input name='ad2' type='checkbox'${" checked" if m_vals['ad2'] == "on" else ""}>     
+                    <input name='ad2text' type='text' value='$m_vals["ad2text"]'> measure as voltage <input name='ad2' type='checkbox'${" checked" if m_vals['ad2'] == "on" else ""}>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Label for input AD3:</td>
                 <td>
-                    <input name='ad3text' type='text' value=$m_vals["ad3text"]> measure as voltage <input name='ad3' type='checkbox'${" checked" if m_vals['ad3'] == "on" else ""}>   
+                    <input name='ad3text' type='text' value='$m_vals["ad3text"]'> measure as voltage <input name='ad3' type='checkbox'${" checked" if m_vals['ad3'] == "on" else ""}>
                 </td>
             </tr>
             <tr> 
@@ -108,7 +108,7 @@ $code:
             <tr>
                 <td style='text-transform: none;'>Output DA voltage:</td>
                 <td>
-                    <input name='da0val' type='number' min="0" max="255" value=$m_vals["da0val"]> (0-255 = 0-5 Volt)
+                    <input name='da0val' type='number' min="0" max="255" value='$m_vals["da0val"]'> (0-255 = 0-5 Volt)
                 </td>
             </tr>
         </table>
