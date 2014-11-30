@@ -17,9 +17,15 @@ class _DummyOutputs(object):
 class _IOOutputs(object):
     def __init__(self):
         self._mapping = {}
+        self._initialized = False
 
     def __setattr__(self, key, value):
         super(_IOOutputs, self).__setattr__(key, value)
+        if not self._initialized:
+            self._initialized = True
+            for pin in self._mapping.values():
+                self._io.setup(pin, self._io.OUT)
+
         if key in self._mapping:
             self._io.output(self._mapping[key], self._io.HIGH if value else self._io.LOW)
 

@@ -17,8 +17,14 @@ class _DummyInputs(_RainSensorMixIn):
 class _IOInputs(_RainSensorMixIn):
     def __init__(self):
         self._mapping = {}
+        self._initialized = False
 
     def __getattr__(self, item):
+        if not self._initialized:
+            self._initialized = True
+            for pin in self._mapping.values():
+                self._io.setup(pin, self._io.IN)
+
         if item.startswith('_'):
             return super(_IOInputs, self).__getattribute__(item)
         else:

@@ -191,25 +191,28 @@ class _DummyStations(_BaseStations):
 
 class _ShiftStations(_BaseStations):
     def __init__(self, count):
+        super(_ShiftStations, self).__init__(count)
+        self._initialized = False
+
         self._io = None
         self._sr_dat = 0
         self._sr_clk = 0
         self._sr_noe = 0
         self._sr_lat = 0
 
-        self._io.setup(self._sr_noe, self._io.OUT)
-        self._io.output(self._sr_noe, self._io.HIGH)
-        self._io.setup(self._sr_clk, self._io.OUT)
-        self._io.output(self._sr_clk, self._io.LOW)
-        self._io.setup(self._sr_dat, self._io.OUT)
-        self._io.output(self._sr_dat, self._io.LOW)
-        self._io.setup(self._sr_lat, self._io.OUT)
-        self._io.output(self._sr_lat, self._io.LOW)
-
-        super(_ShiftStations, self).__init__(count)
-
     def _activate(self):
         """Set the state of each output pin on the shift register from the internal state."""
+        if not self._initialized:
+            self._initialized = True
+            self._io.setup(self._sr_noe, self._io.OUT)
+            self._io.output(self._sr_noe, self._io.HIGH)
+            self._io.setup(self._sr_clk, self._io.OUT)
+            self._io.output(self._sr_clk, self._io.LOW)
+            self._io.setup(self._sr_dat, self._io.OUT)
+            self._io.output(self._sr_dat, self._io.LOW)
+            self._io.setup(self._sr_lat, self._io.OUT)
+            self._io.output(self._sr_lat, self._io.LOW)
+
         self._io.output(self._sr_noe, self._io.HIGH)
         self._io.output(self._sr_clk, self._io.LOW)
         self._io.output(self._sr_lat, self._io.LOW)
@@ -240,6 +243,7 @@ class _ShiftStations(_BaseStations):
 class _RPiStations(_ShiftStations):
     def __init__(self, count):
         import RPi.GPIO as GPIO  # RPi hardware
+        super(_RPiStations, self).__init__(count)
 
         self._io = GPIO
         self._io.setwarnings(False)
@@ -250,12 +254,11 @@ class _RPiStations(_ShiftStations):
         self._sr_noe = 11
         self._sr_lat = 15
 
-        super(_RPiStations, self).__init__(count)
-
 
 class _BBBStations(_ShiftStations):
     def __init__(self, count):
         import Adafruit_BBIO.GPIO as GPIO  # Beagle Bone Black hardware
+        super(_BBBStations, self).__init__(count)
 
         self._io = GPIO
         self._io.setwarnings(False)
@@ -264,8 +267,6 @@ class _BBBStations(_ShiftStations):
         self._sr_clk = "P9_13"
         self._sr_noe = "P9_14"
         self._sr_lat = "P9_12"
-
-        super(_BBBStations, self).__init__(count)
 
 
 try:
