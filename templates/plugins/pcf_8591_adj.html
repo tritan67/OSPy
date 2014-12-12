@@ -1,6 +1,6 @@
-$def with(m_vals)
+$def with(plugin_options, events)
 
-$var title: PCF8591 voltage and temperature adjustments
+$var title: PCF8591 voltage and temperature monitor
 $var page: plugins
 
 $code:
@@ -9,11 +9,10 @@ $code:
        temp = volt * 100.0        
 
        if ad_text != '':
-           if ad_unit == 'on':
+           if ad_unit:
                return '%s: %.1f V' % (ad_text, volt) 
            else:
                return u'%s: %.1f \N{DEGREE SIGN}C' % (ad_text, temp)
-
 
 <script>
     // Initialize behaviors
@@ -26,89 +25,88 @@ $code:
             window.location="/";
         });
  });
-
 </script>
     
 
 <div id="plugin">
-    <div class="title">PCF8591 voltage and temperature adjustments</div>
+    <div class="title">PCF8591 voltage and temperature monitor</div>
     <p>For this plugin is needed enabled I2C bus and connected I2C A/D converter PCF8591 on I2C adress 0x48.</p>
     <p>For measure temperature use temp probe LM35D (0-100 &deg;C) on AD0-3 converter.</p>
     <p>If the label has not blank value the value is displayed in the window read value.</p>
-    <p>Download log as <a href="/pcfl">csv</a>. <a href="/pcfr">Delete</a> log file.</p>
-    <form id="pluginForm" action="/pcfa" method="get">
+    <p>Download log as <a href="$plugins.plugin_url('pcf_8591_adj.pcf_log_page')">csv</a>. <a href="$plugins.plugin_url('pcf_8591_adj.delete_log_page')">Delete</a> log file.</p>
+    <form id="pluginForm" action="$plugins.plugin_url('pcf_8591_adj.settings_page')" method="post">
         <table class="optionList">
             <tr>
                 <td style='text-transform: none;'>Use PCF8591:</td>
                 <td>
-                    <input name='use_pcf' type='checkbox'${" checked" if m_vals['use_pcf'] == "on" else ""}>   
+                    <input name='use_pcf' type='checkbox'${" checked" if plugin_options['use_pcf'] else ""}>   
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Enable logging:</td>
                 <td>
-                    <input name='use_log' type='checkbox'${" checked" if m_vals['use_log'] == "on" else ""}>   
+                    <input name='use_log' type='checkbox'${" checked" if plugin_options['use_log'] else ""}>   
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Maximum number of records:</td>
                 <td>
-                    <input name='records' type='number' value='$m_vals["records"]'> (0 = unlimited)
+                    <input name='records' type='number' value='$plugin_options["records"]'> (0 = unlimited)
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Time loop for logging:</td>
                 <td>
-                    <input name='time' type='number' value='$m_vals["time"]'> minutes (0 = logging disabled)
+                    <input name='time' type='number' value='$plugin_options["time"]'> minutes (0 = logging disabled)
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Label for input AD0:</td>
                 <td>
-                    <input name='ad0text' type='text' value='$m_vals["ad0text"]'> measure as voltage <input name='ad0' type='checkbox'${" checked" if m_vals['ad0'] == "on" else ""}>
+                    <input name='ad0text' type='text' value='$plugin_options["ad0text"]'> measure as voltage <input name='ad0' type='checkbox'${" checked" if plugin_options['ad0'] else ""}>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Label for input AD1:</td>
                 <td>
-                    <input name='ad1text' type='text' value='$m_vals["ad1text"]'> measure as voltage <input name='ad1' type='checkbox'${" checked" if m_vals['ad1'] == "on" else ""}>
+                    <input name='ad1text' type='text' value='$plugin_options["ad1text"]'> measure as voltage <input name='ad1' type='checkbox'${" checked" if plugin_options['ad1'] else ""}>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Label for input AD2:</td>
                 <td>
-                    <input name='ad2text' type='text' value='$m_vals["ad2text"]'> measure as voltage <input name='ad2' type='checkbox'${" checked" if m_vals['ad2'] == "on" else ""}>
+                    <input name='ad2text' type='text' value='$plugin_options["ad2text"]'> measure as voltage <input name='ad2' type='checkbox'${" checked" if plugin_options['ad2'] else ""}>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Label for input AD3:</td>
                 <td>
-                    <input name='ad3text' type='text' value='$m_vals["ad3text"]'> measure as voltage <input name='ad3' type='checkbox'${" checked" if m_vals['ad3'] == "on" else ""}>
+                    <input name='ad3text' type='text' value='$plugin_options["ad3text"]'> measure as voltage <input name='ad3' type='checkbox'${" checked" if plugin_options['ad3'] else ""}>
                 </td>
             </tr>
             <tr> 
                 <td style='text-transform: none; vertical-align: top;'>Read value:</td>
                 <td style="background-color: rgb(220, 220, 220);text-align: left;">                     
-                  $if m_vals['ad0text'] != '': 
-                      ${meas(m_vals['ad0text'],m_vals['ad0val'],m_vals['ad0'])} <br>
-                  $if m_vals['ad1text'] != '': 
-                      ${meas(m_vals['ad1text'],m_vals['ad1val'],m_vals['ad1'])} <br>
-                  $if m_vals['ad2text'] != '': 
-                      ${meas(m_vals['ad2text'],m_vals['ad2val'],m_vals['ad2'])} <br>
-                  $if m_vals['ad3text'] != '':
-                      ${meas(m_vals['ad3text'],m_vals['ad3val'],m_vals['ad3'])} <br>                   
+                  $if plugin_options['ad0text'] != '': 
+                      ${meas(plugin_options['ad0text'],plugin_options['ad0val'],plugin_options['ad0'])} <br>
+                  $if plugin_options['ad1text'] != '': 
+                      ${meas(plugin_options['ad1text'],plugin_options['ad1val'],plugin_options['ad1'])} <br>
+                  $if plugin_options['ad2text'] != '': 
+                      ${meas(plugin_options['ad2text'],plugin_options['ad2val'],plugin_options['ad2'])} <br>
+                  $if plugin_options['ad3text'] != '':
+                      ${meas(plugin_options['ad3text'],plugin_options['ad3val'],plugin_options['ad3'])} <br>                   
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Status:</td>
                 <td>
-                    <textarea style="font-family: monospace;" rows="7" cols="35" readonly>$m_vals['status']</textarea>
+                    <textarea style="font-family: monospace;" rows="7" cols="35" readonly>$'\n'.join(events)</textarea>
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Output DA voltage:</td>
                 <td>
-                    <input name='da0val' type='number' min="0" max="255" value='$m_vals["da0val"]'> (0-255 = 0-5 Volt)
+                    <input name='da0val' type='number' min="0" max="255" value='$plugin_options["da0val"]'> (0-255 = 0-5 Volt)
                 </td>
             </tr>
         </table>
