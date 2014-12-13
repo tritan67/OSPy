@@ -412,13 +412,12 @@ class api_status_json(ProtectedPage):
                             status['reason'] = 'rain_sensed'
                         elif not station.ignore_rain and rain_blocks.seconds_left():
                             status['reason'] = 'rain_delay'
-                        else:
+                        elif station.active:
                             active = log.active_runs()
                             for interval in active:
                                 if not interval['blocked'] and interval['station'] == station.index:
                                     status['programName'] = interval['program_name']
 
-                                    status['status'] = 'on'
                                     status['reason'] = 'program'
                                     status['remaining'] = max(0, (interval['end'] -
                                                                   datetime.datetime.now()).total_seconds())

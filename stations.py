@@ -149,7 +149,7 @@ class _BaseStations(object):
         for i in index:
             if i < len(self._state):
                 self._state[i] = True
-        logging.debug("Activated output %d", index)
+                logging.debug("Activated output %d", i)
 
     def deactivate(self, index):
         if not isinstance(index, list):
@@ -157,7 +157,7 @@ class _BaseStations(object):
         for i in index:
             if i < len(self._state):
                 self._state[i] = False
-        logging.debug("Deactivated output %d", index)
+                logging.debug("Deactivated output %d", i)
 
     def active(self, index=None):
         if index is None:

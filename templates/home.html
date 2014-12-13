@@ -40,8 +40,6 @@ $code:
                     if (seconds < 10) {seconds = "0"+seconds;}
                     if (station.status == "on") {
                         display = minutes+":"+seconds;
-                    } else {
-                        display = "(" + minutes+":"+seconds + ")";
                     }
                     updateInterval = 1000;
                     break;
@@ -64,7 +62,7 @@ $code:
                     display = "Disabled";
                     break;
                 default:
-                    display = "Off";
+                    display = station.status;
             }
             jQuery("td#status" + station.station)
                 .text(display)

@@ -3,13 +3,17 @@
 __author__ = 'Rimco'
 
 # Local imports
+
+# We want to hook the logging before importing other modules which might already use log statements:
 from log import hook_logging
+hook_logging()
+
 from options import options
 from urls import urls
+from scheduler import scheduler
 
 import web
 import plugins
-
 
 
 class OSPyApp(web.application):
@@ -20,11 +24,6 @@ class OSPyApp(web.application):
         return web.httpserver.runsimple(func, ('0.0.0.0', port))
 
 if __name__ == '__main__':
-    hook_logging()
-
-    # Import this only after logging has been hooked and we need it:
-    from scheduler import scheduler
-
     ##############################
     #### web.py setup         ####
     ##############################

@@ -269,7 +269,8 @@ class _Scheduler(Thread):
 
         if not options.manual_mode:
             schedule = predicted_schedule(check_start, check_end)
-            #logging.debug("Schedule: %s", str(schedule))
+            #import pprint
+            #logging.debug("Schedule: %s", pprint.pformat(schedule))
             for entry in schedule:
                 if entry['start'] <= current_time < entry['end']:
                     log.start_run(entry)
