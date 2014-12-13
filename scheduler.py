@@ -231,7 +231,7 @@ class _Scheduler(Thread):
     def __init__(self):
         super(_Scheduler, self).__init__()
         self.daemon = True
-        options.add_callback('scheduler_enabled', self._option_cb)
+        #options.add_callback('scheduler_enabled', self._option_cb)
         options.add_callback('manual_mode', self._option_cb)
 
         # If manual mode is active, finish all stale runs:
@@ -242,7 +242,7 @@ class _Scheduler(Thread):
         # Clear if:
         #   - Manual mode changed
         #   - Scheduler was disabled
-        if key == 'manual_mode' or (key == 'scheduler_enabled' and not new and not options.manual_mode):
+        if key == 'manual_mode':
             log.finish_run(None)
             stations.clear()
 

@@ -406,13 +406,7 @@ class api_status_json(ProtectedPage):
                     if options.manual_mode:
                         status['programName'] = 'Manual Mode'
                     else:
-                        if not options.scheduler_enabled:
-                            status['reason'] = 'system_off'
-                        elif not station.ignore_rain and inputs.rain_sensed():
-                            status['reason'] = 'rain_sensed'
-                        elif not station.ignore_rain and rain_blocks.seconds_left():
-                            status['reason'] = 'rain_delay'
-                        elif station.active:
+                        if station.active:
                             active = log.active_runs()
                             for interval in active:
                                 if not interval['blocked'] and interval['station'] == station.index:
@@ -421,6 +415,12 @@ class api_status_json(ProtectedPage):
                                     status['reason'] = 'program'
                                     status['remaining'] = max(0, (interval['end'] -
                                                                   datetime.datetime.now()).total_seconds())
+                        elif not options.scheduler_enabled:
+                            status['reason'] = 'system_off'
+                        elif not station.ignore_rain and inputs.rain_sensed():
+                            status['reason'] = 'rain_sensed'
+                        elif not station.ignore_rain and rain_blocks.seconds_left():
+                            status['reason'] = 'rain_delay'
 
                 statuslist.append(status)
 
