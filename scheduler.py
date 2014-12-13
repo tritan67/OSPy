@@ -247,6 +247,16 @@ class _Scheduler(Thread):
             stations.clear()
 
     def run(self):
+        # Activate outputs upon start if needed:
+        current_time = datetime.datetime.now()
+        rain = not options.manual_mode and (rain_blocks.block_end() > datetime.datetime.now() or
+                                            inputs.rain_sensed())
+        active = log.active_runs()
+        for entry in active:
+            ignore_rain = stations.get(entry['station']).ignore_rain
+            if entry['end'] > current_time and (not rain or ignore_rain) and not entry['blocked']:
+                stations.activate(entry['station'])
+
         while True:
             self._check_schedule()
             time.sleep(5)
