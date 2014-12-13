@@ -102,6 +102,9 @@ def plugin_url(cls):
         if result.endswith('_json'):
             result = result[:-5] + '.json'
 
+        if result.endswith('_csv'):
+            result = result[:-4] + '.csv'
+
     return result
 
 
