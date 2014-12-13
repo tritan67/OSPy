@@ -31,6 +31,7 @@ class StatusChecker(Thread):
             'ver_str': version.ver_str,
             'ver_date': version.ver_date,
             'remote': 'None!',
+            'remote_branch': 'origin/master',
             'can_update': False}
 
         self._sleep_time = 0
@@ -65,13 +66,18 @@ class StatusChecker(Thread):
         if remote:
             self.status['remote'] = remote
 
-        command = 'git log -1 origin/master --format=%cd --date=short'
+        command = 'git rev-parse --abbrev-ref --symbolic-full-name @{u}'
+        remote_branch = subprocess.check_output(command.split()).strip()
+        if remote_branch:
+            self.status['remote_branch'] = remote_branch
+
+        command = 'git log -1 %s --format=%%cd --date=short' % remote_branch
         new_date = subprocess.check_output(command.split()).strip()
 
-        command = 'git rev-list origin/master --count --first-parent'
+        command = 'git rev-list %s --count --first-parent' % remote_branch
         new_revision = int(subprocess.check_output(command.split()))
 
-        command = 'git log HEAD..origin/master --oneline'
+        command = 'git log HEAD..%s --oneline' % remote_branch
         changes = '  ' + '\n  '.join(subprocess.check_output(command.split()).split('\n'))
 
         if new_revision == version.revision and new_date == version.ver_date:
