@@ -101,8 +101,8 @@ class EmailSender(Thread):
                             body += "Finished run:\n"
                             body += "  Program: %s\n" % run['program_name']
                             body += "  Station: %s\n" % run['station']
-                            body += "  Start time: %s \n\n" % run['start'].strftime("%Y-%m-%d at %H:%M:%S")
-                            body += "  Duration: %02d:%02d\n" % (minutes, seconds)
+                            body += "  Start time: %s \n" % run['start'].strftime("%Y-%m-%d at %H:%M:%S")
+                            body += "  Duration: %02d:%02d\n\n" % (minutes, seconds)
 
                         self.try_mail(email_options['emlsubject'], body)
 
