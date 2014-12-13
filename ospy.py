@@ -5,8 +5,6 @@ __author__ = 'Rimco'
 # Local imports
 from log import hook_logging
 from options import options
-from scheduler import scheduler
-from urls import urls
 
 import web
 import plugins
@@ -21,6 +19,10 @@ class OSPyApp(web.application):
 
 if __name__ == '__main__':
     hook_logging()
+
+    # Import these only after logging has been hooked and we need it:
+    from scheduler import scheduler
+    from urls import urls
 
     ##############################
     #### web.py setup         ####

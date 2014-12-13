@@ -103,7 +103,7 @@ class _BaseStations(object):
 
     def _activate(self):
         """This function should be used to update real outputs according to self._state."""
-        pass
+        logging.debug("Activated outputs")
 
     def _resize_cb(self, key, old, new):
         self.resize(new)
@@ -126,6 +126,8 @@ class _BaseStations(object):
                 del self._stations[-1]
                 del self._state[-1]
 
+        logging.debug("Resized to %d", count)
+
     def count(self):
         return len(self._stations)
 
@@ -147,6 +149,7 @@ class _BaseStations(object):
         for i in index:
             if i < len(self._state):
                 self._state[i] = True
+        logging.debug("Activated output %d", index)
 
     def deactivate(self, index):
         if not isinstance(index, list):
@@ -154,6 +157,7 @@ class _BaseStations(object):
         for i in index:
             if i < len(self._state):
                 self._state[i] = False
+        logging.debug("Deactivated output %d", index)
 
     def active(self, index=None):
         if index is None:
@@ -165,54 +169,32 @@ class _BaseStations(object):
     def clear(self):
         for i in range(len(self._state)):
             self._state[i] = False
-
-
-class _DummyStations(_BaseStations):
-    def _activate(self):
-        super(_DummyStations, self)._activate()
-        logging.debug("Activated outputs")
-
-    def resize(self, count):
-        super(_DummyStations, self).resize(count)
-        logging.debug("Resized to %d", count)
-
-    def activate(self, index):
-        super(_DummyStations, self).activate(index)
-        logging.debug("Activated output %d", index)
-
-    def deactivate(self, index):
-        super(_DummyStations, self).deactivate(index)
-        logging.debug("Deactivated output %d", index)
-
-    def clear(self):
-        super(_DummyStations, self).clear()
         logging.debug("Cleared all outputs")
 
 
 class _ShiftStations(_BaseStations):
-    def __init__(self, count):
-        super(_ShiftStations, self).__init__(count)
-        self._initialized = False
 
-        self._io = None
-        self._sr_dat = 0
-        self._sr_clk = 0
-        self._sr_noe = 0
-        self._sr_lat = 0
+    # All these class variables should be initialized by the subclass before calling init of this class
+    _io = None
+    _sr_dat = 0
+    _sr_clk = 0
+    _sr_noe = 0
+    _sr_lat = 0
+
+    def __init__(self, count):
+        self._io.setup(self._sr_noe, self._io.OUT)
+        self._io.output(self._sr_noe, self._io.HIGH)
+        self._io.setup(self._sr_clk, self._io.OUT)
+        self._io.output(self._sr_clk, self._io.LOW)
+        self._io.setup(self._sr_dat, self._io.OUT)
+        self._io.output(self._sr_dat, self._io.LOW)
+        self._io.setup(self._sr_lat, self._io.OUT)
+        self._io.output(self._sr_lat, self._io.LOW)
+
+        super(_ShiftStations, self).__init__(count)
 
     def _activate(self):
         """Set the state of each output pin on the shift register from the internal state."""
-        if not self._initialized:
-            self._initialized = True
-            self._io.setup(self._sr_noe, self._io.OUT)
-            self._io.output(self._sr_noe, self._io.HIGH)
-            self._io.setup(self._sr_clk, self._io.OUT)
-            self._io.output(self._sr_clk, self._io.LOW)
-            self._io.setup(self._sr_dat, self._io.OUT)
-            self._io.output(self._sr_dat, self._io.LOW)
-            self._io.setup(self._sr_lat, self._io.OUT)
-            self._io.output(self._sr_lat, self._io.LOW)
-
         self._io.output(self._sr_noe, self._io.HIGH)
         self._io.output(self._sr_clk, self._io.LOW)
         self._io.output(self._sr_lat, self._io.LOW)
@@ -222,6 +204,7 @@ class _ShiftStations(_BaseStations):
             self._io.output(self._sr_clk, self._io.HIGH)
         self._io.output(self._sr_lat, self._io.HIGH)
         self._io.output(self._sr_noe, self._io.LOW)
+        logging.debug("Activated shift outputs")
 
     def resize(self, count):
         super(_ShiftStations, self).resize(count)
@@ -243,8 +226,6 @@ class _ShiftStations(_BaseStations):
 class _RPiStations(_ShiftStations):
     def __init__(self, count):
         import RPi.GPIO as GPIO  # RPi hardware
-        super(_RPiStations, self).__init__(count)
-
         self._io = GPIO
         self._io.setwarnings(False)
         self._io.setmode(self._io.BOARD)  # IO channels are identified by header connector pin numbers. Pin numbers are always the same regardless of Raspberry Pi board revision.
@@ -254,12 +235,12 @@ class _RPiStations(_ShiftStations):
         self._sr_noe = 11
         self._sr_lat = 15
 
+        super(_RPiStations, self).__init__(count)
+
 
 class _BBBStations(_ShiftStations):
     def __init__(self, count):
         import Adafruit_BBIO.GPIO as GPIO  # Beagle Bone Black hardware
-        super(_BBBStations, self).__init__(count)
-
         self._io = GPIO
         self._io.setwarnings(False)
 
@@ -268,11 +249,14 @@ class _BBBStations(_ShiftStations):
         self._sr_noe = "P9_14"
         self._sr_lat = "P9_12"
 
+        super(_BBBStations, self).__init__(count)
 
 try:
     stations = _RPiStations(options.output_count)
-except Exception:
+except Exception as err:
+    logging.debug(err)
     try:
         stations = _BBBStations(options.output_count)
-    except Exception:
-        stations = _DummyStations(options.output_count)
+    except Exception as err:
+        logging.debug(err)
+        stations = _BaseStations(options.output_count)
