@@ -1,28 +1,40 @@
 # !/usr/bin/env python
 # this plugins send and check SMS data for modem to control your OSPy
 
-from threading import Thread
-from random import randint
+from threading import Thread, Event
 import json
 import time
+from datetime import datetime
 import sys
 import traceback
 
 import web
-
-from helpers import get_ip, uptime, reboot, poweroff, duration_str, jsave, restart
-from urls import urls  # Get access to ospy's URLs
-
+import helpers 
+import version
+from inputs import inputs
+from options import options
+from log import log
+from plugins import PluginOptions, plugin_url
+import plugins
 from webpages import ProtectedPage
 
+NAME = 'SMS Settings'
+LINK = 'settings_page'
 
-# Add a new url to open the data entry page.
-urls.extend(['/smsa', 'plugins.sms_adj.settings',
-             '/smsj', 'plugins.sms_adj.settings_json',
-             '/usmsa', 'plugins.sms_adj.update'])
-
-# Add this plugin to the home page plugins menu
-gv.plugin_menu.append(['SMS Settings', '/smsa'])
+sms_options = PluginOptions(
+    NAME,
+    {
+        'tel1': '+xxxyyyyyyyyy',
+        'tel2': '+xxxyyyyyyyyy',
+        'use_sms': False,
+        'txt1': 'info',
+        'txt2': 'stop',
+        'txt3': 'start',
+        'txt4': 'reboot',
+        'txt5': 'poweroff',
+        'txt6': 'update',
+    }
+)
 
 # Plugin system will catch the following error and disable the plugin automatically:
 import gammu  # for SMS modem import gammu
@@ -34,101 +46,74 @@ import gammu  # for SMS modem import gammu
 ################################################################################
 
 
-class SMS(Thread):
+class SMSSender(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
-        self.start()
-        self.status = ''
+        self._stop = Event()
 
         self._sleep_time = 0
+        self.start()
 
-    def add_status(self, msg):
-        if self.status:
-            self.status += '\n' + msg
-        else:
-            self.status = msg
-        print msg
+    def stop(self):
+        self._stop.set()
 
     def update(self):
         self._sleep_time = 0
 
     def _sleep(self, secs):
         self._sleep_time = secs
-        while self._sleep_time > 0:
+        while self._sleep_time > 0 and not self._stop.is_set():
             time.sleep(1)
             self._sleep_time -= 1
 
     def run(self):
-        time.sleep(randint(3, 10))  # Sleep some time to prevent printing before startup information
-        log.debug(NAME, "SMS plugin is active")
-
+        log.info(NAME, "SMS plugin is active")
         while True:
             try:
-                #self.status = ''
-                data = get_sms_options()
-                if data["use_sms"] != "off":  # if use_sms is enable (on)
+                if sms_options["use_sms"]:  # if use_sms is enable (on)
                     sms_check(self)  # Check SMS command from modem
                 self._sleep(20)
 
             except Exception:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                err_string = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-                self.add_status('SMS plugin encountered error: ' + err_string)
+                err_string = ''.join(traceback.format_exc())
+                log.error(NAME, 'SMS control plug-in:\n' + err_string)
                 self._sleep(60)
 
 
-checker = SMS()
-
+sms_sender = None
 
 ################################################################################
 # Helper functions:                                                            #
 ################################################################################
+def start():
+    global sms_sender
+    if sms_sender is None:
+        sms_sender = SMSSender()
 
-def get_sms_options():
-    """Returns the data form file."""
-    data = {
-        'tel1': '+xxxyyyyyyyyy',
-        'tel2': '+xxxyyyyyyyyy',
-        'use_sms': 'off',
-        'txt1': 'info',
-        'txt2': 'stop',
-        'txt3': 'start',
-        'txt4': 'reboot',
-        'txt5': 'poweroff',
-        'txt6': 'update',
-        'status': checker.status
-    }
-
-    try:
-        with open('./data/sms_adj.json', 'r') as f:  # Read the settings from file
-            file_data = json.load(f)
-        for key, value in file_data.iteritems():
-            if key in data:
-                data[key] = value
-    except Exception:
-        pass
-
-    return data
-
+def stop():
+    global sms_sender
+    if sms_sender is not None:
+        sms_sender.stop()
+        sms_sender.join()
+        sms_sender = None
 
 def sms_check(self):
     """Control and processing SMS"""
-    data = get_sms_options()  # Load data from json file
-    tel1 = data['tel1']
-    tel2 = data['tel2']
-    comm1 = data['txt1']
-    comm2 = data['txt2']
-    comm3 = data['txt3']
-    comm4 = data['txt4']
-    comm5 = data['txt5']
-    comm6 = data['txt6']
+    tel1 = sms_options['tel1']
+    tel2 = sms_options['tel2']
+    comm1 = sms_options['txt1']
+    comm2 = sms_options['txt2']
+    comm3 = sms_options['txt3']
+    comm4 = sms_options['txt4']
+    comm5 = sms_options['txt5']
+    comm6 = sms_options['txt6']
 
     sm = gammu.StateMachine()
     sm.ReadConfig()
     try:
         sm.Init()
-        log.debug(NAME, "Checking SMS...")
+        log.info(NAME, "Checking SMS...")
     except:
         log.debug(NAME, "Error: SMS modem fault")
 
@@ -153,139 +138,164 @@ def sms_check(self):
         print '%-15s: %s' % ('State', m['State'])
         print '%-15s: %s' % ('SMS command', m['Text'])
         if (m['Number'] == tel1) or (m['Number'] == tel2):  # If telephone is admin 1 or admin 2
-            self.add_status(time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) + ' SMS from admin')
+            log.info(NAME, time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) + ' SMS from admin')
             if m['State'] == "UnRead":          # If SMS is unread
                 if m['Text'] == comm1:           # If command = comm1 (info - send SMS to admin phone1 and phone2)
-                    self.add_status('Command ' + comm1 + ' is processed')
-                    if gv.lrun[1] == 98:
-                        pgr = 'Run-once'
-                    elif gv.lrun[1] == 99:
-                        pgr = 'Manual'
-                    else:
-                        pgr = str(gv.lrun[1])
-                    start = time.gmtime(gv.now - gv.lrun[2])
-                    if pgr != '0':
-                        logline = ' {program: ' + pgr + ',station: ' + str(gv.lrun[0]) + ',duration: ' + duration_str(
-                            gv.lrun[2]) + ',start: ' + time.strftime("%H:%M:%S - %Y-%m-%d", start) + '}'
-                    else:
-                        logline = ' Last program none'
-                    revision = ' Rev: ' + gv.ver_date
-                    datastr = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
-                        time.time())) + '. Run time: ' + uptime() + ' IP: ' + get_ip() + logline + revision)
+                    log.info(NAME, 'Command ' + comm1 + ' is processed')
+                    # send 1/2 SMS with text 1
+                    up = helpers.uptime()
+                    temp = helpers.get_cpu_temp(options.temp_unit) + ' ' + options.temp_unit
+                    ip = str(helpers.get_ip())
+                    ver = version.ver_date
+                    dat = datetime.now().strftime('Date: %d.%m.%Y')
+                    tim = datetime.now().strftime('Time: %H:%M:%S')
+                    datastr = ('SMS 1/2.' + dat + tim +  ',TEMP:' + temp + ',IP:' + ip + ',SW:' + ver + ',UP:' + up  )
                     message = {
                         'Text': datastr,
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                     }
-                    sm.SendSMS(message)
-                    self.add_status(
+                    sm.SendSMS(message) # send sms 1/2
+                    log.info(NAME, datastr)
+                    # send 2/2 SMS with text 2
+                    if inputs.rain_sensed():
+                       rain = "Active"
+                    else:
+                       rain = "Inactive"
+                    try:
+                       pressure_reader = plugins.get('pressure_reader')
+                       state_press = pressure_reader.get_check_pressure()
+                       if state_press:
+                       press = "High"
+                       else:
+                       press = "Low"
+                    except Exception:
+                       press = "None"
+                    finished = [run for run in log.finished_runs() if not run['blocked']]
+                    if finished:
+                       last_prog = finished[-1]['start'].strftime('%H:%M: ') + finished[-1]['program_name']
+                    else:
+                       last_prog = 'None'   
+                    datastr = ('SMS 2/2.' + 'RAIN:' + rain + 'PRESS:' + press + 'LAST:' + last_prog)
+                    message = {
+                        'Text': datastr,
+                        'SMSC': {'Location': 1},
+                        'Number': m['Number'],
+                    }
+                    sm.SendSMS(message) # send sms 2/2
+                    log.info(NAME, datastr)
+                    
+                    log.info(NAME, 
                         'Command: ' + comm1 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
-                    self.add_status('SMS text: ' + datastr)
+                    log.info(NAME, 'SMS text: ' + datastr)
 
                     sm.DeleteSMS(m['Folder'], m['Location'])  # SMS deleted
-                    self.add_status('Received SMS was deleted')
+                    log.info(NAME, 'Received SMS was deleted')
 
                 elif m['Text'] == comm2:        # If command = comm2 (stop - system OSPi off)
-                    self.add_status('Command ' + comm2 + ' is processed')
-                    gv.sd['en'] = 0            # disable system OSPi
-                    jsave(gv.sd, 'sd')         # save en = 0
+                    log.info(NAME, 'Command ' + comm2 + ' is processed')
+#                   gv.sd['en'] = 0            # disable system OSPi
+#                   jsave(gv.sd, 'sd')         # save en = 0
                     message = {
                         'Text': 'Command: ' + comm2 + ' was processed',
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                     }
                     sm.SendSMS(message)
-                    self.add_status(
+                    log.info(NAME,
                         'Command: ' + comm2 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
-                    self.add_status('Received SMS was deleted')
+                    log.info(NAME, 'Received SMS was deleted')
 
                 elif m['Text'] == comm3:         # If command = comm3 (start - system ospi on)
-                    self.add_status('Command ' + comm3 + ' is processed')
-                    gv.sd['en'] = 1             # enable system OSPi
-                    jsave(gv.sd, 'sd')          # save en = 1
+                    log.info(NAME, 'Command ' + comm3 + ' is processed')
+#                   gv.sd['en'] = 1             # enable system OSPi
+#                   jsave(gv.sd, 'sd')          # save en = 1
                     message = {
                         'Text': 'Command: ' + comm3 + ' was processed',
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                     }
                     sm.SendSMS(message)
-                    self.add_status(
+                    log.info(NAME,
                         'Command: ' + comm3 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
-                    self.add_status('Received SMS was deleted')
+                    log.info(NAME, 'Received SMS was deleted')
 
                 elif m['Text'] == comm4:        # If command = comm4 (reboot system)
-                    self.add_status('Command ' + comm4 + ' is processed')
+                    log.info(NAME, 'Command ' + comm4 + ' is processed')
                     message = {
                         'Text': 'Command: ' + comm4 + ' was processed',
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                     }
                     sm.SendSMS(message)
-                    self.add_status(
+                    log.info(NAME,
                         'Command: ' + comm4 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
-                    self.add_status('Received SMS was deleted and system is now reboot')
-                    self._sleep(10)
-                    reboot()                    # restart linux system
+                    log.info(NAME, 'Received SMS was deleted and system is now reboot')
+                    reboot(5)                    # restart linux system
 
                 elif m['Text'] == comm5:        # If command = comm5 (poweroff system)
-                    self.add_status('Command ' + comm5 + ' is processed')
+                    log.info(NAME, 'Command ' + comm5 + ' is processed')
                     message = {
                         'Text': 'Command: ' + comm5 + ' was processed',
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                     }
                     sm.SendSMS(message)
-                    self.add_status(
+                    log.info(NAME,
                         'Command: ' + comm5 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
-                    self.add_status('Received SMS was deleted and system is now poweroff')
-                    self._sleep(10)
-                    poweroff()                  # poweroff linux system
+                    log.info(NAME, 'Received SMS was deleted and system is now poweroff')
+                    poweroff(5)                  # poweroff linux system
 
                 elif m['Text'] == comm6:        # If command = comm6 (update ospi system)
-                    self.add_status('Command ' + comm6 + ' is processed')
+                    log.info(NAME, 'Command ' + comm6 + ' is processed')
                     message = {
                         'Text': 'Command: ' + comm6 + ' was processed',
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                     }
                     sm.SendSMS(message)
-                    self.add_status(
+                    log.info(NAME,
                         'Command: ' + comm6 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     try:
                         from plugins.system_update import perform_update
 
                         perform_update()
-                        self.add_status('Received SMS was deleted, update was performed and program will restart')
+                        log.info(NAME, 'Received SMS was deleted, update was performed and program will restart')
                     except ImportError:
-                        self.add_status('Received SMS was deleted, but could not perform update')
+                        log.info(NAME, 'Received SMS was deleted, but could not perform update')
 
                     sm.DeleteSMS(m['Folder'], m['Location'])
 
                 else:                            # If SMS command is not defined
                     sm.DeleteSMS(m['Folder'], m['Location'])
-                    self.add_status('Received command ' + m['Text'] + ' is not defined!')
+                    log.info(NAME, 'Received command ' + m['Text'] + ' is not defined!')
 
             else:                                # If SMS was read
                 sm.DeleteSMS(m['Folder'], m['Location'])
-                self.add_status('Received SMS was deleted - SMS was read')
+                log.info(NAME, 'Received SMS was deleted - SMS was read')
         else:                          # If telephone number is not admin 1 or admin 2 phone number
             sm.DeleteSMS(m['Folder'], m['Location'])
-            self.add_status('Received SMS was deleted - SMS was not from admin')
+            log.info(NAME, 'Received SMS was deleted - SMS was not from admin')
 
 
 ################################################################################
 # Web pages:                                                                   #
 ################################################################################
-
-class settings(ProtectedPage):
-    """Load an html page for entering sms adjustments."""
+class settings_page(ProtectedPage):
+    """Load an html page for entering lcd adjustments."""
 
     def GET(self):
-        return self.template_render.sms_adj(get_sms_options())
+        return self.template_render.plugins.sms_adj(sms_options, log.events(NAME))
+
+    def POST(self):
+        sms_options.web_update(web.input())
+
+        sms_sender.update()
+        raise web.seeother(plugin_url(settings_page))
 
 
 class settings_json(ProtectedPage):
@@ -294,17 +304,5 @@ class settings_json(ProtectedPage):
     def GET(self):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
-        return json.dumps(get_sms_options())
-
-
-class update(ProtectedPage):
-    """Save user input to sms_adj.json file."""
-
-    def GET(self):
-        qdict = web.input()
-        if 'use_sms' not in qdict:
-            qdict['use_sms'] = 'off'
-        with open('./data/sms_adj.json', 'w') as f:  # write the settings to file
-            json.dump(qdict, f)
-        checker.update()
-        raise web.seeother('/')
+        return json.dumps(sms_options)
+        
