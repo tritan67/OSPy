@@ -192,10 +192,11 @@ def sms_check(self):
                     sm.DeleteSMS(m['Folder'], m['Location'])  # SMS deleted
                     log.info(NAME, 'Received SMS was deleted')
 
-                elif m['Text'] == comm2:        # If command = comm2 (stop - system OSPi off)
+                elif m['Text'] == comm2:        # If command = comm2 (stop - scheduler)
                     log.info(NAME, 'Command ' + comm2 + ' is processed')
 #                   gv.sd['en'] = 0            # disable system OSPi
 #                   jsave(gv.sd, 'sd')         # save en = 0
+#                   options.scheduler_enabled = False
                     message = {
                         'Text': 'Command: ' + comm2 + ' was processed',
                         'SMSC': {'Location': 1},
@@ -207,10 +208,11 @@ def sms_check(self):
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted')
 
-                elif m['Text'] == comm3:         # If command = comm3 (start - system ospi on)
+                elif m['Text'] == comm3:         # If command = comm3 (start - scheduler)
                     log.info(NAME, 'Command ' + comm3 + ' is processed')
 #                   gv.sd['en'] = 1             # enable system OSPi
 #                   jsave(gv.sd, 'sd')          # save en = 1
+#                   options.scheduler_enabled = False
                     message = {
                         'Text': 'Command: ' + comm3 + ' was processed',
                         'SMSC': {'Location': 1},
