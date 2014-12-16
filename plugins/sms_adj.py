@@ -212,7 +212,7 @@ def sms_check(self):
                     log.info(NAME, 'Command ' + comm3 + ' is processed')
 #                   gv.sd['en'] = 1             # enable system OSPi
 #                   jsave(gv.sd, 'sd')          # save en = 1
-#                   options.scheduler_enabled = False
+#                   options.scheduler_enabled = True
                     message = {
                         'Text': 'Command: ' + comm3 + ' was processed',
                         'SMSC': {'Location': 1},
