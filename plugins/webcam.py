@@ -67,7 +67,7 @@ def get_run_cam():
             else: 
                 log.clear(NAME)
                 log.info(NAME, 'Plugin is disabled...')
-  
+
 
 ################################################################################
 # Web pages:                                                                   #
