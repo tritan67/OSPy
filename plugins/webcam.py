@@ -89,6 +89,7 @@ class download_page(ProtectedPage):
         try:
            f= open('./data/image.jpg')
            return f.read()
-        except exception:
-           pass
+        except:
+           log.info(NAME, 'No image file from downloading. Retry')
+           raise web.seeother(plugin_url(settings_page))
           
