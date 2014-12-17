@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This plugin save image from webcam to ./data/image.jpg
-# fswebcam -r 1280x720  ./data/image.jpg
+# fswebcam --list-controls -r 1280x720 --info OpenSprinkler -S 3 --save ./data/image.jpg
 
 
 import json
@@ -21,6 +21,8 @@ LINK = 'settings_page'
 cam_options = PluginOptions(
     NAME,
     {'enabled': False,
+     'flip_h': False,
+     'flip_v': False,
      'resolution': '1280x720'
     }
 )
@@ -38,7 +40,19 @@ def get_run_cam():
             if cam_options['enabled']:                  # if cam plugin is enabled
                 log.clear(NAME)
                 log.info(NAME, 'Please wait...' )
-                cmd = "fswebcam --list-controls" + " -r " + cam_options['resolution'] + " ./data/image.jpg"
+
+                if cam_options['flip_h']:
+                   flip_img_h = ' --flip h'
+                else:
+                   flip_img_h = ''
+
+                if cam_options['flip_v']:
+                   flip_img_v = ' --flip v'
+                else:
+                   flip_img_v = ''
+
+
+                cmd = "fswebcam -r " + cam_options['resolution'] + flip_img_h + flip_img_v + " --info OpenSprinkler -S 3 --save ./data/image.jpg"
                 proc = subprocess.Popen(
                      cmd,
                      stderr=subprocess.STDOUT,  # merge stdout and stderr
@@ -47,7 +61,8 @@ def get_run_cam():
                 output = proc.communicate()[0]
                 text = re.sub('\x1b[^m]*m', '', output) # remove color character from communication in text
                 log.info(NAME, text)  
-                               
+                log.info(NAME, 'Ready...' )
+               
 
             else: 
                 log.clear(NAME)
