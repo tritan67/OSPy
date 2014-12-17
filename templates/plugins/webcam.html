@@ -36,6 +36,19 @@ $var page: plugins
                 </td>
             </tr>
             <tr>
+                <td style='text-transform: none;'>Flip image horizontally:</td>
+                <td>
+                    <input name='flip_h' type='checkbox'${" checked" if plugin_options['flip_h'] else ""}>             
+                </td>
+            </tr>
+            <tr>
+                <td style='text-transform: none;'>Flip image vertically:</td>
+                <td>
+                    <input name='flip_v' type='checkbox'${" checked" if plugin_options['flip_v'] else ""}>             
+                </td>
+            </tr>
+
+            <tr>
                 <td style='text-transform: none;'>Status:</td>
                 <td>
                     <textarea style="font-family: monospace;" rows="23" cols="80" readonly>$'\n'.join(events)</textarea>
