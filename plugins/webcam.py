@@ -38,7 +38,7 @@ def get_run_cam():
             if cam_options['enabled']:                  # if cam plugin is enabled
                 log.clear(NAME)
                 log.info(NAME, 'Please wait...' )
-                cmd = "sudo fswebcam -r " + cam_options['resolution'] + "./data/image.jpg"
+                cmd = "fswebcam --list-controls" + " -r " + cam_options['resolution'] + " ./data/image.jpg"
                 proc = subprocess.Popen(
                      cmd,
                      stderr=subprocess.STDOUT,  # merge stdout and stderr
