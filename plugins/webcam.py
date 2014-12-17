@@ -7,6 +7,7 @@ import json
 import subprocess
 import sys
 import traceback
+import re
 
 import web
 from log import log
@@ -36,26 +37,22 @@ stop = start
 def get_run_cam():
             if cam_options['enabled']:                  # if cam plugin is enabled
                 log.clear(NAME)
-                command = "fswebcam -r " + cam_options['resolution'] + "./data/image.jpg"
-                run_command(command)
-                        
+                log.info(NAME, 'Please wait...' )
+                cmd = "sudo fswebcam -r " + cam_options['resolution'] + "./data/image.jpg"
+                proc = subprocess.Popen(
+                     cmd,
+                     stderr=subprocess.STDOUT,  # merge stdout and stderr
+                     stdout=subprocess.PIPE,
+                     shell=True)
+                output = proc.communicate()[0]
+                text = re.sub('\x1b[^m]*m', '', output) # remove color character from communication in text
+                log.info(NAME, text)  
+                               
 
             else: 
                 log.clear(NAME)
                 log.info(NAME, 'Plugin is disabled...')
-
-
-def run_command(cmd):
-    log.clear(NAME)
-    log.info(NAME, 'Please wait...' )
-    p = subprocess.Popen(cmd,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
-
-    output = p.communicate()
-    log.debug(NAME, output[0])
-   
+  
 
 ################################################################################
 # Web pages:                                                                   #
@@ -93,5 +90,5 @@ class download_page(ProtectedPage):
            f= open('./data/image.jpg')
            return f.read()
         except exception:
-           return 
+           pass
           
