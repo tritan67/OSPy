@@ -51,12 +51,17 @@ $var page: plugins
             <tr>
                 <td style='text-transform: none;'>Status:</td>
                 <td>
-                    <textarea style="font-family: monospace;" rows="23" cols="80" readonly>$'\n'.join(events)</textarea>
+                    <textarea style="font-family: monospace;" rows="6" cols="55" readonly>$'\n'.join(events)</textarea>
                 </td>
             </tr>
         </table>
     </form>
 </div>
+<div id="image">
+    <p>OpenSprinkler camera</p>
+    <a href="$plugins.plugin_url('webcam.download_page')" target="_blank"><img src="$plugins.plugin_url('webcam.download_page')" width="640" height="480" alt="Webcam OpenSprinkler"></a>
+</div>
+
 <div id="controls">
     <button id="cSubmit" class="submit"><b>Submit</b></button>
     <button id="cCancel" class="cancel danger">Cancel</button>
