@@ -18,7 +18,7 @@ from plugins import PluginOptions, plugin_url
 import plugins
 from webpages import ProtectedPage
 
-NAME = 'SMS Settings'
+NAME = 'SMS Modem'
 LINK = 'settings_page'
 
 sms_options = PluginOptions(
@@ -140,6 +140,7 @@ def sms_check(self):
         if (m['Number'] == tel1) or (m['Number'] == tel2):  # If telephone is admin 1 or admin 2
             log.info(NAME, time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) + ' SMS from admin')
             if m['State'] == "UnRead":          # If SMS is unread
+                log.clear(NAME)
                 if m['Text'] == comm1:           # If command = comm1 (info - send SMS to admin phone1 and phone2)
                     log.info(NAME, 'Command ' + comm1 + ' is processed')
                     # send 1/2 SMS with text 1
@@ -149,7 +150,7 @@ def sms_check(self):
                     ver = version.ver_date
                     dat = datetime.now().strftime('Date: %d.%m.%Y')
                     tim = datetime.now().strftime('Time: %H:%M:%S')
-                    datastr = ('SMS 1/2.' + dat + tim +  ',TEMP:' + temp + ',IP:' + ip + ',SW:' + ver + ',UP:' + up  )
+                    datastr = ('SMS 1/2. ' + dat + ' '+ tim +  ', TEMP:' + temp + ', IP:' + ip + ', SW:' + ver + ', UP:' + up  )
                     message = {
                         'Text': datastr,
                         'SMSC': {'Location': 1},
@@ -166,9 +167,9 @@ def sms_check(self):
                        pressure_reader = plugins.get('pressure_reader')
                        state_press = pressure_reader.get_check_pressure()
                        if state_press:
-                       press = "High"
+                          press = "High"
                        else:
-                       press = "Low"
+                          press = "Low"
                     except Exception:
                        press = "None"
                     finished = [run for run in log.finished_runs() if not run['blocked']]
@@ -176,7 +177,7 @@ def sms_check(self):
                        last_prog = finished[-1]['start'].strftime('%H:%M: ') + finished[-1]['program_name']
                     else:
                        last_prog = 'None'   
-                    datastr = ('SMS 2/2.' + 'RAIN:' + rain + 'PRESS:' + press + 'LAST:' + last_prog)
+                    datastr = ('SMS 2/2. ' + 'RAIN:' + rain + ', PRESS:' + press + ', LAST:' + last_prog)
                     message = {
                         'Text': datastr,
                         'SMSC': {'Location': 1},
@@ -194,9 +195,7 @@ def sms_check(self):
 
                 elif m['Text'] == comm2:        # If command = comm2 (stop - scheduler)
                     log.info(NAME, 'Command ' + comm2 + ' is processed')
-#                   gv.sd['en'] = 0            # disable system OSPi
-#                   jsave(gv.sd, 'sd')         # save en = 0
-#                   options.scheduler_enabled = False
+                    options.scheduler_enabled = False
                     message = {
                         'Text': 'Command: ' + comm2 + ' was processed',
                         'SMSC': {'Location': 1},
@@ -210,9 +209,7 @@ def sms_check(self):
 
                 elif m['Text'] == comm3:         # If command = comm3 (start - scheduler)
                     log.info(NAME, 'Command ' + comm3 + ' is processed')
-#                   gv.sd['en'] = 1             # enable system OSPi
-#                   jsave(gv.sd, 'sd')          # save en = 1
-#                   options.scheduler_enabled = True
+                    options.scheduler_enabled = True
                     message = {
                         'Text': 'Command: ' + comm3 + ' was processed',
                         'SMSC': {'Location': 1},
