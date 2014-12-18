@@ -174,7 +174,7 @@ def get_report(index):
         result = "Pressure sensor:"
     elif index == 19:
         try:
-            pressure_reader = plugins.get('pressure_reader')
+            pressure_reader = plugins.get('pressure_monitor')
 
             state_press = pressure_reader.get_check_pressure()
             if state_press:
