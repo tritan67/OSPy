@@ -164,7 +164,7 @@ def sms_check(self):
                     else:
                        rain = "Inactive"
                     try:
-                       pressure_reader = plugins.get('pressure_reader')
+                       pressure_reader = plugins.get('pressure_monitor')
                        state_press = pressure_reader.get_check_pressure()
                        if state_press:
                           press = "High"
