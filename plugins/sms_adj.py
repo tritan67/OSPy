@@ -17,6 +17,8 @@ from log import log
 from plugins import PluginOptions, plugin_url
 import plugins
 from webpages import ProtectedPage
+from email_notifications import email
+
 
 NAME = 'SMS Modem'
 LINK = 'settings_page'
@@ -33,6 +35,14 @@ sms_options = PluginOptions(
         'txt4': 'reboot',
         'txt5': 'poweroff',
         'txt6': 'update',
+        'txt7': 'foto'
+    }
+)
+
+email_options = PluginOptions(
+    'Email Notifications',
+    {
+        'emlsubject': ''
     }
 )
 
@@ -68,11 +78,26 @@ class SMSSender(Thread):
             self._sleep_time -= 1
 
     def run(self):
-        log.info(NAME, "SMS plugin is active")
+        once_text = True
+        two_text = True
+
         while True:
             try:
                 if sms_options["use_sms"]:  # if use_sms is enable (on)
+                    if two_text:
+                       log.clear(NAME)
+                       log.info(NAME, 'SMS plug-in is enabled')
+                       once_text = True
+                       two_text = False
                     sms_check(self)  # Check SMS command from modem
+
+                else:
+                    if once_text: 
+                       log.clear(NAME)
+                       log.info(NAME, 'SMS plug-in is disabled')
+                       once_text = False
+                       two_text = True
+
                 self._sleep(20)
 
             except Exception:
@@ -108,12 +133,13 @@ def sms_check(self):
     comm4 = sms_options['txt4']
     comm5 = sms_options['txt5']
     comm6 = sms_options['txt6']
+    comm7 = sms_options['txt7']
 
     sm = gammu.StateMachine()
     sm.ReadConfig()
     try:
         sm.Init()
-        log.info(NAME, "Checking SMS...")
+        #log.info(NAME, "Checking SMS...")
     except:
         log.debug(NAME, "Error: SMS modem fault")
 
@@ -269,6 +295,38 @@ def sms_check(self):
 
                     sm.DeleteSMS(m['Folder'], m['Location'])
 
+                elif m['Text'] == comm7:        # If command = comm7 (send email with foto from webcam)
+                    log.info(NAME, 'Command ' + comm7 + ' is processed')
+                    message = {
+                        'Text': 'Command: ' + comm7 + ' was processed',
+                        'SMSC': {'Location': 1},
+                        'Number': m['Number'],
+                    }
+                    sm.SendSMS(message)
+                    log.info(NAME,
+                        'Command: ' + comm7 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                    try:
+                        from webcam import get_run_cam
+                        get_run_cam() # process save foto to ./data/image.jpg
+                        data_image = './data/image.jpg'
+                        msg = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) +
+                                          ': SMS plug-in send image file from webcam.')
+
+                        subject = email_options['emlsubject']
+                        send_email(self, msg, subject, data_image)
+                       
+                    except ImportError:
+                        log.info(NAME, 'Received SMS was deleted, but could not send email with foto from webcam')
+                        message = {
+                        'Text': 'Error: not send foto from webcam',
+                        'SMSC': {'Location': 1},
+                        'Number': m['Number'],
+                         }
+                        sm.SendSMS(message) 
+
+                    sm.DeleteSMS(m['Folder'], m['Location'])
+
+
                 else:                            # If SMS command is not defined
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received command ' + m['Text'] + ' is not defined!')
@@ -280,6 +338,16 @@ def sms_check(self):
             sm.DeleteSMS(m['Folder'], m['Location'])
             log.info(NAME, 'Received SMS was deleted - SMS was not from admin')
 
+def send_email(self, msg, subject, attachments):
+    """Send email"""
+    mesage = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
+          time.time())) + ' ' + str(msg))
+    try:
+       from plugins.email_notifications import email
+       email(subject, mesage, attachments)    
+       log.info(NAME, 'Email was sent: ' + mesage)
+    except Exception as err:
+       log.info(NAME, 'Email was not sent! ' + str(err))
 
 ################################################################################
 # Web pages:                                                                   #
