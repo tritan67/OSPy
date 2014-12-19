@@ -32,6 +32,13 @@ pressure_options = PluginOptions(
     }
 )
 
+email_options = PluginOptions(
+    'Email Notifications',
+    {
+        'emlsubject': ''
+    }
+)
+
 
 ################################################################################
 # GPIO input pullup:                                                           #
@@ -84,7 +91,7 @@ class PressureSender(Thread):
         last_time =  int(time.time()) 
         actual_time = int(time.time())
  
-        subject = "pepa" # how to import subject from email plugin
+        subject = email_options['emlsubject']
   
         while not self._stop.is_set():       
             try:
