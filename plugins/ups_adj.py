@@ -26,7 +26,13 @@ ups_options = PluginOptions(
         "time": 60, # in minutes
         "ups": False,
         "sendeml": False,
-        "sensor": 0 # get_check_power_str() how to read get_check_power str()??????????????????
+    }
+)
+
+email_options = PluginOptions(
+    'Email Notifications',
+    {
+        'emlsubject': ''
     }
 )
 
@@ -64,6 +70,9 @@ class UPSSender(Thread):
         self.daemon = True
         self._stop = Event()
 
+        self.status = {}
+        self.status['power%d'] = 0
+
         self._sleep_time = 0
         self.start()
 
@@ -85,8 +94,7 @@ class UPSSender(Thread):
         once_two = True
         once_three = True
 
-# how to read subject from email_notifications subject?
-        subject = "Reporting from OSPy"  # Subject in email  
+        subject = email_options['emlsubject']
     
         last_time = int(time.time())
        
@@ -94,6 +102,13 @@ class UPSSender(Thread):
             try:
                 if ups_options['ups']:                                     # if ups plugin is enabled
                     test = get_check_power() 
+
+                    if not test:
+                      text = 'OK'
+                    else:
+                      text = 'FAULT'
+                    self.status['power%d'] = text          
+           
                     if not test:
                        last_time = int(time.time())
 
@@ -206,7 +221,7 @@ class settings_page(ProtectedPage):
     """Load an html page for entering USP adjustments."""
 
     def GET(self):
-        return self.template_render.plugins.ups_adj(ups_options, log.events(NAME))
+        return self.template_render.plugins.ups_adj(ups_options, ups_sender.status, log.events(NAME))
 
     def POST(self):
         ups_options.web_update(web.input())
