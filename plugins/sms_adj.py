@@ -17,7 +17,7 @@ from log import log
 from plugins import PluginOptions, plugin_url
 import plugins
 from webpages import ProtectedPage
-from email_notifications import email
+from helpers import reboot, poweroff
 
 
 NAME = 'SMS Modem'
@@ -176,7 +176,7 @@ def sms_check(self):
                     ver = version.ver_date
                     dat = datetime.now().strftime('Date: %d.%m.%Y')
                     tim = datetime.now().strftime('Time: %H:%M:%S')
-                    datastr = ('SMS 1/2. ' + dat + ' '+ tim +  ', TEMP:' + temp + ', IP:' + ip + ', SW:' + ver + ', UP:' + up  )
+                    datastr = ('SMS 1/2. ' + dat + ' '+ tim +  ', TEMP: ' + temp + ', IP: ' + ip + ', SW: ' + ver + ', UP: ' + up  )
                     message = {
                         'Text': datastr,
                         'SMSC': {'Location': 1},
@@ -203,7 +203,7 @@ def sms_check(self):
                        last_prog = finished[-1]['start'].strftime('%H:%M: ') + finished[-1]['program_name']
                     else:
                        last_prog = 'None'   
-                    datastr = ('SMS 2/2. ' + 'RAIN:' + rain + ', PRESS:' + press + ', LAST:' + last_prog)
+                    datastr = ('SMS 2/2. ' + 'RAIN: ' + rain + ', PRESS: ' + press + ', LAST: ' + last_prog)
                     message = {
                         'Text': datastr,
                         'SMSC': {'Location': 1},
@@ -259,7 +259,7 @@ def sms_check(self):
                         'Command: ' + comm4 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted and system is now reboot')
-                    reboot(5)                    # restart linux system
+                    reboot()                    # restart linux system
 
                 elif m['Text'] == comm5:        # If command = comm5 (poweroff system)
                     log.info(NAME, 'Command ' + comm5 + ' is processed')
@@ -273,7 +273,7 @@ def sms_check(self):
                         'Command: ' + comm5 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted and system is now poweroff')
-                    poweroff(5)                  # poweroff linux system
+                    poweroff()                  # poweroff linux system
 
                 elif m['Text'] == comm6:        # If command = comm6 (update ospi system)
                     log.info(NAME, 'Command ' + comm6 + ' is processed')
