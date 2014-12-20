@@ -1,4 +1,4 @@
-$def with(plugin_options, events)
+$def with(plugin_options, status, events)
 
 $var title: UPS monitor settings
 $var page: plugins
@@ -42,9 +42,9 @@ $var page: plugins
                 </td>
             </tr>
             <tr>
-                <td style='text-transform: none;'>GPIO state:</td>
+                <td style='text-transform: none;'>Power line state:</td>
                 <td>
-                   $plugin_options['sensor']
+                   $status['power%d']
                 </td>
             </tr>
             <tr>
