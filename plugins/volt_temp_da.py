@@ -24,6 +24,7 @@ pcf_options = PluginOptions(
      'enable_log': False,
      'log_interval': 0,
      'log_records': 0,
+     'voltage': 5.0,
 
      'ad0_temp': False,
      'ad1_temp': False,
@@ -112,6 +113,10 @@ def start():
     global pcf_sender
     if pcf_sender is None:
         pcf_sender = PCFSender()
+        try:
+            write_DA(pcf_sender.adc, pcf_options['da_value'])
+        except Exception:
+            pcf_sender.adc = None
 
 
 def stop():
@@ -123,8 +128,8 @@ def stop():
 
 
 def get_volt(data):
-    """Return voltage 0-3.3V from number"""
-    volt = data/255.0*3.3
+    """Return voltage 0-XX V from number"""
+    volt = data/255.0*pcf_options['voltage']
     volt = round(volt, 1)
     return volt
 
@@ -232,7 +237,7 @@ class log_csv(ProtectedPage):  # save log file from web as csv file type
         log_records = read_log()
         data = "Date/Time"
         for i in range(4):
-            data += ",\t" + pcf_options['ad%d_label' % i]
+            data += ";\t" + pcf_options['ad%d_label' % i]
         data += '\n'
 
         for record in log_records:

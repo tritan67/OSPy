@@ -3,6 +3,7 @@ import pkgutil
 import traceback
 import re
 from os import path
+import web
 
 __all__ = [] # No modules should be accessed statically
 __running = {}
@@ -11,6 +12,7 @@ __running = {}
 class PluginOptions(dict):
     def __init__(self, plugin, defaults):
         super(PluginOptions, self).__init__(defaults.iteritems())
+        self._defaults = defaults.copy()
 
         from options import options
         if plugin in options:
@@ -39,17 +41,21 @@ class PluginOptions(dict):
 
     def web_update(self, qdict, skipped=None):
         for key in self.keys():
-            if skipped is not None and key in skipped:
-                continue
-            old_value = self[key]
-            if isinstance(old_value, bool):
-                self[key] = True if qdict.get(key, 'off') == 'on' else False
-            elif isinstance(old_value, int):
-                self[key] = int(qdict.get(key, old_value))
-            elif isinstance(old_value, float):
-                self[key] = float(qdict.get(key, old_value))
-            elif isinstance(old_value, str) or isinstance(old_value, unicode):
-                self[key] = qdict.get(key, old_value)
+            try:
+                if skipped is not None and key in skipped:
+                    continue
+                default_value = self._defaults[key]
+                old_value = self[key]
+                if isinstance(default_value, bool):
+                    self[key] = True if qdict.get(key, 'off') == 'on' else False
+                elif isinstance(default_value, int):
+                    self[key] = int(qdict.get(key, old_value))
+                elif isinstance(default_value, float):
+                    self[key] = float(qdict.get(key, old_value))
+                elif isinstance(default_value, str) or isinstance(old_value, unicode):
+                    self[key] = qdict.get(key, old_value)
+            except ValueError:
+                raise web.badrequest('Invalid value for \'%s\': \'%s\'' % (key, qdict.get(key)))
 
 
 def available():

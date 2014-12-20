@@ -30,6 +30,10 @@ def determine_platform():
         return 'bo'
     except Exception:
         pass
+
+    if os.name == 'nt':
+        return 'nt'
+
     return ''
 
 
@@ -47,9 +51,17 @@ def reboot(wait=1, block=False):
         stations.clear()
         time.sleep(wait)
         logging.info("Rebooting...")
-        subprocess.Popen(['reboot'])
+        # Stop the web server
+        import server
+        server.stop()
+
+        if determine_platform() == 'nt':
+            subprocess.Popen('shutdown /r /t 0'.split())
+        else:
+            subprocess.Popen(['reboot'])
     else:
         t = Thread(target=reboot, args=(wait, True))
+        t.daemon = False
         t.start()
 
 
@@ -59,9 +71,17 @@ def poweroff(wait=1, block=False):
         stations.clear()
         time.sleep(wait)
         logging.info("Powering off...")
-        subprocess.Popen(['poweroff'])
+        # Stop the web server
+        import server
+        server.stop()
+
+        if determine_platform() == 'nt':
+            subprocess.Popen('shutdown /t 0'.split())
+        else:
+            subprocess.Popen(['poweroff'])
     else:
         t = Thread(target=poweroff, args=(wait, True))
+        t.daemon = False
         t.start()
 
 
@@ -71,9 +91,20 @@ def restart(wait=1, block=False):
         stations.clear()
         time.sleep(wait)
         logging.info("Restarting...")
-        subprocess.Popen('service ospy restart'.split())
+        if determine_platform() == 'nt':
+            # Stop the web server first:
+            import server
+            server.stop()
+
+            # Use this weird construction to start a separate process that is not killed when we stop the current one
+            import sys
+            subprocess.check_call(['cmd.exe', '/c', 'start', sys.executable] + sys.argv)
+        else:
+            # No need to stop web server, the service will do this for us:
+            subprocess.Popen('service ospy restart'.split())
     else:
         t = Thread(target=restart, args=(wait, True))
+        t.daemon = False
         t.start()
 
 

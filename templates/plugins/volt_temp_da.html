@@ -44,6 +44,12 @@ $var page: plugins
                 </td>
             </tr>
             <tr>
+                <td style='text-transform: none;'>I/O Voltage:</td>
+                <td>
+                    <input name='voltage' type='number' value='$plugin_options["voltage"]' min="0" max="15"> V
+                </td>
+            </tr>
+            <tr>
                 <td style='text-transform: none;'>Interval for logging:</td>
                 <td>
                     <input name='log_interval' type='number' value='$plugin_options["log_interval"]'> minutes (Minimum is 1)
@@ -65,7 +71,7 @@ $var page: plugins
             <tr>
                 <td style='text-transform: none;'>DA output value:</td>
                 <td>
-                    <input name='da_value' type='number' min="0" max="255" value='$plugin_options["da_value"]'> (0-255 = 0-3.3 Volt)
+                    <input name='da_value' type='number' min="0" max="255" value='$plugin_options["da_value"]'> (0-255 = 0-$plugin_options['voltage'] Volt)
                 </td>
             </tr>
         </table>
