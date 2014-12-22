@@ -35,7 +35,8 @@ sms_options = PluginOptions(
         'txt4': 'reboot',
         'txt5': 'poweroff',
         'txt6': 'update',
-        'txt7': 'foto'
+        'txt7': 'foto',
+        'txt8': 'help'
     }
 )
 
@@ -134,6 +135,7 @@ def sms_check(self):
     comm5 = sms_options['txt5']
     comm6 = sms_options['txt6']
     comm7 = sms_options['txt7']
+    comm8 = sms_options['txt8']
 
     sm = gammu.StateMachine()
     sm.ReadConfig()
@@ -323,6 +325,19 @@ def sms_check(self):
                         'Number': m['Number'],
                          }
                         sm.SendSMS(message) 
+                        
+                elif m['Text'] == comm8:        # If command = comm8 (send SMS with available commands)
+                    log.info(NAME, 'Command ' + comm8 + ' is processed')
+                    message = {
+                        'Text': 'Available commands: ' + comm1 + ',' + comm2 + ',' + comm3 + ',' + comm4 + ',' + comm5 + ',' + comm6 + ',' + comm7 + ',' + comm8,
+                        'SMSC': {'Location': 1},
+                        'Number': m['Number'],
+                    }
+                    sm.SendSMS(message)
+                    log.info(NAME,
+                        'Command: ' + comm8 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                    sm.DeleteSMS(m['Folder'], m['Location'])
+                    log.info(NAME, 'Received SMS was deleted')
 
                     sm.DeleteSMS(m['Folder'], m['Location'])
 
