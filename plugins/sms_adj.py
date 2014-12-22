@@ -36,7 +36,8 @@ sms_options = PluginOptions(
         'txt5': 'poweroff',
         'txt6': 'update',
         'txt7': 'foto',
-        'txt8': 'help'
+        'txt8': 'help',
+        'txt9': 'run'
     }
 )
 
@@ -136,6 +137,7 @@ def sms_check(self):
     comm6 = sms_options['txt6']
     comm7 = sms_options['txt7']
     comm8 = sms_options['txt8']
+    comm9 = sms_options['txt9']
 
     sm = gammu.StateMachine()
     sm.ReadConfig()
@@ -329,7 +331,7 @@ def sms_check(self):
                 elif m['Text'] == comm8:        # If command = comm8 (send SMS with available commands)
                     log.info(NAME, 'Command ' + comm8 + ' is processed')
                     message = {
-                        'Text': 'Available commands: ' + comm1 + ',' + comm2 + ',' + comm3 + ',' + comm4 + ',' + comm5 + ',' + comm6 + ',' + comm7 + ',' + comm8,
+                        'Text': 'Available commands: ' + comm1 + ',' + comm2 + ',' + comm3 + ',' + comm4 + ',' + comm5 + ',' + comm6 + ',' + comm7 + ',' + comm8 + ',' + comm9 + 'xx',
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                     }
@@ -341,6 +343,34 @@ def sms_check(self):
 
                     sm.DeleteSMS(m['Folder'], m['Location'])
 
+                elif m['Text'] == comm9:        # If command = comm9 (run now program xx)
+                    # todo example: run1 or run2 or runxx how to
+                    log.info(NAME, 'Command ' + comm9 + ' is processed')
+                    try:
+                        from programs import run_now
+                        # TODO: here run now program command
+                        index = 1 # xx form SMS
+                        run_now(self, index)
+                        
+                        message = {
+                        'Text': 'Program ' + 'xx now have runs', # todo text xx? change of number
+                        'SMSC': {'Location': 1},
+                        'Number': m['Number'],
+                        }
+                        
+                    except:
+                        message = {
+                        'Text': 'Program ' + 'xx no exists', # todo text xx? change of number
+                        'SMSC': {'Location': 1},
+                        'Number': m['Number'],
+                        }
+                    sm.SendSMS(message)
+                    log.info(NAME,
+                        'Command: ' + comm9 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                    sm.DeleteSMS(m['Folder'], m['Location'])
+                    log.info(NAME, 'Received SMS was deleted')
+
+                    sm.DeleteSMS(m['Folder'], m['Location'])
 
                 else:                            # If SMS command is not defined
                     sm.DeleteSMS(m['Folder'], m['Location'])
