@@ -313,8 +313,7 @@ def sms_check(self):
                         from webcam import get_run_cam
                         get_run_cam() # process save foto to ./data/image.jpg
                         data_image = './data/image.jpg'
-                        msg = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) +
-                                          ': SMS plug-in send image file from webcam.')
+                        msg = ('SMS plug-in send image file from webcam.')
 
                         subject = email_options['emlsubject']
                         send_email(self, msg, subject, data_image)
