@@ -326,6 +326,7 @@ def sms_check(self):
                         'Number': m['Number'],
                          }
                         sm.SendSMS(message) 
+                    sm.DeleteSMS(m['Folder'], m['Location'])
                         
                 elif m['Text'] == comm8:        # If command = comm8 (send SMS with available commands)
                     log.info(NAME, 'Command ' + comm8 + ' is processed')
@@ -340,36 +341,33 @@ def sms_check(self):
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted')
 
-                    sm.DeleteSMS(m['Folder'], m['Location'])
-
-                elif m['Text'] == comm9:        # If command = comm9 (run now program xx)
-                    # todo example: run1 or run2 or runxx how to
+                    
+                elif m['Text'][0:len(comm9)] == comm9:        # If command = lenght char comm9 (run now program xx)
+                    num = m['Text'][len(comm9):]              # number from sms text example: run36 -> num=36
                     log.info(NAME, 'Command ' + comm9 + ' is processed')
                     try:
+                        import programs
                         from programs import run_now
-                        # TODO: here run now program command
-                        index = 1 # xx form SMS
-                        run_now(self, index)
+                        run_now(self, num) 
                         
                         message = {
-                        'Text': 'Program ' + 'xx now have runs', # todo text xx? change of number
+                        'Text': 'Program ' + num + ' now run',
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                         }
                         
                     except:
                         message = {
-                        'Text': 'Program ' + 'xx no exists', # todo text xx? change of number
+                        'Text': 'Program ' + num + ' no exists',
                         'SMSC': {'Location': 1},
                         'Number': m['Number'],
                         }
+
                     sm.SendSMS(message)
                     log.info(NAME,
                         'Command: ' + comm9 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted')
-
-                    sm.DeleteSMS(m['Folder'], m['Location'])
 
                 else:                            # If SMS command is not defined
                     sm.DeleteSMS(m['Folder'], m['Location'])
