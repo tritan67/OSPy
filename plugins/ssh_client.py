@@ -5,6 +5,10 @@ __author__ = 'Martin Pihrt'
 import json
 import time
 import os
+import psutil
+import subprocess
+import time
+  
 from threading import Thread, Event
 
 import web
@@ -54,19 +58,32 @@ class SSHSender(Thread):
             self._sleep_time -= 1
 
     def run(self):
-        if ssh_options['enabled']:          # if ssh client is enabled
-          while not self._stop.is_set():
-            try:
-               
+        connect = True
+        disconnect = True
+        while not self._stop.is_set():
+            if ssh_options['enabled']:          # if ssh client is enabled
+                try:
+                    if disconnect:
+                        tunnel_cmd = 'ssh -i key.pem -o BatchMode=yes -o ServerAliveInterval=1 -o ServerAliveCountMax=5 -f -o ExitOnForwardFailure=yes -N -L ' + ssh_options['ssh_port'] + ':localhost:8080 ' + ssh_options['ssh_user'] + '@' + ssh_options['server_adress']
+                        try:
+                           ssh_tunnel_process = create_tunnel(tunnel_cmd)
+                           log.info(NAME, 'Create tunnel.')
+                           disconnect = False
+                           connect = True
 
-              self._sleep(5)
 
-            except Exception:
-                err_string = ''.join(traceback.format_exc())
-                log.error(NAME, 'SSH client plug-in:\n' + err_string)
-                self._sleep(60)
-
-
+                except Exception:
+                    err_string = ''.join(traceback.format_exc())
+                    log.error(NAME, 'SSH client plug-in:\n' + err_string)
+                    self._sleep(60)
+            
+            else:          
+                if connect:
+                    ssh_tunnel_process.terminate()
+                    log.info(NAME, 'Terminated the tunnel.')
+                    connect = False
+                    disconnect = True
+                    
 ssh_sender = None
 
 ################################################################################
@@ -83,8 +100,39 @@ def stop():
       ssh_sender.stop()
       ssh_sender.join()
       ssh_sender = None
+      
+def create_tunnel(tunnel_cmd):
+    ssh_process = subprocess.Popen(tunnel_cmd,  universal_newlines=True,
+                                                shell=True,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT,
+                                                stdin=subprocess.PIPE)
 
+    # Assuming that the tunnel command has "-f" and "ExitOnForwardFailure=yes", then the 
+    # command will return immediately so we can check the return status with a poll().
+    output = ssh_process.communicate()[0]
+    log.info(NAME, output) 
+    
+    while True:
+        p = ssh_process.poll()
+        if p is not None: break
+        time.sleep(1)
 
+    if p == 0:
+        # Unfortunately there is no direct way to get the pid of the spawned ssh process, so we'll find it
+        # by finding a matching process using psutil.
+
+        current_username = psutil.Process(os.getpid()).username
+        ssh_processes = [proc for proc in psutil.get_process_list() if proc.cmdline == tunnel_cmd.split() and proc.username == current_username]
+
+        if len(ssh_processes) == 1:
+            return ssh_processes[0]
+        else:
+            raise RuntimeError, 'Multiple (or zero?) tunnel ssh processes found: ' + str(ssh_processes) 
+            log.error(NAME, 'Multiple (or zero?) tunnel ssh processes found: ' + str(ssh_processes)) 
+    else:
+        raise RuntimeError, 'Error creating tunnel: ' + str(p) + ' :: ' + str(ssh_process.stdout.readlines())
+        log.error(NAME, 'Error creating tunnel: ' + str(p) + ' :: ' + str(ssh_process.stdout.readlines()))
 
 ################################################################################
 # Web pages:                                                                   #
