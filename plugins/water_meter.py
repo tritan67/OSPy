@@ -15,7 +15,7 @@ from webpages import ProtectedPage
 from helpers import get_rpi_revision
 
 
-NAME = 'Water meter'
+NAME = 'Water Meter'
 LINK = 'settings_page'
 
 options = PluginOptions(
@@ -66,7 +66,7 @@ class WatterSender(Thread):
             log.clear(NAME)
             try:    
                 if self.bus is not None and options['enabled']:  # if water meter plugin is enabled
-                    val = counter(self.bus)
+                    val = counter(self.bus)/options['pulses']
                     self.status['meter%d'] = val
 
                 self._sleep(1)
@@ -74,7 +74,7 @@ class WatterSender(Thread):
             except Exception:
                 self.bus = None
                 err_string = ''.join(traceback.format_exc())
-                log.error(NAME, 'Water meter plug-in:\n' + err_string)
+                log.error(NAME, 'Water Meter plug-in:\n' + err_string)
                 self._sleep(60)            
                 
 water_sender = None
@@ -116,7 +116,6 @@ def counter(bus): # reset PCF8583, measure pulses and return number pulses per s
         pulses = (num100000 * 100000) + (num10000 * 10000) + (num1000 * 1000) + (num100 * 100) + (num10 * 10) + num1
         return pulses
     except:
-        self.bus = None
         return 0
 
 ################################################################################
