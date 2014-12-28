@@ -60,29 +60,28 @@ class SSHSender(Thread):
     def run(self):
         connect = True
         disconnect = True
-        while not self._stop.is_set():
-            if ssh_options['enabled']:          # if ssh client is enabled
+        log.clear(NAME)
+        while not self._stop.is_set() and ssh_options['enabled']: # if ssh client is enabled
+          try:
+            if disconnect:
+              tunnel_cmd = 'ssh -i key.pem -o BatchMode=yes -o ServerAliveInterval=1 -o ServerAliveCountMax=5 -f -o ExitOnForwardFailure=yes -N -L ' + ssh_options['ssh_port'] + ':localhost:8080 ' + ssh_options['ssh_user'] + '@' + ssh_options['server_adress']
                 try:
-                    if disconnect:
-                        tunnel_cmd = 'ssh -i key.pem -o BatchMode=yes -o ServerAliveInterval=1 -o ServerAliveCountMax=5 -f -o ExitOnForwardFailure=yes -N -L ' + ssh_options['ssh_port'] + ':localhost:8080 ' + ssh_options['ssh_user'] + '@' + ssh_options['server_adress']
-                        try:
-                           ssh_tunnel_process = create_tunnel(tunnel_cmd)
-                           log.info(NAME, 'Create tunnel.')
-                           disconnect = False
-                           connect = True
-
+                  ssh_tunnel_process = create_tunnel(tunnel_cmd)
+                  log.info(NAME, 'Create tunnel.')
+                  disconnect = False
+                  connect = True
 
                 except Exception:
-                    err_string = ''.join(traceback.format_exc())
-                    log.error(NAME, 'SSH client plug-in:\n' + err_string)
-                    self._sleep(60)
+                  err_string = ''.join(traceback.format_exc())
+                  log.error(NAME, 'SSH client plug-in:\n' + err_string)
+                  self._sleep(60)
             
-            else:          
-                if connect:
-                    ssh_tunnel_process.terminate()
-                    log.info(NAME, 'Terminated the tunnel.')
-                    connect = False
-                    disconnect = True
+        else:          
+          if connect:
+            ssh_tunnel_process.terminate()
+            log.info(NAME, 'Terminated the tunnel.')
+            connect = False
+            disconnect = True
                     
 ssh_sender = None
 
