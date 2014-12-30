@@ -4,8 +4,8 @@ __author__ = 'Martin Pihrt'
 
 import json
 import time
+import traceback
 import os
-import psutil
 import subprocess
 import time
   
@@ -25,10 +25,10 @@ ssh_options = PluginOptions(
     NAME,
     {
         'enabled': False,
-        'server_adres': 'x.x.x.x',
-        'server_port': 1234,
-        'ssh_user': '',
-        'ssh_password': ''
+        'adres': 'xxx.xxx.xxx.xxx',
+        'port': 22,
+        'user': 'root',
+        'password': ''
     }
 )
 
@@ -61,28 +61,47 @@ class SSHSender(Thread):
         connect = True
         disconnect = True
         log.clear(NAME)
-        while not self._stop.is_set() and ssh_options['enabled']: # if ssh client is enabled
+       
+        try:
+           import psutil
+           log.debug(NAME, 'Importing psutil is ok.')
+        except:
+           log.info(NAME, 'Installing psutil please wait...')
+           install_psutil()
+
+        while not self._stop.is_set(): 
           try:
-            if disconnect:
-              tunnel_cmd = 'ssh -i key.pem -o BatchMode=yes -o ServerAliveInterval=1 -o ServerAliveCountMax=5 -f -o ExitOnForwardFailure=yes -N -L ' + ssh_options['ssh_port'] + ':localhost:8080 ' + ssh_options['ssh_user'] + '@' + ssh_options['server_adress']
-                try:
+            if ssh_options['enabled']: # if ssh client is enabled
+              if disconnect:
+               # http://linux.about.com/od/commands/l/blcmdl1_ssh.htm 
+               tunnel_cmd = 'ssh -i key.pem -o BatchMode=yes -o ServerAliveInterval=1 -o ServerAliveCountMax=5 -f -o ExitOnForwardFailure=yes -N -L ' + str(ssh_options['port']) + ':localhost:8080 ' + str(ssh_options['user']) + '@' + str(ssh_options['adres'])
+               try:
+                  import psutil
                   ssh_tunnel_process = create_tunnel(tunnel_cmd)
                   log.info(NAME, 'Create tunnel.')
                   disconnect = False
                   connect = True
-
-                except Exception:
-                  err_string = ''.join(traceback.format_exc())
-                  log.error(NAME, 'SSH client plug-in:\n' + err_string)
-                  self._sleep(60)
+               
+               except:
+                  log.clear(NAME)
+                  log.info(NAME, 'Could not create tunnel.')
+                  disconnect = False
+                  connect = True
             
-        else:          
-          if connect:
-            ssh_tunnel_process.terminate()
-            log.info(NAME, 'Terminated the tunnel.')
-            connect = False
-            disconnect = True
-                    
+            
+            else:          
+              if connect:
+                log.clear(NAME)
+                ssh_tunnel_process.terminate()
+                log.info(NAME, 'Terminated the tunnel.')
+                connect = False
+                disconnect = True
+
+          except Exception:
+             err_string = ''.join(traceback.format_exc())
+             log.error(NAME, 'SSH client plug-in:\n' + err_string)
+             self._sleep(60)
+                                
 ssh_sender = None
 
 ################################################################################
@@ -109,6 +128,7 @@ def create_tunnel(tunnel_cmd):
 
     # Assuming that the tunnel command has "-f" and "ExitOnForwardFailure=yes", then the 
     # command will return immediately so we can check the return status with a poll().
+
     output = ssh_process.communicate()[0]
     log.info(NAME, output) 
     
@@ -128,10 +148,22 @@ def create_tunnel(tunnel_cmd):
             return ssh_processes[0]
         else:
             raise RuntimeError, 'Multiple (or zero?) tunnel ssh processes found: ' + str(ssh_processes) 
-            log.error(NAME, 'Multiple (or zero?) tunnel ssh processes found: ' + str(ssh_processes)) 
+            log.info(NAME, 'Multiple (or zero?) tunnel ssh processes found: ' + str(ssh_processes)) 
     else:
         raise RuntimeError, 'Error creating tunnel: ' + str(p) + ' :: ' + str(ssh_process.stdout.readlines())
-        log.error(NAME, 'Error creating tunnel: ' + str(p) + ' :: ' + str(ssh_process.stdout.readlines()))
+        log.info(NAME, 'Error creating tunnel: ' + str(p) + ' :: ' + str(ssh_process.stdout.readlines()))
+
+def install_psutil():
+    cmd = 'sudo apt-get install python-psutil'
+    process = subprocess.Popen(cmd,  universal_newlines=True,
+                                     shell=True,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT,
+                                     stdin=subprocess.PIPE)
+
+    output = process.communicate()[0]
+    log.info(NAME, output) 
+
 
 ################################################################################
 # Web pages:                                                                   #
@@ -143,7 +175,7 @@ class settings_page(ProtectedPage):
         return self.template_render.plugins.ssh_client(ssh_options, log.events(NAME))
 
     def POST(self):
-        ssh_client.web_update(web.input())
+        ssh_options.web_update(web.input())
 
         if ssh_sender is not None:
             ssh_sender.update()
