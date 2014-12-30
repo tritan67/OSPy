@@ -115,6 +115,7 @@ def counter(bus): # reset PCF8583, measure pulses and return number pulses per s
         num100000 = (counter[3] & 0xF0) >> 4   # hundreds of thousands
         pulses = (num100000 * 100000) + (num10000 * 10000) + (num1000 * 1000) + (num100 * 100) + (num10 * 10) + num1
         return pulses
+   
     except:
         return 0
 
