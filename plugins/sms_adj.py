@@ -83,7 +83,7 @@ class SMSSender(Thread):
         once_text = True
         two_text = True
 
-        while True:
+        while not self._stop.is_set(): 
             try:
                 if sms_options["use_sms"]:  # if use_sms is enable (on)
                     if two_text:
