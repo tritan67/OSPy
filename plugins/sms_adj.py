@@ -18,6 +18,8 @@ from plugins import PluginOptions, plugin_url
 import plugins
 from webpages import ProtectedPage
 from helpers import reboot, poweroff
+from programs import programs
+from stations import stations
 
 
 NAME = 'SMS Modem'
@@ -32,8 +34,8 @@ sms_options = PluginOptions(
         'txt1': 'info',
         'txt2': 'stop',
         'txt3': 'start',
-        'txt4': 'reboot',
-        'txt5': 'poweroff',
+        'txt4': 'restart',
+        'txt5': 'power',
         'txt6': 'update',
         'txt7': 'foto',
         'txt8': 'help',
@@ -88,7 +90,7 @@ class SMSSender(Thread):
                 if sms_options["use_sms"]:  # if use_sms is enable (on)
                     if two_text:
                        log.clear(NAME)
-                       log.info(NAME, 'SMS plug-in is enabled')
+                       log.info(NAME, 'SMS Modem plug-in is enabled')
                        once_text = True
                        two_text = False
                     sms_check(self)  # Check SMS command from modem
@@ -96,15 +98,15 @@ class SMSSender(Thread):
                 else:
                     if once_text: 
                        log.clear(NAME)
-                       log.info(NAME, 'SMS plug-in is disabled')
+                       log.info(NAME, 'SMS Modem plug-in is disabled')
                        once_text = False
                        two_text = True
-
-                self._sleep(20)
+                
+                self._sleep(10)
 
             except Exception:
                 err_string = ''.join(traceback.format_exc())
-                log.error(NAME, 'SMS control plug-in:\n' + err_string)
+                log.error(NAME, 'SMS Modem plug-in:\n' + err_string)
                 self._sleep(60)
 
 
@@ -145,7 +147,7 @@ def sms_check(self):
         sm.Init()
         #log.info(NAME, "Checking SMS...")
     except:
-        log.debug(NAME, "Error: SMS modem fault")
+        log.debug(NAME, "Error: SMS Modem fault")
 
     status = sm.GetSMSStatus()
     remain = status['SIMUsed'] + status['PhoneUsed'] + status['TemplatesUsed']
@@ -218,14 +220,15 @@ def sms_check(self):
                     
                     log.info(NAME, 
                         'Command: ' + comm1 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
-                    log.info(NAME, 'SMS text: ' + datastr)
-
                     sm.DeleteSMS(m['Folder'], m['Location'])  # SMS deleted
                     log.info(NAME, 'Received SMS was deleted')
 
                 elif m['Text'] == comm2:        # If command = comm2 (stop - scheduler)
                     log.info(NAME, 'Command ' + comm2 + ' is processed')
                     options.scheduler_enabled = False
+                    log.finish_run(None)
+                    stations.clear()
+                    
                     message = {
                         'Text': 'Command: ' + comm2 + ' was processed',
                         'SMSC': {'Location': 1},
@@ -345,27 +348,28 @@ def sms_check(self):
                 elif m['Text'][0:len(comm9)] == comm9:        # If command = lenght char comm9 (run now program xx)
                     num = m['Text'][len(comm9):]              # number from sms text example: run36 -> num=36
                     log.info(NAME, 'Command ' + comm9 + ' is processed')
-                    try:
-                        import programs
-                        from programs import run_now
-                        run_now(self, num) 
-                        
-                        message = {
-                        'Text': 'Program ' + num + ' now run',
-                        'SMSC': {'Location': 1},
-                        'Number': m['Number'],
-                        }
-                        
-                    except:
-                        message = {
-                        'Text': 'Program ' + num + ' no exists',
-                        'SMSC': {'Location': 1},
-                        'Number': m['Number'],
-                        }
+                    index = int(num)
+                    if index <= programs.count():             # if program number from sms text exists in program db
+                       log.finish_run(None)
+                       stations.clear()
+                       prog = int(index-1)
+                       programs.run_now(prog)
+                       log.info(NAME, 'Program: ' + str(index) + ' now run')
+                       message = {
+                          'Text': 'Program: ' + str(index) + ' now run',
+                          'SMSC': {'Location': 1},
+                          'Number': m['Number'],
+                                 }    
+                    else:
+                       message = {
+                          'Text': 'Program: ' + str(index) + ' no exists!',
+                          'SMSC': {'Location': 1},
+                          'Number': m['Number'],
+                                 }
 
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + comm9 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                        'Command: ' + str(m['Text']) + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted')
 
