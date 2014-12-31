@@ -20,7 +20,7 @@ $var page: plugins
 <div id="plugin">
     <div class="title">Water meter settings</div>
     <p>This plugin needs an enabled I2C bus and connected counter PCF8583 on I2C address 0x50.</p>
-    <p>This plugin measures the amount of water flowing per second and the total amount of water.</p>
+    <p>This plugin measures the amount of water flowing per sec, min, hour and the total amount of water.</p>
     <form id="pluginForm" action="$plugins.plugin_url('water_meter.settings_page')" method="post">
         <table class="optionList">
             <tr>
@@ -32,13 +32,13 @@ $var page: plugins
             <tr>
                 <td style='text-transform: none;'>Number of pulses per liter:</td>
                 <td>
-                    <input name='pulses' type='number' min="1" max="9999" value='$plugin_options["pulses"]'> (max 9999 pulses)
+                    <input name='pulses' type='text' value='$plugin_options["pulses"]'> 
                 </td>
             </tr>
             <tr>
                 <td style='text-transform: none;'>Water meter state:</td>
                 <td>
-                   $status['meter%d'] (liter per second)
+                   $status['meter'] (liter per second)
                 </td>
             </tr>
             <tr>
