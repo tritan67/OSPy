@@ -21,7 +21,8 @@ LINK = 'settings_page'
 options = PluginOptions(
     NAME,
     {'enabled': False,
-     'pulses': 10
+     'pulses': 10.0,
+     'sum': 0
     }
 )
 
@@ -30,7 +31,7 @@ options = PluginOptions(
 ################################################################################
 
 
-class WatterSender(Thread):
+class WaterSender(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
@@ -38,7 +39,7 @@ class WatterSender(Thread):
 
         self.bus = None
         self.status = {}
-        self.status['meter%d'] = 0
+        self.status['meter'] = 0.0
 
         self._sleep_time = 0
         self.start()
@@ -62,12 +63,62 @@ class WatterSender(Thread):
         except ImportError:
             log.warning(NAME, 'Could not import smbus.')
 
-        while True:
-            log.clear(NAME)
+        pcf_ok = False
+        counter(self.bus) # test pcf8583 exist? -> pcf_ok = True
+          
+        log.clear(NAME)
+        once_text = True  # text enabled plugin
+        two_text = True   # text disabled plugin
+
+        val = 0                     # actual water per second
+        sum_water = options['sum']  # summary water 
+        minute_water = 0            # actual water per minutes
+        hour_water = 0              # actual water per hours
+
+        last_minute_time = int(time.time())
+        last_hour_time = int(time.time())
+        actual_time = int(time.time())
+
+        while not self._stop.is_set():            
             try:    
                 if self.bus is not None and options['enabled']:  # if water meter plugin is enabled
                     val = counter(self.bus)/options['pulses']
-                    self.status['meter%d'] = val
+                    self.status['meter'] = val
+
+                    if once_text:
+                      log.clear(NAME)
+                      log.info(NAME, 'Water Meter plug-in is enabled.')
+                      if not pcf_ok:
+                         log.warning(NAME, 'Could not find PCF8583 on 0x50 I2C bus.')
+                      once_text = False
+                      two_text = True
+
+                    if pcf_ok:
+                      actual_time = int(time.time())
+                      if actual_time - last_minute_time >= 60:          # minute counter
+                         last_minute_time = actual_time 
+                         log.clear(NAME)   
+                         log.info(NAME, 'Water in liters')
+                         log.info(NAME, 'Water per minutes: ' + str(minute_water) ) 
+                         log.info(NAME, 'Water per hours:   ' + str(hour_water) )
+                         log.info(NAME, 'Water summary:     ' + str(sum_water) ) 
+                         minute_water = 0
+#todo how to save        options.sum = sum_water                        # save summary water to options
+
+                      if actual_time - last_hour_time >= 3600:          # hour counter
+                         last_hour_time = actual_time 
+                         hour_water = 0
+
+                else:
+                    if two_text:
+                         log.clear(NAME)
+                         log.info(NAME, 'Water Meter plug-in is disabled.')
+                         two_text = False
+                         once_text = True
+
+                sum_water = sum_water + val 
+                minute_water = minute_water + val
+                hour_water = hour_water + val
 
                 self._sleep(1)
                
@@ -114,9 +165,11 @@ def counter(bus): # reset PCF8583, measure pulses and return number pulses per s
         num10000 = (counter[3] & 0x0F)         # tens of thousands
         num100000 = (counter[3] & 0xF0) >> 4   # hundreds of thousands
         pulses = (num100000 * 100000) + (num10000 * 10000) + (num1000 * 1000) + (num100 * 100) + (num10 * 10) + num1
+        pcf_ok = True
         return pulses
-   
+
     except:
+        pcf_ok = False
         return 0
 
 ################################################################################
