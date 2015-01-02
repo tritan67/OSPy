@@ -4,6 +4,7 @@ from threading import Thread, Event
 import traceback
 import json
 import time
+import datetime
 import re
 import urllib
 import urllib2
@@ -70,8 +71,7 @@ class weather_to_delay(Thread):
 
                    if delay > 0:
                       log.info(NAME, 'Rain detected: ' + weather['text'] + '. Adding delay of ' + str(delay))
-                      rain_blocks = float(delay)
-# no refactor         # gv.sd['rdst'] = gv.now + rain_blocks * 3600 + 1  # +1 adds a smidge just so after a round trip the display hasn't already counted down by a minute.
+                      options.rain_block = datetime.datetime.now() + datetime.timedelta(hours=float(delay))
                       stop_onrain()
 
                    elif delay == 0:
@@ -79,9 +79,8 @@ class weather_to_delay(Thread):
 
                    elif delay < 0:
                       log.info(NAME, 'Good weather detected: ' + weather['text'] + '. Removing rain delay.')
-#?                      options['rain_block'] = now()
-#                     gv.sd['rdst'] = gv.now
-  
+                      options.rain_block = datetime.datetime.now()            
+                    
                    self._sleep(3600)
 
 
