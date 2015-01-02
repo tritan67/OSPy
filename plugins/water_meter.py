@@ -122,6 +122,7 @@ class WaterSender(Thread):
 
                 else:
                     if two_text:
+                         self.status['meter'] = '0.0' 
                          log.clear(NAME)
                          log.info(NAME, 'Water Meter plug-in is disabled.')
                          two_text = False
