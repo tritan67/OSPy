@@ -1,45 +1,69 @@
 #!/usr/bin/env python
-# This plugin read data from I2C counter PCF8583 on I2C address 0x50. Max count PCF8583 is 1 milion pulses per seconds
+# this plugins check pressure in pipe if master station is switched on
 
 import json
 import time
+import sys
 import traceback
 
 from threading import Thread, Event
 
 import web
-
+import helpers
+from stations import stations
+from options import options
 from log import log
 from plugins import PluginOptions, plugin_url
+import plugins
 from webpages import ProtectedPage
-from helpers import get_rpi_revision
 
+from email_notifications import email
 
-NAME = 'Water Meter'
+NAME = 'Pressure Monitor'
 LINK = 'settings_page'
 
-options = PluginOptions(
+pressure_options = PluginOptions(
     NAME,
-    {'enabled': False,
-     'pulses': 10
+    {
+        "time": 10,
+        "use_press_monitor": False,
+        "normally": False,
+        "sendeml": True
     }
 )
+
+email_options = PluginOptions(
+    'Email Notifications',
+    {
+        'emlsubject': ''
+    }
+)
+
+
+################################################################################
+# GPIO input pullup:                                                           #
+################################################################################
+
+import RPi.GPIO as GPIO  # RPi hardware
+
+pin_pressure = 12
+
+try:
+    GPIO.setup(pin_pressure, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+except NameError:
+    pass
+
 
 ################################################################################
 # Main function loop:                                                          #
 ################################################################################
 
-
-class WaterSender(Thread):
+class PressureSender(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.daemon = True
         self._stop = Event()
-
-        self.bus = None
-        self.status = {}
-        self.status['meter%d'] = 0
-
+        
         self._sleep_time = 0
         self.start()
 
@@ -48,115 +72,160 @@ class WaterSender(Thread):
 
     def update(self):
         self._sleep_time = 0
-    
+
     def _sleep(self, secs):
         self._sleep_time = secs
         while self._sleep_time > 0 and not self._stop.is_set():
             time.sleep(1)
             self._sleep_time -= 1
-    
+
     def run(self):
-        try:
-            import smbus  # for PCF 8583
-            self.bus = smbus.SMBus(1 if get_rpi_revision() >= 2 else 0)
-        except ImportError:
-            log.warning(NAME, 'Could not import smbus.')
+        send = False
 
-        pcf_ok = False
-        counter(self.bus) 
-          
-        log.clear(NAME)
-        once_text = True 
+        once_text = True
         two_text = True
+        three_text = True
+        four_text = True
+        five_text = True
 
-        while not self._stop.is_set():            
-            try:    
-                if self.bus is not None and options['enabled']:  # if water meter plugin is enabled
-                    val = counter(self.bus)/options['pulses']
-                    self.status['meter%d'] = val
-                    if once_text:
-                         log.clear(NAME)
-                         log.info(NAME, 'Water Meter plug-in is enabled.')
-                         if  not pcf_ok:
-                            log.warning(NAME, 'Could not find PCF8583 on 0x50 I2C bus.')
-                         once_text = False
-                         two_text = True
+        last_time =  int(time.time()) 
+        actual_time = int(time.time())
+ 
+        subject = email_options['emlsubject']
+  
+        while not self._stop.is_set():       
+            try:
+                if pressure_options['use_press_monitor']:                           # if pressure plugin is enabled
+                   four_text = True
+                   if get_master_is_on():                                           # if master station is on
+                       three_text = True
+                       if once_text:						       # text on the web if master is on
+                           log.clear(NAME)
+                           log.info(NAME, 'Master station is ON.')
+                           once_text = False
+                       if get_check_pressure():                                     # if pressure sensor is on
+                           actual_time = int(time.time())
+                           count_val = int(pressure_options['time'])
+                           log.clear(NAME) 
+                           log.info(NAME, 'Time to test pressure sensor: ' + str(count_val - (actual_time - last_time)) + ' sec')   
+                           if actual_time - last_time > int(pressure_options['time']): # wait for activated pressure sensor (time delay)
+                              last_time = actual_time 
+                              if get_check_pressure():                              # if pressure sensor is actual on
+                               #  options.scheduler_enabled = False                  # set scheduler to off 
+                                 log.finish_run(None)                               # save log  
+                                 stations.clear()                                   # set all station to off
+                                 log.clear(NAME)
+                                 log.info(NAME, 'Pressure sensor is not activated in time -> stops all stations and sends email.')
+                                 if pressure_options['sendeml']:                    # if enabled send email
+                                     send = True
+                                      
+                       if not get_check_pressure():
+                           last_time = int(time.time())
+                           if five_text:
+                              once_text = True
+                              five_text = False 
+
+                   if not get_master_is_on():                                    # text on the web if master is off
+                     if stations.master is not None:
+                         if two_text:
+                            log.clear(NAME)
+                            log.info(NAME, 'Master station is OFF.')
+                            two_text = False
+                            five_text = True
+                         last_time = int(time.time())
 
                 else:
-                    if two_text:
-                         log.clear(NAME)
-                         log.info(NAME, 'Water Meter plug-in is disabled.')
-                         two_text = False
-                         once_text = True
-
-                self._sleep(1)
+                    once_text = True 
+                    two_text = True
+                    if four_text:                                                # text on the web if plugin is disabled
+                       log.clear(NAME)  
+                       log.info(NAME, 'Pressure monitor plug-in is disabled.')
+                       four_text = False                
+    
+                if stations.master is None:                                      # text on the web if master station is none
+                        if three_text:
+                           log.clear(NAME)
+                           log.info(NAME, 'Not used master station.')
+                           three_text = False
+  
+              
+                if send:
+                    TEXT = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
+                        time.time())) + ' System detected error: pressure sensor.')
+                    try:
+                        email(subject, TEXT)                                     # send email without attachments
+                        log.info(NAME, 'Email was sent: ' + TEXT)
+                        send = False
+                    except Exception as err:
+                        log.error(NAME, 'Email was not sent! ' + str(err))
                
+                self._sleep(1)
+
             except Exception:
-                self.bus = None
                 err_string = ''.join(traceback.format_exc())
-                log.error(NAME, 'Water Meter plug-in:\n' + err_string)
-                self._sleep(60)            
-                
-water_sender = None
+                log.error(NAME, 'Pressure monitor plug-in:\n' + err_string)
+                self._sleep(60)
+
+pressure_sender = None
 
 ################################################################################
 # Helper functions:                                                            #
 ################################################################################
 def start():
-    global water_sender
-    if water_sender is None:
-        water_sender = WaterSender()
-        
+    global pressure_sender
+    if pressure_sender is None:
+        pressure_sender = PressureSender()
+
+
 def stop():
-    global water_sender
-    if water_sender is not None:
-        water_sender.stop()
-        water_sender.join()
-        water_sender = None
+    global pressure_sender
+    if pressure_sender is not None:
+        pressure_sender.stop()
+        pressure_sender.join()
+        pressure_sender = None
 
-
-def counter(bus): # reset PCF8583, measure pulses and return number pulses per second
+def get_check_pressure():
     try:
-        # reset PCF8583
-        bus.write_byte_data(0x50,0x00,0x20) # status registr setup to "EVENT COUNTER"
-        bus.write_byte_data(0x50,0x01,0x00) # reset LSB
-        bus.write_byte_data(0x50,0x02,0x00) # reset midle Byte
-        bus.write_byte_data(0x50,0x03,0x00) # reset MSB
-        
-        time.sleep(1)
-        
-        # read number (pulses in counter) and translate to DEC
-        counter =  bus.read_i2c_block_data(0x50,0x00)
-        num1 = (counter[1] & 0x0F)             # units
-        num10 = (counter[1] & 0xF0) >> 4       # dozens
-        num100 = (counter[2] & 0x0F)           # hundred
-        num1000 = (counter[2] & 0xF0) >> 4     # thousand
-        num10000 = (counter[3] & 0x0F)         # tens of thousands
-        num100000 = (counter[3] & 0xF0) >> 4   # hundreds of thousands
-        pulses = (num100000 * 100000) + (num10000 * 10000) + (num1000 * 1000) + (num100 * 100) + (num10 * 10) + num1
-        pcf_ok = True
-        return pulses
+        if pressure_options['normally']:
+            if GPIO.input(pin_pressure):  # pressure detected
+                press = 1
+            else:
+                press = 0
+        elif pressure_options['normally'] != 'on':
+            if not GPIO.input(pin_pressure):
+                press = 1
+            else:
+                press = 0
+        return press
+    except NameError:
+        pass
 
-    except:
-        pcf_ok = False
-        return 0
+def get_master_is_on():
+    if stations.master is not None and not options.manual_mode:              # if is use master station and not manual control
+       for station in stations.get():
+          if station.is_master:                                              # if station is master
+             if station.active:                                              # if master is active
+                return True
+             else:
+                return False
+
 
 ################################################################################
 # Web pages:                                                                   #
 ################################################################################
 
+
 class settings_page(ProtectedPage):
-    """Load an html page for entering water meter adjustments."""
+    """Load an html page for entering pressure adjustments."""
 
     def GET(self):
-        return self.template_render.plugins.water_meter(options, water_sender.status, log.events(NAME))
+        return self.template_render.plugins.pressure_monitor(pressure_options, log.events(NAME))
 
     def POST(self):
-        options.web_update(web.input())
+        pressure_options.web_update(web.input())
 
-        if water_sender is not None:
-            water_sender.update()
-
+        if pressure_sender is not None:
+            pressure_sender.update()
         raise web.seeother(plugin_url(settings_page))
 
 
@@ -166,4 +235,5 @@ class settings_json(ProtectedPage):
     def GET(self):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
-        return json.dumps(options)
+        return json.dumps(pressure_options)
+
