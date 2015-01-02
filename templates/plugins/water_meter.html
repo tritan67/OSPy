@@ -13,6 +13,9 @@ $var page: plugins
         jQuery("button#cCancel").click(function(){
             window.location="/";
         });
+        jQuery("button#cReset").click(function(){
+            jQuery("#pluginForm2").submit();       
+        }); 
 
     });
 </script>
@@ -32,7 +35,7 @@ $var page: plugins
             <tr>
                 <td style='text-transform: none;'>Number of pulses per liter:</td>
                 <td>
-                    <input name='pulses' type='text' value='$plugin_options["pulses"]'> 
+                    <input name='pulses' type='text' value='$plugin_options["pulses"]' style="width:40px;"> 
                 </td>
             </tr>
             <tr>
@@ -49,8 +52,13 @@ $var page: plugins
             </tr>
         </table>
     </form>
+    <form id="pluginForm2" action="$plugins.plugin_url('water_meter.reset_page')" method="post">
+    </form>
+
 </div>
 <div id="controls">
     <button id="cSubmit" class="submit"><b>Submit</b></button>
     <button id="cCancel" class="cancel danger">Cancel</button>
+    <button id="cReset" class="cancel danger">Reset summary</button>
+
 </div>
