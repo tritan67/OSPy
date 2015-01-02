@@ -71,7 +71,7 @@ class WaterSender(Thread):
         two_text = True   # text disabled plugin
 
         val = 0                     # actual water per second
-        sum_water = options['sum']  # summary water 
+        sum_water = options['sum']  # saved value of summary water 
         minute_water = 0            # actual water per minutes
         hour_water = 0              # actual water per hours
 
@@ -84,16 +84,26 @@ class WaterSender(Thread):
                 if self.bus is not None and options['enabled']:  # if water meter plugin is enabled
                     val = counter(self.bus)/options['pulses']
                     self.status['meter'] = val
-
+           
                     if once_text:
                       log.clear(NAME)
                       log.info(NAME, 'Water Meter plug-in is enabled.')
+
                       if not pcf_ok:
                          log.warning(NAME, 'Could not find PCF8583 on 0x50 I2C bus.')
+                      else:
+                         log.info(NAME, 'Please wait for min/hour data...')
+                         log.info(NAME, '________________________________')
+                         log.info(NAME, 'Water in liters')
+                         log.info(NAME, 'Saved water summary:     ' + str(sum_water) ) 
                       once_text = False
                       two_text = True
 
                     if pcf_ok:
+                      sum_water = sum_water + val 
+                      minute_water = minute_water + val
+                      hour_water = hour_water + val
+                       
                       actual_time = int(time.time())
                       if actual_time - last_minute_time >= 60:          # minute counter
                          last_minute_time = actual_time 
@@ -103,7 +113,8 @@ class WaterSender(Thread):
                          log.info(NAME, 'Water per hours:   ' + str(hour_water) )
                          log.info(NAME, 'Water summary:     ' + str(sum_water) ) 
                          minute_water = 0
-#todo how to save        options.sum = sum_water                        # save summary water to options
+
+                         options.__setitem__('sum', sum_water)          # save summary water to options only 1 minutes
 
                       if actual_time - last_hour_time >= 3600:          # hour counter
                          last_hour_time = actual_time 
@@ -115,10 +126,6 @@ class WaterSender(Thread):
                          log.info(NAME, 'Water Meter plug-in is disabled.')
                          two_text = False
                          once_text = True
-
-                sum_water = sum_water + val 
-                minute_water = minute_water + val
-                hour_water = hour_water + val
 
                 self._sleep(1)
                
@@ -190,6 +197,20 @@ class settings_page(ProtectedPage):
 
         raise web.seeother(plugin_url(settings_page))
 
+class reset_page(ProtectedPage):
+    """Reset summary counter."""
+
+    def POST(self):
+        options.__setitem__('sum', 0) 
+        log.clear(NAME)
+        log.info(NAME, 'Water summary was reseting...')
+        log.info(NAME, 'Water in liters')
+        log.info(NAME, 'Water summary:     ' + str(options['sum']) ) 
+
+        if water_sender is not None:
+            water_sender.update()
+
+        raise web.seeother(plugin_url(settings_page))
 
 class settings_json(ProtectedPage):
     """Returns plugin settings in JSON format."""
