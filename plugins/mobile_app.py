@@ -1,15 +1,21 @@
+# !/usr/bin/env python
+
 import json
 import time
 import datetime
 import string
+import web
 
-from helpers import get_cpu_temp, check_login
+from helpers import *
 from inputs import inputs
 from options import options, rain_blocks
 from stations import stations
-import web
-from urls import urls  # Gain access to ospy's URL list
+from programs import programs
+from urls import urls # Gain access to ospy's URL list
 from webpages import ProtectedPage, WebPage
+from log import log
+
+NAME = 'Mobile aplication'
 
 ##############
 ## New URLs ##
@@ -35,24 +41,24 @@ class options(WebPage):  # /jo
         web.header('Cache-Control', 'no-cache')
         if check_login():
             jopts = {
-                "fwv": gv.ver_str+'-OSPi',
-                "tz": gv.sd['tz'],
-                "ext": gv.sd['nbrd'] - 1,
-                "seq":options.sequential,
-                "sdt": options.station_delay,
-                "mas": gv.sd['mas'],
-                "mton": options.master_on_delay,
-                "mtof": options.master_off_delay,
-                "urs": options.rain_sensor_enabled,
-                "rso": gv.options.rain_sensor_no,
-                "wl": options.level_adjustment,
-                "ipas": gv.sd['ipas'],
-                "reset": gv.sd['rbt'],
-                "lg": gv.sd['lg']
+                "fwv": version+'-OSPi', #version firmware
+                "tz": 0, # not used in refactor version?
+                "ext": options.output_count - 1,
+                "seq": options.sequential, #sequential/concurrent operation 
+                "sdt": options.station_delay, #station delay time
+                "mas": stations.master, #master station index
+                "mton": options.master_on_delay, #master on delay
+                "mtof": options.master_off_delay, #master off delay
+                "urs": options.rain_sensor_enabled, #use rain sensor 
+                "rso": options.rain_sensor_no, #Rain sensor type 
+                "wl": options.level_adjustment, #water level (percent adjustment of watering time)
+                "ipas": options.no_password, #ignore password 
+                "reset": 0, #gv.sd['rbt'], #reboot not used in refactor version?
+                "lg": options.run_log #log runs
             }
-        else:
+        else: # without login
             jopts = {
-                "fwv": gv.ver_str+'-OSPi',
+                "fwv": version+'-OSPi', #version firmware
             }
 
         return json.dumps(jopts)
@@ -64,22 +70,31 @@ class cur_settings(ProtectedPage):  # /jc
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jsettings = {
-            "devt": gv.now,
-            "nbrd": gv.sd['nbrd'],
-            "en": options.scheduler_enabled,
-            "rd": rain_blocks,
-            "rs": inputs.rain_input,
-            "mm": options.manual_mode,
-            "rdst": rain_blocks.block_end(),
-            "loc": options.location,
-            "sbits": gv.sbits,
-            "ps": gv.ps,
-            "lrun": gv.lrun,
-            "ct": get_cpu_temp(gv.sd['tu']),
-            "tu": gv.sd['tu']
+            "devt": time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds(), #system time
+            "nbrd": options.output_count, #number of boards (includes base unit and expansion boards)
+            "en": options.scheduler_enabled, #enabled (system operation)
+            "rd": rain_blocks, #rain delay 
+            "rs": inputs.rain_input, #rain sensed 
+            "mm": options.manual_mode, #manual mode
+            "rdst": rain_blocks.block_end(), #rain delay stop time 
+            "loc": options.location, #location for weather
+            "sbits": 0, #gv.sbits, #station bits, used to display stations that are on in UI 
+            "ps": 0, #gv.ps, #program schedule used for UI display 
+            "lrun": last_run(), #last run
+            "ct": get_cpu_temp(), #procesor temperature
+            "tu": options.temp_unit #temperature unit C/F
         }
 
         return json.dumps(jsettings)
+    
+    def last_run():
+        finished = [run for run in log.finished_runs() if not run['blocked']]
+        if finished:
+            last_prog = finished[-1]['start'].strftime('%H:%M: ') + finished[-1]['program_name']
+        else:
+            last_prog = 'None' 
+  
+        return last_prog        
 
 
 class station_state(ProtectedPage):  # /js
@@ -90,7 +105,7 @@ class station_state(ProtectedPage):  # /js
         web.header('Cache-Control', 'no-cache')
         jstate = {
             "sn": gv.srvals,
-            "nstations": gv.sd['nst']
+            "nstations": stations.count()
         }
 
         return json.dumps(jstate)
@@ -175,7 +190,7 @@ class get_logs(ProtectedPage):  # /jl
                 data.append([pid, station, duration, timestamp])
 
         return json.dumps(data)
-
+        
     def read_log(self):
         try:
             with open('./data/log.json') as logf:
@@ -183,3 +198,8 @@ class get_logs(ProtectedPage):  # /jl
             return records
         except IOError:
             return []
+
+
+def start():
+pass
+stop = start            
