@@ -104,8 +104,8 @@ class station_state(ProtectedPage):  # /js
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jstate = {
-            "sn": gv.srvals,
-            "nstations": stations.count()
+            "sn": station.name for station in stations.get(), #station name
+            "nstations": stations.count() #number of station
         }
 
         return json.dumps(jstate)
@@ -115,7 +115,7 @@ class program_info(ProtectedPage):  # /jp
     """Returns program data as json."""
     def GET(self):
         lpd = []  # Local program data
-        dse = int((time.time()+((gv.sd['tz']/4)-12)*3600)/86400)  # days since epoch
+        dse = int(time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds())  # ???days since epoch
         for p in gv.pd:
             op = p[:]  # Make local copy of each program
             if op[1] >= 128 and op[2] > 1:
@@ -126,10 +126,10 @@ class program_info(ProtectedPage):  # /jp
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jpinfo = {
-            "nprogs": gv.sd['nprogs']-1,
-            "nboards": gv.sd['nbrd'],
-            "mnp": 9999,
-            'pd': lpd
+            "nprogs": programs.count()-1, #number of programs
+            "nboards": options.output_count, #number of boards
+            "mnp": 9999, #maximum number of programs
+            'pd': lpd #local program data
         }
 
         return json.dumps(jpinfo)
@@ -147,15 +147,14 @@ class station_info(ProtectedPage):  # /jn
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jpinfo = {
-            "snames": [s.name for s in stations]
+            "snames": [station.name for station in stations.get()] #station names
             "ignore_rain": gv.sd['ir'],
-            "masop": gv.sd['mo'],
+            "masop": gv.sd['mo'], #master operation bytes - contains bits per board for stations with master set
             "stn_dis": disable,
-            "maxlen": gv.sd['snlen']
+            "maxlen": 100 # not used in refactor? gv.sd['snlen'] max size of station names
         }
 
         return json.dumps(jpinfo)
-
 
 class get_logs(ProtectedPage):  # /jl
     """Returns log information for specified date range."""
