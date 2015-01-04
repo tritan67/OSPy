@@ -5,6 +5,7 @@ import time
 import datetime
 import string
 import web
+import version
 
 from helpers import *
 from inputs import inputs
@@ -15,15 +16,16 @@ from urls import urls # Gain access to ospy's URL list
 from webpages import ProtectedPage, WebPage
 from log import log
 
-NAME = 'Mobile aplication'
+NAME = 'Mobile Aplication'
+LINK = 'None' 
 
 ##############
 ## New URLs ##
 
 urls.extend([
-    '/jo', 'plugins.mobile_app.options',
-    '/jc', 'plugins.mobile_app.cur_settings',
-    '/js', 'plugins.mobile_app.station_state',
+    '/jo', 'plugins.mobile_app.cur_options',   #jo is ok
+    '/jc', 'plugins.mobile_app.cur_settings',  #jc found rdst, sbits, ps, lrun 
+    '/js', 'plugins.mobile_app.station_state', #js is ok
     '/jp', 'plugins.mobile_app.program_info',
     '/jn', 'plugins.mobile_app.station_info',
     '/jl', 'plugins.mobile_app.get_logs',
@@ -33,7 +35,7 @@ urls.extend([
 #######################
 ## Class definitions ##
 
-class options(WebPage):  # /jo
+class cur_options(WebPage):  # /jo
     """Returns device options as json."""
     def GET(self):
         web.header('Access-Control-Allow-Origin', '*')
@@ -41,24 +43,24 @@ class options(WebPage):  # /jo
         web.header('Cache-Control', 'no-cache')
         if check_login():
             jopts = {
-                "fwv": version+'-OSPi', #version firmware
-                "tz": 0, # not used in refactor version?
+                "fwv": version.ver_date +'-OSPi', 
+                "tz": 0,                                # time zone not used in refactor version?
                 "ext": options.output_count - 1,
-                "seq": options.sequential, #sequential/concurrent operation 
-                "sdt": options.station_delay, #station delay time
-                "mas": stations.master, #master station index
-                "mton": options.master_on_delay, #master on delay
-                "mtof": options.master_off_delay, #master off delay
-                "urs": options.rain_sensor_enabled, #use rain sensor 
-                "rso": options.rain_sensor_no, #Rain sensor type 
-                "wl": options.level_adjustment, #water level (percent adjustment of watering time)
-                "ipas": options.no_password, #ignore password 
-                "reset": 0, #gv.sd['rbt'], #reboot not used in refactor version?
-                "lg": options.run_log #log runs
+                "seq": options.sequential,
+                "sdt": options.station_delay,
+                "mas": stations.master, 
+                "mton": options.master_on_delay, 
+                "mtof": options.master_off_delay,
+                "urs": options.rain_sensor_enabled, 
+                "rso": options.rain_sensor_no,
+                "wl": options.level_adjustment, 
+                "ipas": options.no_password, 
+                "reset": 0,                             # gv.sd['rbt'], reboot not used in refactor version?
+                "lg": options.run_log 
             }
         else: # without login
             jopts = {
-                "fwv": version+'-OSPi', #version firmware
+                "fwv": version.ver_date +'-OSPi', 
             }
 
         return json.dumps(jopts)
@@ -70,32 +72,23 @@ class cur_settings(ProtectedPage):  # /jc
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jsettings = {
-            "devt": time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds(), #system time
-            "nbrd": options.output_count, #number of boards (includes base unit and expansion boards)
-            "en": options.scheduler_enabled, #enabled (system operation)
-            "rd": rain_blocks, #rain delay 
-            "rs": inputs.rain_input, #rain sensed 
-            "mm": options.manual_mode, #manual mode
-            "rdst": rain_blocks.block_end(), #rain delay stop time 
-            "loc": options.location, #location for weather
-            "sbits": 0, #gv.sbits, #station bits, used to display stations that are on in UI 
-            "ps": 0, #gv.ps, #program schedule used for UI display 
-            "lrun": last_run(), #last run
-            "ct": get_cpu_temp(), #procesor temperature
-            "tu": options.temp_unit #temperature unit C/F
+            "devt": time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds(),
+            "nbrd": options.output_count,
+            "en": options.scheduler_enabled, 
+            "rd": rain_blocks,  
+            "rs": inputs.rain_input, 
+            "mm": options.manual_mode,
+            "rdst": 0, #rain_blocks.block_end(),
+            "loc": options.location, 
+            "sbits": 0, #gv.sbits
+            "ps": 0, #gv.ps
+            "lrun": 0, #last_run(self), #last run
+            "ct": get_cpu_temp(options.temp_unit), 
+            "tu": options.temp_unit 
         }
 
         return json.dumps(jsettings)
     
-    def last_run():
-        finished = [run for run in log.finished_runs() if not run['blocked']]
-        if finished:
-            last_prog = finished[-1]['start'].strftime('%H:%M: ') + finished[-1]['program_name']
-        else:
-            last_prog = 'None' 
-  
-        return last_prog        
-
 
 class station_state(ProtectedPage):  # /js
     """Returns station status and total number of stations as json."""
@@ -104,7 +97,7 @@ class station_state(ProtectedPage):  # /js
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jstate = {
-            "sn": station.name for station in stations.get(), #station name
+            "sn": [station.name for station in stations.get()], #station name
             "nstations": stations.count() #number of station
         }
 
@@ -114,22 +107,17 @@ class station_state(ProtectedPage):  # /js
 class program_info(ProtectedPage):  # /jp
     """Returns program data as json."""
     def GET(self):
-        lpd = []  # Local program data
-        dse = int(time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds())  # ???days since epoch
-        for p in gv.pd:
-            op = p[:]  # Make local copy of each program
-            if op[1] >= 128 and op[2] > 1:
-                rel_rem = (((op[1]-128) + op[2])-(dse % op[2])) % op[2]
-                op[1] = rel_rem + 128
-            lpd.append(op)
+       
+        # here add code for program lpd
+
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jpinfo = {
-            "nprogs": programs.count()-1, #number of programs
-            "nboards": options.output_count, #number of boards
-            "mnp": 9999, #maximum number of programs
-            'pd': lpd #local program data
+            "nprogs": programs.count()-1, 
+            "nboards": options.output_count,
+            "mnp": 9999, 
+            'pd': 10#lpd #local program data
         }
 
         return json.dumps(jpinfo)
@@ -140,16 +128,16 @@ class station_info(ProtectedPage):  # /jn
     def GET(self):
         disable = []
 
-        for byte in gv.sd['show']:
-            disable.append(~byte&255)
+#        for byte in gv.sd['show']:
+#            disable.append(~byte&255)
 
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jpinfo = {
-            "snames": [station.name for station in stations.get()] #station names
-            "ignore_rain": gv.sd['ir'],
-            "masop": gv.sd['mo'], #master operation bytes - contains bits per board for stations with master set
+            "snames": [station.name for station in stations.get()], #station names
+            "ignore_rain": 0,#gv.sd['ir']
+            "masop": 0,#gv.sd['mo'] #master operation bytes - contains bits per board for stations with master set
             "stn_dis": disable,
             "maxlen": 100 # not used in refactor? gv.sd['snlen'] max size of station names
         }
@@ -200,5 +188,6 @@ class get_logs(ProtectedPage):  # /jl
 
 
 def start():
-pass
+   pass
+
 stop = start            
