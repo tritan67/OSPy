@@ -23,14 +23,13 @@ LINK = 'None'
 ## New URLs ##
 
 urls.extend([
-    '/jo', 'plugins.mobile_app.cur_options',   #jo is ok
-    '/jc', 'plugins.mobile_app.cur_settings',  #jc found rdst, sbits, ps, lrun 
-    '/js', 'plugins.mobile_app.station_state', #js is ok
-    '/jp', 'plugins.mobile_app.program_info',
-    '/jn', 'plugins.mobile_app.station_info',
-    '/jl', 'plugins.mobile_app.get_logs',
-    '/sp', 'plugins.mobile_app.set_password'])
-
+    '/jo', 'plugins.mobile_app.cur_options',   # jo not ok corect: ext
+    '/jc', 'plugins.mobile_app.cur_settings',  # jc not ok found: rdst, sbits, ps, lrun, corect: nbrd 
+    '/js', 'plugins.mobile_app.station_state', # ok
+    '/jp', 'plugins.mobile_app.program_info',  # jp not ok found: lpd, corect: nboards
+    '/jn', 'plugins.mobile_app.station_info',  # jn not ok found: masop and line 136,137
+    '/jl', 'plugins.mobile_app.get_logs',      # ?
+ 
 
 #######################
 ## Class definitions ##
@@ -43,24 +42,24 @@ class cur_options(WebPage):  # /jo
         web.header('Cache-Control', 'no-cache')
         if check_login():
             jopts = {
-                "fwv": version.ver_date +'-OSPi', 
-                "tz": 0,                                # time zone not used in refactor version?
-                "ext": options.output_count - 1,
-                "seq": options.sequential,
+                "fwv": version.ver_date + '/2.2.' + str(version.revision) +'-OSPi', 
+                "tz": 0,                                # time zone is not used in refactor version?
+                "ext": options.output_count,            # todo (8 + 8*extensions) min=8 max=1000    
+                "seq": 1 if options.sequential else 0,
                 "sdt": options.station_delay,
                 "mas": stations.master, 
                 "mton": options.master_on_delay, 
                 "mtof": options.master_off_delay,
-                "urs": options.rain_sensor_enabled, 
-                "rso": options.rain_sensor_no,
+                "urs": 1 if options.rain_sensor_enabled else 0, 
+                "rso": 1 if options.rain_sensor_no else 0,
                 "wl": options.level_adjustment, 
-                "ipas": options.no_password, 
-                "reset": 0,                             # gv.sd['rbt'], reboot not used in refactor version?
-                "lg": options.run_log 
+                "ipas": 1 if options.no_password else 0, 
+                "reset": 0,                             # gv.sd['rbt'], reboot is not used in refactor version?
+                "lg": 1 if options.run_log else 0
             }
         else: # without login
             jopts = {
-                "fwv": version.ver_date +'-OSPi', 
+                "fwv": version.ver_date + '/2.2.' + str(version.revision) +'-OSPi', 
             }
 
         return json.dumps(jopts)
@@ -72,23 +71,24 @@ class cur_settings(ProtectedPage):  # /jc
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jsettings = {
-            "devt": time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds(),
-            "nbrd": options.output_count,
-            "en": options.scheduler_enabled, 
+            "devt": int(time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()),
+            "nbrd": options.output_count,              # todo (8 + 8*extensions) min=8 max=1000  
+            "en": 1 if options.scheduler_enabled else 0, 
             "rd": rain_blocks,  
             "rs": inputs.rain_input, 
-            "mm": options.manual_mode,
-            "rdst": 0, #rain_blocks.block_end(),
+            "mm": 1 if options.manual_mode else 0,
+            "rdst": 0, #rain_blocks.block_end(),       # todo return datetime.datetime(2015, 1, 4, 20, 0, 29, 739014) is not JSON serializable
             "loc": options.location, 
-            "sbits": 0, #gv.sbits
-            "ps": 0, #gv.ps
-            "lrun": 0, #last_run(self), #last run
+            "sbits": [0, 0], #gv.sbits
+            "ps": [0, 0], #gv.ps
+            "lrun": 0, #gv.lrun
             "ct": get_cpu_temp(options.temp_unit), 
             "tu": options.temp_unit 
         }
 
         return json.dumps(jsettings)
-    
+
+
 
 class station_state(ProtectedPage):  # /js
     """Returns station status and total number of stations as json."""
@@ -97,8 +97,8 @@ class station_state(ProtectedPage):  # /js
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jstate = {
-            "sn": [station.name for station in stations.get()], #station name
-            "nstations": stations.count() #number of station
+            "sn": [1 if station.active else 0 for station in stations.get()], 
+            "nstations": stations.count()                                     
         }
 
         return json.dumps(jstate)
@@ -107,17 +107,22 @@ class station_state(ProtectedPage):  # /js
 class program_info(ProtectedPage):  # /jp
     """Returns program data as json."""
     def GET(self):
-       
-        # here add code for program lpd
-
+        lpd = []  # Local program data
+#        dse = int(time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()) #int((time.time()+((gv.sd['tz']/4)-12)*3600)/86400)  # days since epoch in master
+#        for p in gv.pd: #program data - loaded from file at startup (list of lists) 
+#            op = p[:]  # Make local copy of each program
+#            if op[1] >= 128 and op[2] > 1:
+#                rel_rem = (((op[1]-128) + op[2])-(dse % op[2])) % op[2]
+#                op[1] = rel_rem + 128
+#            lpd.append(op)
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jpinfo = {
-            "nprogs": programs.count()-1, 
-            "nboards": options.output_count,
+            "nprogs": programs.count(),                      # ? -1 is in master  
+            "nboards": options.output_count,                 # todo (8 + 8*extensions) min=8 max=1000 
             "mnp": 9999, 
-            'pd': 10#lpd #local program data
+            'pd': lpd 
         }
 
         return json.dumps(jpinfo)
@@ -135,11 +140,11 @@ class station_info(ProtectedPage):  # /jn
         web.header('Content-Type', 'application/json')
         web.header('Cache-Control', 'no-cache')
         jpinfo = {
-            "snames": [station.name for station in stations.get()], #station names
-            "ignore_rain": 0,#gv.sd['ir']
+            "snames": [station.name for station in stations.get()], 
+            "ignore_rain": [1 if station.ignore_rain else 0 for station in stations.get()], 
             "masop": 0,#gv.sd['mo'] #master operation bytes - contains bits per board for stations with master set
-            "stn_dis": disable,
-            "maxlen": 100 # not used in refactor? gv.sd['snlen'] max size of station names
+            "stn_dis": [0],
+            "maxlen": 32                                                    # not used in refactor? gv.sd['snlen'] max size of station names 32
         }
 
         return json.dumps(jpinfo)
