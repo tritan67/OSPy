@@ -17,7 +17,7 @@ from webpages import ProtectedPage, WebPage
 from log import log
 
 NAME = 'Mobile Aplication'
-LINK = 'None' 
+LINK = 'info_page' 
 
 ##############
 ## New URLs ##
@@ -28,7 +28,8 @@ urls.extend([
     '/js', 'plugins.mobile_app.station_state', # ok
     '/jp', 'plugins.mobile_app.program_info',  # jp not ok found: lpd, corect: nboards
     '/jn', 'plugins.mobile_app.station_info',  # jn not ok found: masop and line 136,137
-    '/jl', 'plugins.mobile_app.get_logs',      # ?
+    '/jl', 'plugins.mobile_app.get_logs'       # jl not ok
+    ])        
  
 
 #######################
@@ -195,4 +196,15 @@ class get_logs(ProtectedPage):  # /jl
 def start():
    pass
 
-stop = start            
+stop = start  
+
+
+################################################################################
+# Web pages:                                                                   #
+################################################################################
+class info_page(ProtectedPage):
+    """Load an html page"""
+
+    def GET(self):
+        return self.template_render.plugins.mobile_app()
+          
