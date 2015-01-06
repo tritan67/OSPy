@@ -23,8 +23,8 @@ LINK = 'info_page'
 ## New URLs ##
 
 urls.extend([
-    '/jo', 'plugins.mobile_app.cur_options',   # jo not ok corect: ext
-    '/jc', 'plugins.mobile_app.cur_settings',  # jc not ok found: rdst, sbits, ps, lrun, corect: nbrd 
+    '/jo', 'plugins.mobile_app.cur_options',   # jo not ok corect: corect: ext
+    '/jc', 'plugins.mobile_app.cur_settings',  # jc not ok found: sbits, ps, lrun, corect: nbrd 
     '/js', 'plugins.mobile_app.station_state', # ok
     '/jp', 'plugins.mobile_app.program_info',  # jp not ok found: lpd, corect: nboards
     '/jn', 'plugins.mobile_app.station_info',  # jn not ok found: masop and line 136,137
@@ -78,7 +78,7 @@ class cur_settings(ProtectedPage):  # /jc
             "rd": rain_blocks,  
             "rs": inputs.rain_input, 
             "mm": 1 if options.manual_mode else 0,
-            "rdst": 0, #rain_blocks.block_end(),       # todo return datetime.datetime(2015, 1, 4, 20, 0, 29, 739014) is not JSON serializable
+            "rdst": time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds() + rain_blocks.seconds_left(), 
             "loc": options.location, 
             "sbits": [0, 0], #gv.sbits
             "ps": [0, 0], #gv.ps
