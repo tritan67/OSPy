@@ -80,7 +80,7 @@ class PCFSender(Thread):
         except ImportError:
             log.warning(NAME, 'Could not import smbus.')
 
-        while True:
+        while not self._stop.is_set():
             log.clear(NAME)
             try:    
                 if self.adc is not None and pcf_options['enabled']:  # if pcf plugin is enabled

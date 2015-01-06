@@ -18,6 +18,8 @@ from plugins import PluginOptions, plugin_url
 import plugins
 from webpages import ProtectedPage
 from helpers import reboot, poweroff
+from programs import programs
+from stations import stations
 
 
 NAME = 'SMS Modem'
@@ -32,10 +34,12 @@ sms_options = PluginOptions(
         'txt1': 'info',
         'txt2': 'stop',
         'txt3': 'start',
-        'txt4': 'reboot',
-        'txt5': 'poweroff',
+        'txt4': 'restart',
+        'txt5': 'power',
         'txt6': 'update',
-        'txt7': 'foto'
+        'txt7': 'foto',
+        'txt8': 'help',
+        'txt9': 'run'
     }
 )
 
@@ -81,12 +85,12 @@ class SMSSender(Thread):
         once_text = True
         two_text = True
 
-        while True:
+        while not self._stop.is_set(): 
             try:
                 if sms_options["use_sms"]:  # if use_sms is enable (on)
                     if two_text:
                        log.clear(NAME)
-                       log.info(NAME, 'SMS plug-in is enabled')
+                       log.info(NAME, 'SMS Modem plug-in is enabled')
                        once_text = True
                        two_text = False
                     sms_check(self)  # Check SMS command from modem
@@ -94,15 +98,15 @@ class SMSSender(Thread):
                 else:
                     if once_text: 
                        log.clear(NAME)
-                       log.info(NAME, 'SMS plug-in is disabled')
+                       log.info(NAME, 'SMS Modem plug-in is disabled')
                        once_text = False
                        two_text = True
-
-                self._sleep(20)
+                
+                self._sleep(10)
 
             except Exception:
                 err_string = ''.join(traceback.format_exc())
-                log.error(NAME, 'SMS control plug-in:\n' + err_string)
+                log.error(NAME, 'SMS Modem plug-in:\n' + err_string)
                 self._sleep(60)
 
 
@@ -134,6 +138,8 @@ def sms_check(self):
     comm5 = sms_options['txt5']
     comm6 = sms_options['txt6']
     comm7 = sms_options['txt7']
+    comm8 = sms_options['txt8']
+    comm9 = sms_options['txt9']
 
     sm = gammu.StateMachine()
     sm.ReadConfig()
@@ -141,7 +147,7 @@ def sms_check(self):
         sm.Init()
         #log.info(NAME, "Checking SMS...")
     except:
-        log.debug(NAME, "Error: SMS modem fault")
+        log.debug(NAME, "Error: SMS Modem fault")
 
     status = sm.GetSMSStatus()
     remain = status['SIMUsed'] + status['PhoneUsed'] + status['TemplatesUsed']
@@ -214,14 +220,15 @@ def sms_check(self):
                     
                     log.info(NAME, 
                         'Command: ' + comm1 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
-                    log.info(NAME, 'SMS text: ' + datastr)
-
                     sm.DeleteSMS(m['Folder'], m['Location'])  # SMS deleted
                     log.info(NAME, 'Received SMS was deleted')
 
                 elif m['Text'] == comm2:        # If command = comm2 (stop - scheduler)
                     log.info(NAME, 'Command ' + comm2 + ' is processed')
                     options.scheduler_enabled = False
+                    log.finish_run(None)
+                    stations.clear()
+                    
                     message = {
                         'Text': 'Command: ' + comm2 + ' was processed',
                         'SMSC': {'Location': 1},
@@ -309,8 +316,7 @@ def sms_check(self):
                         from webcam import get_run_cam
                         get_run_cam() # process save foto to ./data/image.jpg
                         data_image = './data/image.jpg'
-                        msg = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) +
-                                          ': SMS plug-in send image file from webcam.')
+                        msg = ('SMS plug-in send image file from webcam.')
 
                         subject = email_options['emlsubject']
                         send_email(self, msg, subject, data_image)
@@ -323,9 +329,49 @@ def sms_check(self):
                         'Number': m['Number'],
                          }
                         sm.SendSMS(message) 
-
                     sm.DeleteSMS(m['Folder'], m['Location'])
+                        
+                elif m['Text'] == comm8:        # If command = comm8 (send SMS with available commands)
+                    log.info(NAME, 'Command ' + comm8 + ' is processed')
+                    message = {
+                        'Text': 'Available commands: ' + comm1 + ',' + comm2 + ',' + comm3 + ',' + comm4 + ',' + comm5 + ',' + comm6 + ',' + comm7 + ',' + comm8 + ',' + comm9 + 'xx',
+                        'SMSC': {'Location': 1},
+                        'Number': m['Number'],
+                    }
+                    sm.SendSMS(message)
+                    log.info(NAME,
+                        'Command: ' + comm8 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                    sm.DeleteSMS(m['Folder'], m['Location'])
+                    log.info(NAME, 'Received SMS was deleted')
 
+                    
+                elif m['Text'][0:len(comm9)] == comm9:        # If command = lenght char comm9 (run now program xx)
+                    num = m['Text'][len(comm9):]              # number from sms text example: run36 -> num=36
+                    log.info(NAME, 'Command ' + comm9 + ' is processed')
+                    index = int(num)
+                    if index <= programs.count():             # if program number from sms text exists in program db
+                       log.finish_run(None)
+                       stations.clear()
+                       prog = int(index-1)
+                       programs.run_now(prog)
+                       log.info(NAME, 'Program: ' + str(index) + ' now run')
+                       message = {
+                          'Text': 'Program: ' + str(index) + ' now run',
+                          'SMSC': {'Location': 1},
+                          'Number': m['Number'],
+                                 }    
+                    else:
+                       message = {
+                          'Text': 'Program: ' + str(index) + ' no exists!',
+                          'SMSC': {'Location': 1},
+                          'Number': m['Number'],
+                                 }
+
+                    sm.SendSMS(message)
+                    log.info(NAME,
+                        'Command: ' + str(m['Text']) + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                    sm.DeleteSMS(m['Folder'], m['Location'])
+                    log.info(NAME, 'Received SMS was deleted')
 
                 else:                            # If SMS command is not defined
                     sm.DeleteSMS(m['Folder'], m['Location'])

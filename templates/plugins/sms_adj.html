@@ -20,7 +20,7 @@ $var page: plugins
 <div id="plugin">
     <div class="title">SMS Settings</div>
     <p>For this plugin is needed to SMS modem with the telephone service provider.</p>
-    <p>For more information visit the www.pihrt.com/elektronika/259-moje-rapsberry-pi-sms-ovladani-rpi for instructions.</p>
+    <p>For more information visit the <a href="http://www.pihrt.com/elektronika/259-moje-rapsberry-pi-sms-ovladani-rpi">www.pihrt.com</a> for instructions.</p>
     <form id="pluginForm" action="$plugins.plugin_url('sms_adj.settings_page')" method="post">
         <table class="optionList">
             <tr>
@@ -83,6 +83,18 @@ $var page: plugins
                     <input name='txt7' type='text' value='$plugin_options["txt7"]'> (For this function required email and webcam plugin) 
                 </td>
             </tr>
+            <tr>
+                <td style='text-transform: none;'>Command for help:</td>
+                <td>
+                    <input name='txt8' type='text' value='$plugin_options["txt8"]'> (Send SMS with all available commands) 
+                </td>
+            </tr>
+            <tr>
+                <td style='text-transform: none;'>Command for run now program:</td>
+                <td>
+                    <input name='txt9' type='text' value='$plugin_options["txt9"]'> (Example: runxx = run now program xx if exists) 
+                </td>
+            </tr> 
             <tr>
                 <td style='text-transform: none;'>Status:</td>
                 <td>

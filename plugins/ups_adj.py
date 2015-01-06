@@ -98,7 +98,7 @@ class UPSSender(Thread):
     
         last_time = int(time.time())
        
-        while True:
+        while not self._stop.is_set(): 
             try:
                 if ups_options['ups']:                                     # if ups plugin is enabled
                     test = get_check_power() 
