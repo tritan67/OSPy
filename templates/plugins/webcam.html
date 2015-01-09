@@ -19,7 +19,9 @@ $var page: plugins
 
 <div id="plugin">
     <div class="title">Webcam Monitor</div>
-    <p>This plugin needs fswebcam. For installation use sudo apt-get install fswebcam.</p>
+    <p>This plugin needs fswebcam.</p>
+    <p>If not installed fswebcam, plugin installs fswebcam in to the system himself.</p>
+    <p>On first use please wait for status.</p>
     <p>Download image as <a href="$plugins.plugin_url('webcam.download_page')">jpg</a>.
     <form id="pluginForm" action="$plugins.plugin_url('webcam.settings_page')" method="post">
         <table class="optionList">
@@ -58,8 +60,9 @@ $var page: plugins
     </form>
 </div>
 <div id="image">
-    <p>OpenSprinkler camera</p>
-    <a href="$plugins.plugin_url('webcam.download_page')" target="_blank"><img src="$plugins.plugin_url('webcam.download_page')" width="640" height="480" alt="Webcam OpenSprinkler"></a>
+    $if plugin_options['installed_fswebcam']:
+       <p>OpenSprinkler camera</p>
+       <a href="$plugins.plugin_url('webcam.download_page')" target="_blank"><img src="$plugins.plugin_url('webcam.download_page')" width="640" height="480" alt="Webcam OpenSprinkler"></a> 
 </div>
 
 <div id="controls">
