@@ -24,7 +24,7 @@ LINK = 'info_page'
 
 urls.extend([
     '/jo', 'plugins.mobile_app.cur_options',   
-    '/jc', 'plugins.mobile_app.cur_settings',  #  found: sbits, ps, 
+    '/jc', 'plugins.mobile_app.cur_settings',   
     '/js', 'plugins.mobile_app.station_state', 
     '/jp', 'plugins.mobile_app.program_info',  #  found: lpd, 
     '/jn', 'plugins.mobile_app.station_info',  #  found: masop and line 136,137
@@ -81,8 +81,8 @@ class cur_settings(ProtectedPage):  # /jc
             "mm": 1 if options.manual_mode else 0,
             "rdst": time.mktime(rain_blocks.block_end().timetuple()), # rain delay stop time (unix time stamp)
             "loc": options.location, 
-            "sbits": [0, 0], #gv.sbits station bits, used to display stations that are on in UI (list of bytes, one byte per board)
-            "ps": [0, 0], #gv.ps program schedule used for UI display (list of 2 element lists i.e. [program number, duration])
+            "sbits": [0] * (number_ext_board(self) + 1),
+            "ps": get_ps(self),
             "lrun": last_run(self), 
             "ct": get_cpu_temp(options.temp_unit), 
             "tu": options.temp_unit 
@@ -132,10 +132,10 @@ class program_info(ProtectedPage):  # /jp
 class station_info(ProtectedPage):  # /jn
     """Returns station information as json."""
     def GET(self):
-#        disable = []
+ #       disable = []
 
-#        for byte in gv.sd['show']:
-#            disable.append(~byte&255)
+ #       for byte in gv.sd['show']:
+ #           disable.append(~byte&255)
 
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
@@ -143,7 +143,7 @@ class station_info(ProtectedPage):  # /jn
         jpinfo = {
             "snames": [station.name for station in stations.get()], 
             "ignore_rain": [1 if station.ignore_rain else 0 for station in stations.get()], 
-            "masop": [0],  #gv.sd['mo'] #master operation bytes - contains bits per board for stations with master set
+            "masop": [0],  #gv.sd['mo'] 
             "stn_dis": [0],
             "maxlen": 32                                                    # not used in refactor? gv.sd['snlen'] max size of station names 32
         }
@@ -194,6 +194,7 @@ def number_ext_board(self):
    num2 = options.output_count%8
    if num2 > 0:
       num1 = num1 + 1 
+
    return num1   
 
 def last_run(self):
@@ -206,6 +207,13 @@ def last_run(self):
       end_time = (datetime.datetime.now() - interval['end']).total_seconds()
 
    return [station_index, program_number, duration, end_time]
+
+def get_ps(self):
+   ps = []
+   for i in range(stations.count()):
+      ps.append([0, 0])
+
+   return ps
 
 
 ################################################################################
