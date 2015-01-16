@@ -193,14 +193,16 @@ def find_lcd_address():
 
     try:
         import smbus
-        bus = smbus.SMBus(1 if helpers.get_rpi_revision() >= 2 else 0)
+        bus = smbus.SMBus(0 if helpers.get_rpi_revision() == 1 else 1)
+        # DF - alter RPi version test fallback to value that works on BBB
     except ImportError:
         log.warning(NAME, 'Could not import smbus.')
     else:
 
         for addr, pcf_type in search_range.iteritems():
             try:
-                bus.write_quick(addr)
+                # bus.write_quick(addr)
+                bus.read_byte(addr) # DF - write_quick doesn't work on BBB
                 log.info(NAME, 'Found %s on address 0x%02x' % (pcf_type, addr))
                 lcd_options['address'] = addr
                 break
@@ -218,7 +220,8 @@ def update_lcd(line1, line2=None):
 
     if lcd_options['address'] != 0:
         import pylcd2  # Library for LCD 16x2 PCF8574
-        lcd = pylcd2.lcd(lcd_options['address'], 1 if helpers.get_rpi_revision() >= 2 else 0)
+        lcd = pylcd2.lcd(lcd_options['address'], 0 if helpers.get_rpi_revision() == 1 else 1)
+        # DF - alter RPi version test fallback to value that works on BBB
     else:
         lcd = dummy_lcd
 
