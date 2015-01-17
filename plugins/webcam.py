@@ -8,6 +8,7 @@ import subprocess
 import sys
 import traceback
 import re
+import os
 
 import web
 from log import log
@@ -23,7 +24,8 @@ cam_options = PluginOptions(
     {'enabled': False,
      'flip_h': False,
      'flip_v': False,
-     'resolution': '1280x720'
+     'resolution': '1280x720',
+     'installed_fswebcam': False
     }
 )
 
@@ -37,9 +39,8 @@ def start():
 stop = start
 
 def get_run_cam():
+        try:
             if cam_options['enabled']:                  # if cam plugin is enabled
-                log.clear(NAME)
-                log.info(NAME, 'Please wait...' )
 
                 if cam_options['flip_h']:
                    flip_img_h = ' --flip h'
@@ -51,23 +52,51 @@ def get_run_cam():
                 else:
                    flip_img_v = ''
 
+                if os.path.exists('/dev/video0'):              # if usb cam exists
+                   if not os.path.exists("/usr/bin/fswebcam"): # if fswebcam is installed
+                      log.clear(NAME)
+                      log.info(NAME, 'Fswebcam is not installed.')
+                      log.info(NAME, 'Please wait installing....')
+                      cmd = "sudo apt-get install fswebcam"
+                      proc = subprocess.Popen(
+                           cmd,
+                           stderr=subprocess.STDOUT,  # merge stdout and stderr
+                           stdout=subprocess.PIPE,
+                           shell=True)
+                      output = proc.communicate()[0]
+                      log.info(NAME, output)
+                      cam_options['installed_fswebcam'] = False
 
-                cmd = "fswebcam -r " + cam_options['resolution'] + flip_img_h + flip_img_v + " --info OpenSprinkler -S 3 --save ./data/image.jpg"
-                proc = subprocess.Popen(
-                     cmd,
-                     stderr=subprocess.STDOUT,  # merge stdout and stderr
-                     stdout=subprocess.PIPE,
-                     shell=True)
-                output = proc.communicate()[0]
-                text = re.sub('\x1b[^m]*m', '', output) # remove color character from communication in text
-                log.info(NAME, text)  
-                log.info(NAME, 'Ready...' )
-               
+                   else:
+                      cam_options['installed_fswebcam'] = True
+                      log.clear(NAME)
+                      log.info(NAME, 'Please wait...' )
+
+                      cmd = "fswebcam -r " + cam_options['resolution'] + flip_img_h + flip_img_v + " --info OpenSprinkler -S 3 --save ./data/image.jpg"
+                      proc = subprocess.Popen(
+                           cmd,
+                           stderr=subprocess.STDOUT,  # merge stdout and stderr
+                           stdout=subprocess.PIPE,
+                           shell=True)
+                      output = proc.communicate()[0]
+                      text = re.sub('\x1b[^m]*m', '', output) # remove color character from communication in text
+                      log.info(NAME, text)  
+                      log.info(NAME, 'Ready...' )
+                else:
+                   log.clear(NAME)
+                   log.info(NAME, 'Cannot find USB camera (/dev/video0).')
+                   cam_options['installed_fswebcam'] = False
 
             else: 
                 log.clear(NAME)
                 log.info(NAME, 'Plugin is disabled...')
+                cam_options['installed_fswebcam'] = False 
 
+        except Exception:
+            err_string = ''.join(traceback.format_exc())
+            log.error(NAME, 'Webcam plug-in:\n' + err_string)
+            cam_options['installed_fswebcam'] = False
+                  
 
 ################################################################################
 # Web pages:                                                                   #
