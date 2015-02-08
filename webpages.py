@@ -67,7 +67,10 @@ class login_page(WebPage):
     """Login page"""
 
     def GET(self):
-        return self.template_render.login(signin_form())
+        if check_login(False):
+            raise web.seeother('/')
+        else:
+            return self.template_render.login(signin_form())
 
     def POST(self):
         my_signin = signin_form()

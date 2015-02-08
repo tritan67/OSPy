@@ -17,6 +17,7 @@ import web
 from webpages import ProtectedPage
 from plugins import PluginOptions, plugin_url
 from options import options
+from stations import stations
 from inputs import inputs
 from log import log
 
@@ -100,7 +101,7 @@ class EmailSender(Thread):
                             minutes, seconds = divmod(duration, 60)
                             body += "Finished run:\n"
                             body += "  Program: %s\n" % run['program_name']
-                            body += "  Station: %s\n" % run['station']
+                            body += "  Station: %s\n" % stations.get(run['station']).name
                             body += "  Start time: %s \n" % run['start'].strftime("%Y-%m-%d at %H:%M:%S")
                             body += "  Duration: %02d:%02d\n\n" % (minutes, seconds)
 

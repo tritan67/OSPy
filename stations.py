@@ -11,7 +11,7 @@ from options import options
 
 
 class _Station(object):
-    SAVE_EXCLUDE = ['SAVE_EXCLUDE', 'index', 'active', 'remaining_seconds']
+    SAVE_EXCLUDE = ['SAVE_EXCLUDE', 'index', 'is_master', 'active', 'remaining_seconds']
 
     def __init__(self, stations_instance, index):
         self._stations = stations_instance
@@ -20,6 +20,12 @@ class _Station(object):
         self.name = "Station %02d" % (index+1)
         self.enabled = True
         self.ignore_rain = False
+
+        # Remove (old) master info:
+        opts = options[options.cls_name(self, index)]
+        if 'is_master' in opts:
+            del opts['is_master']
+        options[options.cls_name(self, index)] = opts
 
         options.load(self, index)
 
@@ -77,7 +83,11 @@ class _Station(object):
 
 class _BaseStations(object):
     def __init__(self, count):
-        self._master = None
+        self._loading = True
+        self.master = None
+        options.load(self)
+        self._loading = False
+
         self._stations = []
         self._state = [False] * count
         for i in range(count):
@@ -85,21 +95,6 @@ class _BaseStations(object):
         self.clear()
 
         options.add_callback('output_count', self._resize_cb)
-
-    @property
-    def master(self):
-        return self._master
-
-    @master.setter
-    def master(self, value):
-        old = self._master
-        self._master = value
-
-        #Ensure the change gets saved:
-        if old is not None:
-            options.save(self.get(old), old)
-        if self._master is not None:
-            options.save(self.get(self._master), self._master)
 
     def _activate(self):
         """This function should be used to update real outputs according to self._state."""
@@ -170,6 +165,11 @@ class _BaseStations(object):
         for i in range(len(self._state)):
             self._state[i] = False
         logging.debug("Cleared all outputs")
+
+    def __setattr__(self, key, value):
+        super(_BaseStations, self).__setattr__(key, value)
+        if not key.startswith('_') and not self._loading:
+            options.save(self)
 
 
 class _ShiftStations(_BaseStations):
