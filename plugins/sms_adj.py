@@ -9,7 +9,7 @@ import sys
 import traceback
 
 import web
-import helpers 
+import helpers
 import version
 from inputs import inputs
 from options import options
@@ -85,23 +85,23 @@ class SMSSender(Thread):
         once_text = True
         two_text = True
 
-        while not self._stop.is_set(): 
+        while not self._stop.is_set():
             try:
                 if sms_options["use_sms"]:  # if use_sms is enable (on)
                     if two_text:
-                       log.clear(NAME)
-                       log.info(NAME, 'SMS Modem plug-in is enabled')
-                       once_text = True
-                       two_text = False
+                        log.clear(NAME)
+                        log.info(NAME, 'SMS Modem plug-in is enabled')
+                        once_text = True
+                        two_text = False
                     sms_check(self)  # Check SMS command from modem
 
                 else:
-                    if once_text: 
-                       log.clear(NAME)
-                       log.info(NAME, 'SMS Modem plug-in is disabled')
-                       once_text = False
-                       two_text = True
-                
+                    if once_text:
+                        log.clear(NAME)
+                        log.info(NAME, 'SMS Modem plug-in is disabled')
+                        once_text = False
+                        two_text = True
+
                 self._sleep(10)
 
             except Exception:
@@ -120,12 +120,14 @@ def start():
     if sms_sender is None:
         sms_sender = SMSSender()
 
+
 def stop():
     global sms_sender
     if sms_sender is not None:
         sms_sender.stop()
         sms_sender.join()
         sms_sender = None
+
 
 def sms_check(self):
     """Control and processing SMS"""
@@ -182,7 +184,8 @@ def sms_check(self):
                     ver = version.ver_date
                     dat = datetime.now().strftime('Date: %d.%m.%Y')
                     tim = datetime.now().strftime('Time: %H:%M:%S')
-                    datastr = ('SMS 1/2. ' + dat + ' '+ tim +  ', TEMP: ' + temp + ', IP: ' + ip + ', SW: ' + ver + ', UP: ' + up  )
+                    datastr = (
+                    'SMS 1/2. ' + dat + ' ' + tim + ', TEMP: ' + temp + ', IP: ' + ip + ', SW: ' + ver + ', UP: ' + up  )
                     message = {
                         'Text': datastr,
                         'SMSC': {'Location': 1},
@@ -192,23 +195,23 @@ def sms_check(self):
                     log.info(NAME, datastr)
                     # send 2/2 SMS with text 2
                     if inputs.rain_sensed():
-                       rain = "Active"
+                        rain = "Active"
                     else:
-                       rain = "Inactive"
+                        rain = "Inactive"
                     try:
-                       pressure_reader = plugins.get('pressure_monitor')
-                       state_press = pressure_reader.get_check_pressure()
-                       if state_press:
-                          press = "High"
-                       else:
-                          press = "Low"
+                        pressure_reader = plugins.get('pressure_monitor')
+                        state_press = pressure_reader.get_check_pressure()
+                        if state_press:
+                            press = "High"
+                        else:
+                            press = "Low"
                     except Exception:
-                       press = "None"
+                        press = "None"
                     finished = [run for run in log.finished_runs() if not run['blocked']]
                     if finished:
-                       last_prog = finished[-1]['start'].strftime('%H:%M: ') + finished[-1]['program_name']
+                        last_prog = finished[-1]['start'].strftime('%H:%M: ') + finished[-1]['program_name']
                     else:
-                       last_prog = 'None'   
+                        last_prog = 'None'
                     datastr = ('SMS 2/2. ' + 'RAIN: ' + rain + ', PRESS: ' + press + ', LAST: ' + last_prog)
                     message = {
                         'Text': datastr,
@@ -217,9 +220,9 @@ def sms_check(self):
                     }
                     sm.SendSMS(message) # send sms 2/2
                     log.info(NAME, datastr)
-                    
-                    log.info(NAME, 
-                        'Command: ' + comm1 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+
+                    log.info(NAME,
+                             'Command: ' + comm1 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])  # SMS deleted
                     log.info(NAME, 'Received SMS was deleted')
 
@@ -228,7 +231,7 @@ def sms_check(self):
                     options.scheduler_enabled = False
                     log.finish_run(None)
                     stations.clear()
-                    
+
                     message = {
                         'Text': 'Command: ' + comm2 + ' was processed',
                         'SMSC': {'Location': 1},
@@ -236,7 +239,7 @@ def sms_check(self):
                     }
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + comm2 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                             'Command: ' + comm2 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted')
 
@@ -250,7 +253,7 @@ def sms_check(self):
                     }
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + comm3 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                             'Command: ' + comm3 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted')
 
@@ -263,7 +266,7 @@ def sms_check(self):
                     }
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + comm4 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                             'Command: ' + comm4 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted and system is now reboot')
                     reboot()                    # restart linux system
@@ -277,7 +280,7 @@ def sms_check(self):
                     }
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + comm5 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                             'Command: ' + comm5 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted and system is now poweroff')
                     poweroff()                  # poweroff linux system
@@ -291,7 +294,7 @@ def sms_check(self):
                     }
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + comm6 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                             'Command: ' + comm6 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     try:
                         from plugins.system_update import perform_update
 
@@ -311,26 +314,27 @@ def sms_check(self):
                     }
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + comm7 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                             'Command: ' + comm7 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     try:
                         from webcam import get_run_cam
+
                         get_run_cam() # process save foto to ./data/image.jpg
                         data_image = './data/image.jpg'
                         msg = ('SMS plug-in send image file from webcam.')
 
                         subject = email_options['emlsubject']
                         send_email(self, msg, subject, data_image)
-                       
+
                     except ImportError:
                         log.info(NAME, 'Received SMS was deleted, but could not send email with foto from webcam')
                         message = {
-                        'Text': 'Error: not send foto from webcam',
-                        'SMSC': {'Location': 1},
-                        'Number': m['Number'],
-                         }
-                        sm.SendSMS(message) 
+                            'Text': 'Error: not send foto from webcam',
+                            'SMSC': {'Location': 1},
+                            'Number': m['Number'],
+                        }
+                        sm.SendSMS(message)
                     sm.DeleteSMS(m['Folder'], m['Location'])
-                        
+
                 elif m['Text'] == comm8:        # If command = comm8 (send SMS with available commands)
                     log.info(NAME, 'Command ' + comm8 + ' is processed')
                     message = {
@@ -340,36 +344,37 @@ def sms_check(self):
                     }
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + comm8 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                             'Command: ' + comm8 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted')
 
-                    
+
                 elif m['Text'][0:len(comm9)] == comm9:        # If command = lenght char comm9 (run now program xx)
                     num = m['Text'][len(comm9):]              # number from sms text example: run36 -> num=36
                     log.info(NAME, 'Command ' + comm9 + ' is processed')
                     index = int(num)
                     if index <= programs.count():             # if program number from sms text exists in program db
-                       log.finish_run(None)
-                       stations.clear()
-                       prog = int(index-1)
-                       programs.run_now(prog)
-                       log.info(NAME, 'Program: ' + str(index) + ' now run')
-                       message = {
-                          'Text': 'Program: ' + str(index) + ' now run',
-                          'SMSC': {'Location': 1},
-                          'Number': m['Number'],
-                                 }    
+                        log.finish_run(None)
+                        stations.clear()
+                        prog = int(index - 1)
+                        programs.run_now(prog)
+                        log.info(NAME, 'Program: ' + str(index) + ' now run')
+                        message = {
+                            'Text': 'Program: ' + str(index) + ' now run',
+                            'SMSC': {'Location': 1},
+                            'Number': m['Number'],
+                        }
                     else:
-                       message = {
-                          'Text': 'Program: ' + str(index) + ' no exists!',
-                          'SMSC': {'Location': 1},
-                          'Number': m['Number'],
-                                 }
+                        message = {
+                            'Text': 'Program: ' + str(index) + ' no exists!',
+                            'SMSC': {'Location': 1},
+                            'Number': m['Number'],
+                        }
 
                     sm.SendSMS(message)
                     log.info(NAME,
-                        'Command: ' + str(m['Text']) + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
+                             'Command: ' + str(m['Text']) + ' was processed and confirmation was sent as SMS to: ' + m[
+                                 'Number'])
                     sm.DeleteSMS(m['Folder'], m['Location'])
                     log.info(NAME, 'Received SMS was deleted')
 
@@ -384,16 +389,18 @@ def sms_check(self):
             sm.DeleteSMS(m['Folder'], m['Location'])
             log.info(NAME, 'Received SMS was deleted - SMS was not from admin')
 
+
 def send_email(self, msg, subject, attachments):
     """Send email"""
     mesage = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
-          time.time())) + ' ' + str(msg))
+        time.time())) + ' ' + str(msg))
     try:
-       from plugins.email_notifications import email
-       email(subject, mesage, attachments)    
-       log.info(NAME, 'Email was sent: ' + mesage)
+        from plugins.email_notifications import email
+
+        email(subject, mesage, attachments)
+        log.info(NAME, 'Email was sent: ' + mesage)
     except Exception as err:
-       log.info(NAME, 'Email was not sent! ' + str(err))
+        log.info(NAME, 'Email was not sent! ' + str(err))
 
 ################################################################################
 # Web pages:                                                                   #

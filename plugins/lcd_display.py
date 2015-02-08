@@ -66,12 +66,12 @@ class LCDSender(Thread):
                 if lcd_options['use_lcd']:  # if LCD plugin is enabled
                     log.clear(NAME)
                     line1 = get_report(report_index)
-                    line2 = get_report(report_index+1)
+                    line2 = get_report(report_index + 1)
 
                     if line1 is None:
                         report_index = 0
                         line1 = get_report(report_index)
-                        line2 = get_report(report_index+1)
+                        line2 = get_report(report_index + 1)
 
                     update_lcd(line1, line2)
 
@@ -88,6 +88,7 @@ class LCDSender(Thread):
                 log.error(NAME, 'LCD display plug-in:\n' + err_string)
                 self._sleep(60)
 
+
 lcd_sender = None
 
 
@@ -102,8 +103,9 @@ class DummyLCD(object):
         if line == 1:
             self._lines = text + self._lines[len(text):]
         elif line == 2:
-            self._lines = self._lines[:19] + text + self._lines[19+len(text):]
+            self._lines = self._lines[:19] + text + self._lines[19 + len(text):]
         #log.debug('LCD', self._lines)
+
 
 dummy_lcd = DummyLCD()
 
@@ -193,6 +195,7 @@ def find_lcd_address():
 
     try:
         import smbus
+
         bus = smbus.SMBus(0 if helpers.get_rpi_revision() == 1 else 1)
         # DF - alter RPi version test fallback to value that works on BBB
     except ImportError:
@@ -220,6 +223,7 @@ def update_lcd(line1, line2=None):
 
     if lcd_options['address'] != 0:
         import pylcd2  # Library for LCD 16x2 PCF8574
+
         lcd = pylcd2.lcd(lcd_options['address'], 0 if helpers.get_rpi_revision() == 1 else 1)
         # DF - alter RPi version test fallback to value that works on BBB
     else:

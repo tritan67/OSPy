@@ -66,44 +66,47 @@ class PCFSender(Thread):
 
     def update(self):
         self._sleep_time = 0
-    
+
     def _sleep(self, secs):
         self._sleep_time = secs
         while self._sleep_time > 0 and not self._stop.is_set():
             time.sleep(1)
             self._sleep_time -= 1
-    
+
     def run(self):
         try:
             import smbus  # for PCF 8591
+
             self.adc = smbus.SMBus(1 if get_rpi_revision() >= 2 else 0)
         except ImportError:
             log.warning(NAME, 'Could not import smbus.')
 
         while not self._stop.is_set():
             log.clear(NAME)
-            try:    
+            try:
                 if self.adc is not None and pcf_options['enabled']:  # if pcf plugin is enabled
                     for i in range(4):
-                        val = read_AD(self.adc, i+1)
+                        val = read_AD(self.adc, i + 1)
                         self.status['ad%d_raw' % i] = val
                         self.status['ad%d' % i] = get_temp(val) if pcf_options['ad%d_temp' % i] else get_volt(val)
 
                     log.info(NAME, time.strftime('%Y-%m-%d %H:%M:%S:'))
                     for i in range(4):
-                        log.info(NAME, pcf_options['ad%d_label' % i] + ': ' + format(self.status['ad%d' % i], pcf_options['ad%d_temp' % i]))
+                        log.info(NAME, pcf_options['ad%d_label' % i] + ': ' + format(self.status['ad%d' % i],
+                                                                                     pcf_options['ad%d_temp' % i]))
 
                     if pcf_options['enable_log']:
                         update_log(self.status)
 
                 self._sleep(max(60, pcf_options['log_interval'] * 60))
-               
+
             except Exception:
                 self.adc = None
                 err_string = ''.join(traceback.format_exc())
                 log.error(NAME, 'Voltage and Temperature Monitor plug-in:\n' + err_string)
-                self._sleep(60)            
-                
+                self._sleep(60)
+
+
 pcf_sender = None
 
 ################################################################################
@@ -129,14 +132,14 @@ def stop():
 
 def get_volt(data):
     """Return voltage 0-XX V from number"""
-    volt = data/255.0*pcf_options['voltage']
+    volt = data / 255.0 * pcf_options['voltage']
     volt = round(volt, 1)
     return volt
 
 
 def get_temp(data):
     """Return temperature 0-100C from data"""
-    temp = data/255.0*100
+    temp = data / 255.0 * 100
     temp = round(temp, 1)
     return temp
 

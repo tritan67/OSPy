@@ -23,7 +23,6 @@ from plugins import PluginOptions, plugin_url
 NAME = 'Weather-based Water Level'
 LINK = 'settings_page'
 
-
 plugin_options = PluginOptions(
     NAME,
     {
@@ -102,10 +101,10 @@ class WeatherLevelChecker(Thread):
                     log.info(NAME, 'Using %d days of information.' % len(info))
 
                     total_info = {
-                        'temp_c': sum([val['temp_c'] for val in info.values()])/len(info),
+                        'temp_c': sum([val['temp_c'] for val in info.values()]) / len(info),
                         'rain_mm': sum([val['rain_mm'] for val in info.values()]),
-                        'wind_ms': sum([val['wind_ms'] for val in info.values()])/len(info),
-                        'humidity': sum([val['humidity'] for val in info.values()])/len(info)
+                        'wind_ms': sum([val['wind_ms'] for val in info.values()]) / len(info),
+                        'humidity': sum([val['humidity'] for val in info.values()]) / len(info)
                     }
 
                     # We assume that the default 100% provides 4mm water per day (normal need)
@@ -122,7 +121,8 @@ class WeatherLevelChecker(Thread):
 
                     water_adjustment = round((water_left / (4 * len(info))) * 100, 1)
 
-                    water_adjustment = float(max(plugin_options['wl_min'], min(plugin_options['wl_max'], water_adjustment)))
+                    water_adjustment = float(
+                        max(plugin_options['wl_min'], min(plugin_options['wl_max'], water_adjustment)))
 
                     log.info(NAME, 'Water needed (%d days): %.1fmm' % (len(info), water_needed))
                     log.info(NAME, 'Total rainfall       : %.1fmm' % total_info['rain_mm'])
@@ -130,7 +130,7 @@ class WeatherLevelChecker(Thread):
                     log.info(NAME, 'Irrigation needed    : %.1fmm' % water_left)
                     log.info(NAME, 'Weather Adjustment   : %.1f%%' % water_adjustment)
 
-                    level_adjustments[NAME] = water_adjustment/100
+                    level_adjustments[NAME] = water_adjustment / 100
 
                     self._sleep(3600)
 
@@ -138,6 +138,7 @@ class WeatherLevelChecker(Thread):
                 err_string = ''.join(traceback.format_exc())
                 log.error(NAME, 'Weather-based water level plug-in:\n' + err_string)
                 self._sleep(60)
+
 
 checker = None
 
@@ -150,7 +151,8 @@ def get_wunderground_lid():
     if re.search("pws:", options.location):
         lid = options.location
     else:
-        data = urllib2.urlopen("http://autocomplete.wunderground.com/aq?h=0&query="+urllib.quote_plus(options.location))
+        data = urllib2.urlopen(
+            "http://autocomplete.wunderground.com/aq?h=0&query=" + urllib.quote_plus(options.location))
         data = json.load(data)
         if data is None:
             return ""
@@ -171,7 +173,7 @@ def get_data(suffix, name=None, force=False):
         try:
             if not os.path.exists(path) or force:
                 with open(path, 'wb') as fh:
-                    req = urllib2.urlopen("http://api.wunderground.com/api/"+plugin_options['wapikey']+"/" + suffix)
+                    req = urllib2.urlopen("http://api.wunderground.com/api/" + plugin_options['wapikey'] + "/" + suffix)
                     while True:
                         chunk = req.read(20480)
                         if not chunk:
@@ -234,7 +236,7 @@ def history_info():
     for index in range(-1, -1 - plugin_options['days_history'], -1):
         check_date -= day_delta
         datestring = check_date.strftime('%Y%m%d')
-        request = "history_"+datestring+"/q/"+lid+".json"
+        request = "history_" + datestring + "/q/" + lid + ".json"
 
         data = get_data(request)
 
@@ -260,8 +262,8 @@ def today_info():
 
     datestring = datetime.date.today().strftime('%Y%m%d')
 
-    request = "conditions/q/"+lid+".json"
-    name = "conditions_"+datestring+"/q/"+lid+".json"
+    request = "conditions/q/" + lid + ".json"
+    name = "conditions_" + datestring + "/q/" + lid + ".json"
     data = get_data(request, name, True)
 
     day_info = data['current_observation']
@@ -283,8 +285,8 @@ def forecast_info():
 
     datestring = datetime.date.today().strftime('%Y%m%d')
 
-    request = "forecast10day/q/"+lid+".json"
-    name = "forecast10day_"+datestring+"/q/"+lid+".json"
+    request = "forecast10day/q/" + lid + ".json"
+    name = "forecast10day_" + datestring + "/q/" + lid + ".json"
     data = get_data(request, name)
 
     info = {}

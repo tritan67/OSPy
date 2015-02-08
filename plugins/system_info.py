@@ -18,6 +18,7 @@ LINK = 'status_page'
 def start():
     pass
 
+
 stop = start
 
 
@@ -27,7 +28,7 @@ def get_overview():
 
     meminfo = helpers.get_meminfo()
     netdevs = helpers.get_netdevs()
-    
+
     result.append('System release: ' + platform.release())
     result.append('System name:    ' + platform.system())
     result.append('Node:           ' + platform.node())

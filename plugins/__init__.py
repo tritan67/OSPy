@@ -1,4 +1,3 @@
-
 import pkgutil
 import traceback
 import re
@@ -15,6 +14,7 @@ class PluginOptions(dict):
         self._defaults = defaults.copy()
 
         from options import options
+
         if plugin in options:
             for key, value in options[plugin].iteritems():
                 if key in self:
@@ -35,6 +35,7 @@ class PluginOptions(dict):
             super(PluginOptions, self).__setitem__(key, value)
             if hasattr(self, '_plugin'):
                 from options import options
+
                 options[self._plugin] = self.copy()
         except ValueError:  # No index available yet
             pass
@@ -88,6 +89,7 @@ def plugin_names():
 def plugin_url(cls):
     from webpages import WebPage
     import inspect
+
     if cls is None:
         result = cls
     else:
@@ -133,6 +135,7 @@ def start_enabled_plugins():
     from options import options
     import logging
     from urls import urls
+
     for module in available():
         if module in options.enabled_plugins and module not in __running:
             plugin_name = module
@@ -154,7 +157,7 @@ def start_enabled_plugins():
 
     for module, plugin in __running.copy().iteritems():
         if module not in options.enabled_plugins:
-            import_name = __name__+'.'+module
+            import_name = __name__ + '.' + module
             plugin_name = plugin.NAME
             plugin_urls = _get_urls(import_name, plugin)
             try:

@@ -15,7 +15,6 @@ from plugins import PluginOptions, plugin_url
 NAME = 'Monthly Water Level'
 LINK = 'settings_page'
 
-
 plugin_options = PluginOptions(
     NAME,
     {
@@ -26,7 +25,7 @@ plugin_options = PluginOptions(
 def _sleep_time():
     """Calculates how long to sleep until just after midnight."""
     now = datetime.datetime.now()
-    return 5 + 3600*24 - (now.second + now.minute*60 + now.hour*3600)
+    return 5 + 3600 * 24 - (now.second + now.minute * 60 + now.hour * 3600)
 
 
 class MonthChecker(Thread):
@@ -52,8 +51,8 @@ class MonthChecker(Thread):
 
     def run(self):
         while not self._stop.is_set():
-            month = time.localtime().tm_mon-1  # Current month.
-            level_adjustments[NAME] = plugin_options[month]/100.0  # Set the water level% (levels list is zero based).
+            month = time.localtime().tm_mon - 1  # Current month.
+            level_adjustments[NAME] = plugin_options[month] / 100.0  # Set the water level% (levels list is zero based).
             log.debug(NAME, 'Monthly Adjust: Setting water level to %d%%' % plugin_options[month])
 
             self._sleep(_sleep_time())

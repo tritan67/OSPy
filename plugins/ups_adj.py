@@ -44,13 +44,11 @@ import RPi.GPIO as GPIO  # RPi hardware
 
 pin_power_ok = 16 # GPIO23
 pin_ups_down = 18 # GPIO24
-   
 
 try:
     GPIO.setup(pin_power_ok, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 except NameError:
     pass
-
 
 try:
     GPIO.setmode(GPIO.BOARD) ## Use board pin numbering
@@ -95,66 +93,67 @@ class UPSSender(Thread):
         once_three = True
 
         subject = email_options['emlsubject']
-    
+
         last_time = int(time.time())
-       
-        while not self._stop.is_set(): 
+
+        while not self._stop.is_set():
             try:
                 if ups_options['ups']:                                     # if ups plugin is enabled
-                    test = get_check_power() 
+                    test = get_check_power()
 
                     if not test:
-                      text = 'OK'
+                        text = 'OK'
                     else:
-                      text = 'FAULT'
-                    self.status['power%d'] = text          
-           
+                        text = 'FAULT'
+                    self.status['power%d'] = text
+
                     if not test:
-                       last_time = int(time.time())
+                        last_time = int(time.time())
 
                     if test:                                               # if power line is not active
-                       reboot_time = True                                  # start countdown timer
-                       if once: 
-                          msg = 'UPS plugin detected fault on power line.' # send email with info power line fault
-                          log.info(NAME, msg)
-                          if ups_options['sendeml']:                       # if enabled send email
-                             send_email(self, msg, subject)
-                             once_three = True 
-                          once = False  
+                        reboot_time = True                                  # start countdown timer
+                        if once:
+                            msg = 'UPS plugin detected fault on power line.' # send email with info power line fault
+                            log.info(NAME, msg)
+                            if ups_options['sendeml']:                       # if enabled send email
+                                send_email(self, msg, subject)
+                                once_three = True
+                            once = False
 
                     if reboot_time and test:
-                       count_val = int(ups_options['time'])*60             # value for countdown
-                       actual_time = int(time.time())
-                       log.clear(NAME)
-                       log.info(NAME, 'Time to shutdown: ' + str(count_val - (actual_time - last_time)) + ' sec')  
-                       if ((actual_time - last_time) >= count_val):        # if countdown is 0
-                          last_time = actual_time
-                          test = get_check_power()
-                          if test:                                         # if power line is current not active
-                             log.clear(NAME)
-                             log.info(NAME, 'Power line is not restore in time -> sends email and shutdown system.')
-                             reboot_time = False  
-                             if ups_options['sendeml']:                    # if enabled send email
-                                if once_two:
-                                    msg = 'UPS plugin - power line is not restore in time -> shutdown system!' # send email with info shutdown system
-                                    send_email(self, msg, subject)
-                                    once_two = False 
+                        count_val = int(ups_options['time']) * 60             # value for countdown
+                        actual_time = int(time.time())
+                        log.clear(NAME)
+                        log.info(NAME, 'Time to shutdown: ' + str(count_val - (actual_time - last_time)) + ' sec')
+                        if ((actual_time - last_time) >= count_val):        # if countdown is 0
+                            last_time = actual_time
+                            test = get_check_power()
+                            if test:                                         # if power line is current not active
+                                log.clear(NAME)
+                                log.info(NAME, 'Power line is not restore in time -> sends email and shutdown system.')
+                                reboot_time = False
+                                if ups_options['sendeml']:                    # if enabled send email
+                                    if once_two:
+                                        msg = 'UPS plugin - power line is not restore in time -> shutdown system!' # send email with info shutdown system
+                                        send_email(self, msg, subject)
+                                        once_two = False
 
-                             GPIO.output(pin_ups_down, GPIO.HIGH)          # switch on GPIO fo countdown UPS battery power off 
-                             self._sleep(4)
-                             GPIO.output(pin_ups_down, GPIO.LOW) 
-                             poweroff(1, True)                             # shutdown system      
-           
+                                GPIO.output(pin_ups_down,
+                                            GPIO.HIGH)          # switch on GPIO fo countdown UPS battery power off
+                                self._sleep(4)
+                                GPIO.output(pin_ups_down, GPIO.LOW)
+                                poweroff(1, True)                             # shutdown system
+
                     if not test:
-                         if once_three:
+                        if once_three:
                             if ups_options['sendeml']:                     # if enabled send email
-                               msg = 'UPS plugin - power line has restored - OK.'                               
-                               log.clear(NAME)
-                               log.info(NAME, msg)
-                               send_email(self, msg, subject)   
-                               once = True
-                               once_two = True
-                               once_three = False                
+                                msg = 'UPS plugin - power line has restored - OK.'
+                                log.clear(NAME)
+                                log.info(NAME, msg)
+                                send_email(self, msg, subject)
+                                once = True
+                                once_two = True
+                                once_three = False
 
                 self._sleep(1)
 
@@ -162,6 +161,7 @@ class UPSSender(Thread):
                 err_string = ''.join(traceback.format_exc())
                 log.error(NAME, 'UPS plug-in: \n' + err_string)
                 self._sleep(60)
+
 
 ups_sender = None
 
@@ -173,33 +173,37 @@ def start():
     if ups_sender is None:
         ups_sender = UPSSender()
         log.clear(NAME)
-        log.info(NAME, 'UPS plugin is started.')  
+        log.info(NAME, 'UPS plugin is started.')
+
 
 def stop():
     global ups_sender
     if ups_sender is not None:
         ups_sender.stop()
         ups_sender.join()
-        ups_sender = None   
+        ups_sender = None
+
 
 def send_email(self, msg, subject):
     """Send email"""
     mesage = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
-          time.time())) + ' ' + str(msg))
+        time.time())) + ' ' + str(msg))
     try:
-       from plugins.email_notifications import email
-       email(subject, mesage)     # send email without attachments
-       log.info(NAME, 'Email was sent: ' + mesage)
+        from plugins.email_notifications import email
+
+        email(subject, mesage)     # send email without attachments
+        log.info(NAME, 'Email was sent: ' + mesage)
     except Exception as err:
-       log.info(NAME, 'Email was not sent! ' + str(err))
+        log.info(NAME, 'Email was not sent! ' + str(err))
 
 
 def get_check_power_str():
     if GPIO.input(pin_power_ok) == 0:
-        pwr = ('GPIO Pin = 0 Power line is OK.')  
+        pwr = ('GPIO Pin = 0 Power line is OK.')
     else:
-        pwr = ('GPIO Pin = 1 Power line ERROR.')  
+        pwr = ('GPIO Pin = 1 Power line ERROR.')
     return str(pwr)
+
 
 def get_check_power():
     try:
@@ -227,7 +231,7 @@ class settings_page(ProtectedPage):
         ups_options.web_update(web.input())
 
         if ups_sender is not None:
-           ups_sender.update()
+            ups_sender.update()
         raise web.seeother(plugin_url(settings_page))
 
 

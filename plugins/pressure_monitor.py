@@ -63,7 +63,7 @@ class PressureSender(Thread):
         Thread.__init__(self)
         self.daemon = True
         self._stop = Event()
-        
+
         self._sleep_time = 0
         self.start()
 
@@ -88,67 +88,69 @@ class PressureSender(Thread):
         four_text = True
         five_text = True
 
-        last_time =  int(time.time()) 
+        last_time = int(time.time())
         actual_time = int(time.time())
- 
+
         subject = email_options['emlsubject']
-  
-        while not self._stop.is_set():       
+
+        while not self._stop.is_set():
             try:
                 if pressure_options['use_press_monitor']:                           # if pressure plugin is enabled
-                   four_text = True
-                   if get_master_is_on():                                           # if master station is on
-                       three_text = True
-                       if once_text:						       # text on the web if master is on
-                           log.clear(NAME)
-                           log.info(NAME, 'Master station is ON.')
-                           once_text = False
-                       if get_check_pressure():                                     # if pressure sensor is on
-                           actual_time = int(time.time())
-                           count_val = int(pressure_options['time'])
-                           log.clear(NAME) 
-                           log.info(NAME, 'Time to test pressure sensor: ' + str(count_val - (actual_time - last_time)) + ' sec')   
-                           if actual_time - last_time > int(pressure_options['time']): # wait for activated pressure sensor (time delay)
-                              last_time = actual_time 
-                              if get_check_pressure():                              # if pressure sensor is actual on
-                               #  options.scheduler_enabled = False                  # set scheduler to off 
-                                 log.finish_run(None)                               # save log  
-                                 stations.clear()                                   # set all station to off
-                                 log.clear(NAME)
-                                 log.info(NAME, 'Pressure sensor is not activated in time -> stops all stations and sends email.')
-                                 if pressure_options['sendeml']:                    # if enabled send email
-                                     send = True
-                                      
-                       if not get_check_pressure():
-                           last_time = int(time.time())
-                           if five_text:
-                              once_text = True
-                              five_text = False 
-
-                   if not get_master_is_on():                                    # text on the web if master is off
-                     if stations.master is not None:
-                         if two_text:
+                    four_text = True
+                    if get_master_is_on():                                           # if master station is on
+                        three_text = True
+                        if once_text:                               # text on the web if master is on
                             log.clear(NAME)
-                            log.info(NAME, 'Master station is OFF.')
-                            two_text = False
-                            five_text = True
-                         last_time = int(time.time())
+                            log.info(NAME, 'Master station is ON.')
+                            once_text = False
+                        if get_check_pressure():                                     # if pressure sensor is on
+                            actual_time = int(time.time())
+                            count_val = int(pressure_options['time'])
+                            log.clear(NAME)
+                            log.info(NAME, 'Time to test pressure sensor: ' + str(
+                                count_val - (actual_time - last_time)) + ' sec')
+                            if actual_time - last_time > int(
+                                    pressure_options['time']): # wait for activated pressure sensor (time delay)
+                                last_time = actual_time
+                                if get_check_pressure():                              # if pressure sensor is actual on
+                                #  options.scheduler_enabled = False                  # set scheduler to off
+                                    log.finish_run(None)                               # save log
+                                    stations.clear()                                   # set all station to off
+                                    log.clear(NAME)
+                                    log.info(NAME,
+                                             'Pressure sensor is not activated in time -> stops all stations and sends email.')
+                                    if pressure_options['sendeml']:                    # if enabled send email
+                                        send = True
+
+                        if not get_check_pressure():
+                            last_time = int(time.time())
+                            if five_text:
+                                once_text = True
+                                five_text = False
+
+                    if not get_master_is_on():                                    # text on the web if master is off
+                        if stations.master is not None:
+                            if two_text:
+                                log.clear(NAME)
+                                log.info(NAME, 'Master station is OFF.')
+                                two_text = False
+                                five_text = True
+                            last_time = int(time.time())
 
                 else:
-                    once_text = True 
+                    once_text = True
                     two_text = True
                     if four_text:                                                # text on the web if plugin is disabled
-                       log.clear(NAME)  
-                       log.info(NAME, 'Pressure monitor plug-in is disabled.')
-                       four_text = False                
-    
+                        log.clear(NAME)
+                        log.info(NAME, 'Pressure monitor plug-in is disabled.')
+                        four_text = False
+
                 if stations.master is None:                                      # text on the web if master station is none
-                        if three_text:
-                           log.clear(NAME)
-                           log.info(NAME, 'Not used master station.')
-                           three_text = False
-  
-              
+                    if three_text:
+                        log.clear(NAME)
+                        log.info(NAME, 'Not used master station.')
+                        three_text = False
+
                 if send:
                     TEXT = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
                         time.time())) + ' System detected error: pressure sensor.')
@@ -158,13 +160,14 @@ class PressureSender(Thread):
                         send = False
                     except Exception as err:
                         log.error(NAME, 'Email was not sent! ' + str(err))
-               
+
                 self._sleep(1)
 
             except Exception:
                 err_string = ''.join(traceback.format_exc())
                 log.error(NAME, 'Pressure monitor plug-in:\n' + err_string)
                 self._sleep(60)
+
 
 pressure_sender = None
 
@@ -184,6 +187,7 @@ def stop():
         pressure_sender.join()
         pressure_sender = None
 
+
 def get_check_pressure():
     try:
         if pressure_options['normally']:
@@ -200,14 +204,15 @@ def get_check_pressure():
     except NameError:
         pass
 
+
 def get_master_is_on():
     if stations.master is not None and not options.manual_mode:              # if is use master station and not manual control
-       for station in stations.get():
-          if station.is_master:                                              # if station is master
-             if station.active:                                              # if master is active
-                return True
-             else:
-                return False
+        for station in stations.get():
+            if station.is_master:                                              # if station is master
+                if station.active:                                              # if master is active
+                    return True
+                else:
+                    return False
 
 
 ################################################################################

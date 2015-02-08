@@ -17,6 +17,7 @@ LINK = 'status_page'
 def start():
     pass
 
+
 stop = start
 
 
@@ -40,16 +41,17 @@ class status_page(ProtectedPage):
     def GET(self):
         return self.template_render.plugins.system_debug(get_overview())
 
+
 class delete_page(ProtectedPage):
     """delete data/events.log file"""
 
     def POST(self):
         try:
             with open('./data/events.log', 'w') as outfile:
-              json.dump(json_data, outfile)
+                json.dump(json_data, outfile)
 
             raise web.seeother(plugin_url(status_page))
-            
+
         except:
             raise web.seeother(plugin_url(status_page))
 

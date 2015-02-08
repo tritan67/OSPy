@@ -114,6 +114,7 @@ class StatusChecker(Thread):
                 log.error(NAME, 'System update plug-in:\n' + err_string)
                 self._sleep(60)
 
+
 checker = None
 
 

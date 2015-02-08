@@ -12,6 +12,7 @@ LINK = 'test_page'
 
 class test_page(ProtectedPage):
     """Test relay by turning it on for a short time, then off."""
+
     def GET(self):
         try:
             outputs.relay_output = True
@@ -24,4 +25,6 @@ class test_page(ProtectedPage):
 
 def start():
     pass
+
+
 stop = start

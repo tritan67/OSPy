@@ -58,45 +58,47 @@ class weather_to_delay(Thread):
         while not self._stop.is_set():
             try:
                 if plugin_options['enabled']:         # if Weather-based Rain Delay plug-in is enabled
-                   if once_text:                      # text enabled on the status window
-                      log.clear(NAME)
-                      log.info(NAME, 'Weather-based Rain Delay plug-in is enabled.')
-                      once_text = False
-                      two_text = True
-   
-                   log.info(NAME, 'Checking rain status...')
+                    if once_text:                      # text enabled on the status window
+                        log.clear(NAME)
+                        log.info(NAME, 'Weather-based Rain Delay plug-in is enabled.')
+                        once_text = False
+                        two_text = True
 
-                   weather = get_weather_data() if plugin_options['weather_provider'] == "yahoo" else get_wunderground_weather_data()
-                   delay = code_to_delay(weather['code'])
+                    log.info(NAME, 'Checking rain status...')
 
-                   if delay > 0:
-                      log.info(NAME, 'Rain detected: ' + weather['text'] + '. Adding delay of ' + str(delay))
-                      options.rain_block = datetime.datetime.now() + datetime.timedelta(hours=float(delay))
-                      stop_onrain()
+                    weather = get_weather_data() if plugin_options[
+                                                        'weather_provider'] == "yahoo" else get_wunderground_weather_data()
+                    delay = code_to_delay(weather['code'])
 
-                   elif delay == 0:
-                      log.info(NAME, 'No rain detected: ' + weather['text'] + '. No action.')
+                    if delay > 0:
+                        log.info(NAME, 'Rain detected: ' + weather['text'] + '. Adding delay of ' + str(delay))
+                        options.rain_block = datetime.datetime.now() + datetime.timedelta(hours=float(delay))
+                        stop_onrain()
 
-                   elif delay < 0:
-                      log.info(NAME, 'Good weather detected: ' + weather['text'] + '. Removing rain delay.')
-                      options.rain_block = datetime.datetime.now()            
-                    
-                   self._sleep(3600)
+                    elif delay == 0:
+                        log.info(NAME, 'No rain detected: ' + weather['text'] + '. No action.')
+
+                    elif delay < 0:
+                        log.info(NAME, 'Good weather detected: ' + weather['text'] + '. Removing rain delay.')
+                        options.rain_block = datetime.datetime.now()
+
+                    self._sleep(3600)
 
 
                 else:
-                   if two_text:                       # text disabled on the status window
-                      log.clear(NAME)
-                      log.info(NAME, 'Weather-based Rain Delay plug-in is disabled.')
-                      two_text = False
-                      once_text = True
+                    if two_text:                       # text disabled on the status window
+                        log.clear(NAME)
+                        log.info(NAME, 'Weather-based Rain Delay plug-in is disabled.')
+                        two_text = False
+                        once_text = True
 
-                   self._sleep(1)
+                    self._sleep(1)
 
             except Exception:
                 err_string = ''.join(traceback.format_exc())
                 log.error(NAME, 'Weather-based Rain Delay plug-in:\n' + err_string)
                 self._sleep(60)
+
 
 checker = None
 
@@ -123,7 +125,8 @@ def get_wunderground_lid():
     if re.search("pws:", options.location):
         lid = options.location
     else:
-        data = urllib2.urlopen("http://autocomplete.wunderground.com/aq?h=0&query=" + urllib.quote_plus(options.location))
+        data = urllib2.urlopen(
+            "http://autocomplete.wunderground.com/aq?h=0&query=" + urllib.quote_plus(options.location))
         data = json.load(data)
         if data is None:
             return ""
@@ -160,7 +163,8 @@ def get_wunderground_weather_data():
     lid = get_wunderground_lid()
     if lid == "":
         return []
-    data = urllib2.urlopen("http://api.wunderground.com/api/" + plugin_options['wapikey'] + "/conditions/q/" + lid + ".json")
+    data = urllib2.urlopen(
+        "http://api.wunderground.com/api/" + plugin_options['wapikey'] + "/conditions/q/" + lid + ".json")
     data = json.load(data)
     if data is None:
         return {}
