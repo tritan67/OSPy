@@ -88,6 +88,7 @@ class _Program(object):
     def start_now(self):
         first_offset = datetime.timedelta(minutes=self._schedule[0][0])
         self._manual = True
+        self._schedule = [interval for interval in self.typed_schedule() if interval[1] <= 1440]
         self._start = datetime.datetime.now() - first_offset  # Make sure the first interval starts now
 
     def _day_str(self, index):
