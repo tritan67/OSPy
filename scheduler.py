@@ -155,9 +155,6 @@ def predicted_schedule(start_time, end_time):
     # Make list of entries sorted on time (stable sorted on station #)
     all_intervals.sort(key=lambda inter: inter['start'])
 
-    # And make sure manual programs get priority:
-    all_intervals.sort(key=lambda inter: not inter['manual'])
-
     # If we have processed some intervals before, we should skip all that were scheduled before them
     for i in range(len(skip_uids)):
         for j in range(len(all_intervals)):
@@ -165,6 +162,9 @@ def predicted_schedule(start_time, end_time):
                 for k in range(j+1):
                     del all_intervals[0]
                 break
+
+    # And make sure manual programs get priority:
+    all_intervals.sort(key=lambda inter: not inter['manual'])
 
     # Try to add each interval
     for interval in all_intervals:
@@ -240,6 +240,8 @@ class _Scheduler(Thread):
     def _option_cb(self, key, old, new):
         # Clear if manual mode changed:
         if key == 'manual_mode':
+            programs.run_now_program = None
+            run_once.clear()
             log.finish_run(None)
             stations.clear()
 

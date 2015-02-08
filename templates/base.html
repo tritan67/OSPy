@@ -113,7 +113,8 @@ $def with (content)
                     <div id="nav">
                         <button id="bHome" class="home${' here' if content.page=='home' else ''}" title="Home">Home</button>
                         <button id="bPrograms" class="programs${' here' if content.page=='programs' else ''}" title="Define Programs">Programs</button>
-                        <button id="bRunOnce" class="start${' here' if content.page=='runonce' else ''}" title="Define Run Once Program">Run Once</button>
+                        $if not options.manual_mode:
+                            <button id="bRunOnce" class="start${' here' if content.page=='runonce' else ''}" title="Define Run Once Program">Run Once</button>
                         <button id="bPlugins" class="plugins${' here' if content.page=='plugins' else ''}" title="Access Plugins">Plugins</button>
                         <button id="bLog" class="log${' here' if content.page=='log' else ''}" title="View Log">Log</button>
                         <button id="bOptions" class="options${' here' if content.page=='options' else ''}" title="Options">Options</button>

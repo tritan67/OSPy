@@ -96,6 +96,8 @@ class home_page(ProtectedPage):
         if 'stop_all' in qdict and qdict['stop_all'] == '1':
             if not options.manual_mode:
                 options.scheduler_enabled = False
+                programs.run_now_program = None
+                run_once.clear()
             log.finish_run(None)
             stations.clear()
             raise web.seeother('/')
@@ -230,8 +232,6 @@ class runonce_page(ProtectedPage):
                 station_seconds[station.index] = seconds
 
         run_once.set(station_seconds)
-        log.finish_run(None)
-        stations.clear()
         raise web.seeother('/runonce')
 
 
