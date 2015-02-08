@@ -5,7 +5,6 @@ __author__ = 'Rimco'
 # System imports
 from threading import Thread
 import datetime
-import logging
 import time
 
 # Local imports
@@ -239,9 +238,7 @@ class _Scheduler(Thread):
             log.finish_run(None)
 
     def _option_cb(self, key, old, new):
-        # Clear if:
-        #   - Manual mode changed
-        #   - Scheduler was disabled
+        # Clear if manual mode changed:
         if key == 'manual_mode':
             log.finish_run(None)
             stations.clear()
@@ -259,7 +256,7 @@ class _Scheduler(Thread):
 
         while True:
             self._check_schedule()
-            time.sleep(5)
+            time.sleep(1)
 
     @staticmethod
     def _check_schedule():
@@ -292,8 +289,6 @@ class _Scheduler(Thread):
 
             # It's easy if we don't have to use delays:
             if options.master_on_delay == options.master_off_delay == 0:
-                active = log.active_runs()
-
                 for entry in active:
                     if not entry['blocked'] and stations.get(entry['station']).activate_master:
                         master_on = True
@@ -302,7 +297,7 @@ class _Scheduler(Thread):
             else:
                 # In manual mode we cannot predict, we only know what is currently running and the history
                 if options.manual_mode:
-                    active = log.finished_runs() + log.active_runs()
+                    active = log.finished_runs() + active
                 else:
                     active = combined_schedule(check_start, check_end)
 

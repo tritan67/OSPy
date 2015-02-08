@@ -343,6 +343,7 @@ class get_set_station_page(ProtectedPage):
                     'manual': True,
                     'blocked': False,
                     'start': start,
+                    'original_start': start,
                     'end': start + datetime.timedelta(days=3650),
                     'uid': '%s-%s-%d' % (str(start), "Manual", sid),
                     'usage': 1.0  # FIXME

@@ -59,7 +59,6 @@ class _Program(object):
         except ValueError:
             return -1
 
-
     @property
     def schedule(self):
         return [interval[:] for interval in self._schedule]
@@ -85,6 +84,11 @@ class _Program(object):
     @property
     def start(self):
         return self._start
+
+    def start_now(self):
+        first_offset = datetime.timedelta(minutes=self._schedule[0][0])
+        self._manual = True
+        self._start = datetime.datetime.now() - first_offset  # Make sure the first interval starts now
 
     def _day_str(self, index):
         if self.type != ProgramType.CUSTOM and self.type != ProgramType.REPEAT_ADVANCED:
@@ -488,9 +492,7 @@ class _Programs(object):
             if program.type != ProgramType.WEEKLY_ADVANCED and program.type != ProgramType.CUSTOM:
                 if len(program.schedule) > 0:
                     run_now_p = _Program(self, index)  # Create a copy using the information saved in options
-                    run_now_p.manual = True
-                    first_offset = datetime.timedelta(minutes=run_now_p.schedule[0][0])
-                    run_now_p.start = datetime.datetime.now() - first_offset  # Make sure the first interval starts now
+                    run_now_p.start_now()
                     self.run_now_program = run_now_p
 
     def count(self):

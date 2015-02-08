@@ -29,7 +29,7 @@ class _Log(logging.Handler):
         self._plugin_time = time.time() + 3
 
         # Remove old entries:
-        self.clear_runs(False)
+        self._prune('Run')
 
     @property
     def level(self):
@@ -46,10 +46,10 @@ class _Log(logging.Handler):
                 result.append(entry)
                 if 0 < options.run_entries <= len(result):
                     break
-            options.logged_runs = result
+        options.logged_runs = result
 
-    def _save_log(self, msg, level, event_type):
-        self._save_logs()
+    @staticmethod
+    def _save_log(msg, level, event_type):
         msg = msg.encode('ascii', 'replace')
 
         # Print if it we are debugging, if it is general information or if it is important
@@ -121,6 +121,8 @@ class _Log(logging.Handler):
                     if uid is not None:
                         break
 
+            self._prune('Run')
+
     def active_runs(self):
         return [run['data'].copy() for run in self._log['Run'] if run['data']['active']]
 
@@ -176,8 +178,8 @@ class _Log(logging.Handler):
     def error(self, event_type, message):
         self.log_event(event_type, message, logging.ERROR)
 
-    def clear_runs(self, all=True):
-        if all:
+    def clear_runs(self, all_entries=True):
+        if all_entries or not options.run_log:  # User request or logging is disabled
             minimum = 0
         elif options.run_entries > 0:
             minimum = options.run_entries
@@ -195,6 +197,8 @@ class _Log(logging.Handler):
                 if (last_start - interval['end']).total_seconds() > max(options.station_delay,
                                                                         options.master_off_delay, 60):
                     del self._log['Run'][index]
+
+        self._save_logs()
 
     def clear(self, event_type):
         if event_type != 'Run':
