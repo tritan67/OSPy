@@ -50,6 +50,7 @@ class _Log(logging.Handler):
 
     def _save_log(self, msg, level, event_type):
         self._save_logs()
+        msg = msg.encode('ascii', 'replace')
 
         # Print if it we are debugging, if it is general information or if it is important
         if options.debug_log or (event_type == 'Event' and level >= logging.INFO) or level >= logging.WARNING:
