@@ -22,10 +22,11 @@ class _Station(object):
         self.ignore_rain = False
 
         # Remove (old) master info:
-        opts = options[options.cls_name(self, index)]
-        if 'is_master' in opts:
-            del opts['is_master']
-        options[options.cls_name(self, index)] = opts
+        if options.cls_name(self, index) in options:
+            opts = options[options.cls_name(self, index)]
+            if 'is_master' in opts:
+                del opts['is_master']
+            options[options.cls_name(self, index)] = opts
 
         options.load(self, index)
 
