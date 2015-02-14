@@ -34,6 +34,7 @@ $var page: stations
             <tr>
                 <th class="stationNumber">Station</th>
                 <th class="stationName">Name</th>
+                <th class="stationUsage">Usage</th>
                 <th class="stationShow">Connected?</th>
                 <th class="stationIgnore">Ignore Rain?</th>
                 $if stations.master is not None:
@@ -45,8 +46,11 @@ $var page: stations
                     <td class="stationName">
                         <input type="text" size="32" value="${station.name}" name="${station.index}_name">
                     </td>
+                    <td class="stationUsage">
+                        <input type="number" size="3" maxlength="3" value="${str(station.usage)}" name="${station.index}_usage">
+                    </td>
                     $if station.is_master:
-                        <td class="stationMaster" colspan="3">(Master station)</td>
+                        <td class="stationMaster" colspan="4">(Master station)</td>
                     $else:
                         <td class="stationShow">
                             <input type="checkbox" ${"checked" if station.enabled else ""} name="${station.index}_enabled">

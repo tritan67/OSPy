@@ -20,6 +20,7 @@ class _Station(object):
         self.name = "Station %02d" % (index+1)
         self.enabled = True
         self.ignore_rain = False
+        self.usage = 1.0
 
         # Remove (old) master info:
         if options.cls_name(self, index) in options:
@@ -80,6 +81,10 @@ class _Station(object):
                 options.save(self, self.index)
         except ValueError:  # No index available yet
             pass
+
+        if key == 'usage' and value > options.max_usage:
+            logging.warning('The usage of %s is more than the maximum allowed usage, '
+                            'scheduling it will be impossible.', self.name)
 
 
 class _BaseStations(object):

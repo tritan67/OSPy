@@ -260,12 +260,12 @@ def save_to_options(qdict):
                 value = qdict[key]
                 if isinstance(option['default'], bool):
                     options[key] = True if value and value != "off" else False
-                elif isinstance(option['default'], int):
-                    if 'min' in option and int(qdict[key]) < option['min']:
+                elif isinstance(option['default'], int) or isinstance(option['default'], float):
+                    if 'min' in option and float(qdict[key]) < option['min']:
                         continue
-                    if 'max' in option and int(qdict[key]) > option['max']:
+                    if 'max' in option and float(qdict[key]) > option['max']:
                         continue
-                    options[key] = int(qdict[key])
+                    options[key] = type(option['default'])(qdict[key])
                 else:
                     options[key] = qdict[key]
             elif multi_enum:

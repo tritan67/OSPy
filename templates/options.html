@@ -110,7 +110,7 @@ $var page: options
                     output += "</div>\n"
                 elif isinstance(value, bool):
                     output += "<input name='" + name + "' type='checkbox' " + ("checked" if value>0 else "") + ">\n"
-                elif isinstance(value, int):
+                elif isinstance(value, int) or isinstance(value, float):
                     output += "<input name='" + name + "' type='number'" + minv + maxv + " size='3' maxlength='3' value='" + str(value) + "'>\n"
                 else:
                     output += "<input name='" + name + "' type='text' size='31' value='" + str(value) + "'>\n"

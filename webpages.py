@@ -300,6 +300,7 @@ class stations_page(ProtectedPage):
 
         for s in xrange(0, stations.count()):
             stations[s].name = qdict["%d_name" % s]
+            stations[s].usage = float(qdict.get("%d_usage" % s, 1.0))
             stations[s].enabled = True if qdict.get("%d_enabled" % s, 'off') == 'on' else False
             stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'off') == 'on' else False
             if stations.master is not None:

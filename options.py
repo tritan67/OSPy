@@ -79,10 +79,11 @@ class _Options(object):
         #######################################################################
         # Station Handling ####################################################
         {
-            "key": "sequential",
-            "name": "Sequential",
-            "default": True,
-            "help": "Sequential or concurrent running mode.",
+            "key": "max_usage",
+            "name": "Maximum usage",
+            "default": 1.0,
+            "help": "Determines how schedules of different stations are combined. "
+                    "0 is no limit. 1 is sequential in case all stations have a usage of 1.",
             "category": "Station Handling"
         },
         {
