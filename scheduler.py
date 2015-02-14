@@ -24,7 +24,7 @@ def predicted_schedule(start_time, end_time):
     To calculate what should currently be active, a start time of some time (a day) ago should be used."""
 
     adjustment = level_adjustments.total_adjustment()
-    max_usage = options.max_usage + 1e-9  # Add a tiny bit to prevent float comparison problems
+    max_usage = options.max_usage
     delay_delta = datetime.timedelta(seconds=options.station_delay)
 
     rain_block_start = datetime.datetime.now()
@@ -131,7 +131,7 @@ def predicted_schedule(start_time, end_time):
 
     # Make lists sorted on start time, check usage
     for station in station_schedules:
-        if stations.get(station).usage > max_usage:
+        if 0 < max_usage < stations.get(station).usage:
             station_schedules[station] = []  # Impossible to schedule
         else:
             station_schedules[station].sort(key=lambda inter: inter['start'])
@@ -193,63 +193,64 @@ def predicted_schedule(start_time, end_time):
             interval['blocked'] = 'cut-off'
             continue
 
-        usage_keys = sorted(usage_changes.keys())
-        start_usage = 0
-        start_key_index = -1
+        if max_usage > 0:
+            usage_keys = sorted(usage_changes.keys())
+            start_usage = 0
+            start_key_index = -1
 
-        for index, key in enumerate(usage_keys):
-            if key > interval['start']:
-                break
-            start_key_index = index
-            start_usage += usage_changes[key]
-
-        failed = False
-        finished = False
-        while not failed and not finished:
-            parallel_usage = 0
-            parallel_current = 0
-            for index in range(start_key_index+1, len(usage_keys)):
-                key = usage_keys[index]
-                if key >= interval['end']:
+            for index, key in enumerate(usage_keys):
+                if key > interval['start']:
                     break
-                parallel_current += usage_changes[key]
-                parallel_usage = max(parallel_usage, parallel_current)
+                start_key_index = index
+                start_usage += usage_changes[key]
 
-            if start_usage + parallel_usage + interval['usage'] <= max_usage:
+            failed = False
+            finished = False
+            while not failed and not finished:
+                parallel_usage = 0
+                parallel_current = 0
+                for index in range(start_key_index+1, len(usage_keys)):
+                    key = usage_keys[index]
+                    if key >= interval['end']:
+                        break
+                    parallel_current += usage_changes[key]
+                    parallel_usage = max(parallel_usage, parallel_current)
 
-                start = interval['start']
-                end = interval['end']
-                if start not in usage_changes:
-                    usage_changes[start] = 0
-                if end not in usage_changes:
-                    usage_changes[end] = 0
+                if start_usage + parallel_usage + interval['usage'] <= max_usage:
 
-                usage_changes[start] += interval['usage']
-                usage_changes[end] -= interval['usage']
-                finished = True
-            else:
-                while not failed:
-                    # Shift this interval to next possibility
-                    start_key_index += 1
+                    start = interval['start']
+                    end = interval['end']
+                    if start not in usage_changes:
+                        usage_changes[start] = 0
+                    if end not in usage_changes:
+                        usage_changes[end] = 0
 
-                    # No more options
-                    if start_key_index >= len(usage_keys):
-                        failed = True
-                    else:
-                        next_option = usage_keys[start_key_index]
-                        next_change = usage_changes[next_option]
-                        start_usage += next_change
+                    usage_changes[start] += interval['usage']
+                    usage_changes[end] -= interval['usage']
+                    finished = True
+                else:
+                    while not failed:
+                        # Shift this interval to next possibility
+                        start_key_index += 1
 
-                        # Lower usage at this starting point:
-                        if next_change < 0:
-                            time_to_next = next_option + delay_delta - interval['start']
-                            interval['start'] += time_to_next
-                            interval['end'] += time_to_next
-                            break
+                        # No more options
+                        if start_key_index >= len(usage_keys):
+                            failed = True
+                        else:
+                            next_option = usage_keys[start_key_index]
+                            next_change = usage_changes[next_option]
+                            start_usage += next_change
 
-        if failed:
-            logging.warning('Could not schedule %s.', interval['uid'])
-            interval['blocked'] = 'scheduler error'
+                            # Lower usage at this starting point:
+                            if next_change < 0:
+                                time_to_next = next_option + delay_delta - interval['start']
+                                interval['start'] += time_to_next
+                                interval['end'] += time_to_next
+                                break
+
+            if failed:
+                logging.warning('Could not schedule %s.', interval['uid'])
+                interval['blocked'] = 'scheduler error'
 
 
 
