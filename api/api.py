@@ -3,12 +3,12 @@ __author__ = 'Teodor Yantcheff'
 
 from utils import *
 
-import version
-from stations import stations
-from options import options
-from programs import programs, ProgramType
-from log import log
-import helpers
+from ospy import version
+from ospy.stations import stations
+from ospy.options import options
+from ospy.programs import programs, ProgramType
+from ospy.log import log
+from ospy import helpers
 
 urls = (
     # Stations

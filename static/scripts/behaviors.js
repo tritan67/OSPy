@@ -52,6 +52,9 @@ jQuery(document).ready(function(){
     jQuery("button#bStations").click(function(){
         window.location = "/stations";
     });
+    jQuery("button#bHelp").click(function(){
+        window.location = "/help";
+    });
     jQuery("button#bPrograms").click(function(){
         window.location = "/programs";
     });

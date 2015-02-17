@@ -1,0 +1,35 @@
+$def with (docs)
+
+$var title: Help
+$var page: help
+
+<script>
+function load_doc(e) {
+    if(window.location.hash) {
+        jQuery("#help_contents").load("/help?id=" + window.location.hash.substring(1));
+    } else {
+        jQuery("#help_contents").load("/help?id=1");
+    }
+}
+
+jQuery(document).ready(load_doc);
+jQuery(window).bind('hashchange', load_doc);
+
+</script>
+
+<div id="help">
+    <div class="title">Help</div>
+    <div class="simpleblock" style="min-height: 350px; display: table; box-sizing: border-box; width: 100%">
+        <div style="vertical-align:top; display: table-cell; min-width: 200px; padding:5px; border-right: solid 1px; text-wrap: none;">
+            $for index, doc_entry in enumerate(docs):
+                $if isinstance(doc_entry, tuple):
+                    <p><a href="#${index}">${doc_entry[0]}</a></p>
+                $else:
+                    <h3 style="margin-bottom: 0;">${doc_entry}</h3>
+
+        </div>
+        <div id="help_contents" style="vertical-align:top; display: table-cell; width: 80%; padding:5px;">
+
+        </div>
+    </div>
+</div>

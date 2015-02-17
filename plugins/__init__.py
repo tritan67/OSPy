@@ -8,12 +8,30 @@ __all__ = [] # No modules should be accessed statically
 __running = {}
 
 
+class PluginStaticMiddleware(web.httpserver.StaticMiddleware):
+    """WSGI middleware for serving static plugin files.
+    This ensures all URLs starting with /p/static/plugin_name are mapped correctly."""
+
+    def __call__(self, environ, start_response):
+        upath = environ.get('PATH_INFO', '')
+        upath = self.normpath(upath)
+
+        if upath.startswith('/p' + self.prefix):
+            parts = upath.split('/')
+            if len(parts) > 3:
+                module = parts[3]
+                environ["PATH_INFO"] = '/'.join(['plugins', module, 'static'] + parts[4:])
+            return web.httpserver.StaticApp(environ, start_response)
+        else:
+            return self.app(environ, start_response)
+
+
 class PluginOptions(dict):
     def __init__(self, plugin, defaults):
         super(PluginOptions, self).__init__(defaults.iteritems())
         self._defaults = defaults.copy()
 
-        from options import options
+        from ospy.options import options
 
         if plugin in options:
             for key, value in options[plugin].iteritems():
@@ -34,7 +52,7 @@ class PluginOptions(dict):
         try:
             super(PluginOptions, self).__setitem__(key, value)
             if hasattr(self, '_plugin'):
-                from options import options
+                from ospy.options import options
 
                 options[self._plugin] = self.copy()
         except ValueError:  # No index available yet
@@ -69,7 +87,7 @@ def available():
 
 def plugin_name(plugin):
     """Tries to find the name of the given plugin without importing it yet."""
-    filename = path.join(path.dirname(__file__), plugin + '.py')
+    filename = path.join(path.dirname(__file__), plugin, '__init__.py')
     try:
         with open(filename) as fh:
             for line in fh:
@@ -87,7 +105,7 @@ def plugin_names():
 
 
 def plugin_url(cls):
-    from webpages import WebPage
+    from ospy.webpages import WebPage
     import inspect
 
     if cls is None:
@@ -116,8 +134,34 @@ def plugin_url(cls):
     return result
 
 
+def plugin_dir(module=None):
+    my_dir = path.dirname(path.abspath(__file__))
+
+    if module is not None:
+        if module.startswith('plugins.'):
+            module = module[8:]
+    else:
+        stack = traceback.extract_stack()
+        module = ''
+        for tb in reversed(stack):
+            tb_dir = path.dirname(path.abspath(tb[0]))
+            if 'plugins' in tb_dir and tb_dir != my_dir:
+                module = path.basename(tb_dir)
+                break
+
+    return path.join(my_dir, module)
+
+
+def plugin_data_dir(module=None):
+    return path.join(plugin_dir(module), 'data')
+
+
+def plugin_docs_dir(module=None):
+    return path.join(plugin_dir(module), 'docs')
+
+
 def _get_urls(import_name, plugin):
-    from webpages import WebPage
+    from ospy.webpages import WebPage
     import inspect
 
     result = []
@@ -132,33 +176,35 @@ def _get_urls(import_name, plugin):
 
 
 def start_enabled_plugins():
-    from options import options
+    from ospy.options import options
     import logging
-    from urls import urls
+    from ospy.urls import urls
 
     for module in available():
         if module in options.enabled_plugins and module not in __running:
-            plugin_name = module
+            plugin_n = module
             import_name = __name__ + '.' + module
             try:
                 plugin = getattr(__import__(import_name), module)
-                plugin_name = plugin.NAME
+                plugin_n = plugin.NAME
+                plugin.start()
+                __running[module] = plugin
+                logging.info('Started the {} plug-in.'.format(plugin_n))
+
                 if plugin.LINK is not None and not (plugin.LINK.startswith(module) or plugin.LINK.startswith(__name__)):
                     plugin.LINK = module + '.' + plugin.LINK
                 plugin_urls = _get_urls(import_name, plugin)
                 urls += plugin_urls
-                __running[module] = plugin
-                plugin.start()
-                logging.info('Started the {} plug-in.'.format(plugin_name))
+
             except Exception as e:
-                logging.info('Failed to load the {} plug-in:'.format(plugin_name))
+                logging.info('Failed to load the {} plug-in:'.format(plugin_n))
                 traceback.print_exc()
                 options.enabled_plugins.remove(module)
 
     for module, plugin in __running.copy().iteritems():
         if module not in options.enabled_plugins:
             import_name = __name__ + '.' + module
-            plugin_name = plugin.NAME
+            plugin_n = plugin.NAME
             plugin_urls = _get_urls(import_name, plugin)
             try:
                 for url in plugin_urls:
@@ -166,9 +212,9 @@ def start_enabled_plugins():
                         urls.remove(url)
                 plugin.stop()
                 del __running[module]
-                logging.info('Stopped the {} plug-in.'.format(plugin_name))
+                logging.info('Stopped the {} plug-in.'.format(plugin_n))
             except Exception as e:
-                logging.info('Failed to stop the {} plug-in:'.format(plugin_name))
+                logging.info('Failed to stop the {} plug-in:'.format(plugin_n))
                 traceback.print_exc()
 
 
