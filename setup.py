@@ -25,7 +25,7 @@ def del_rw(action, name, exc):
         os.rmdir(name)
 
 
-def install_package(module, easy_install=None, package=None, git=None, git_exec=None):
+def install_package(module, easy_install=None, package=None, git=None, git_execs=None, zipfile=None, zip_cwd=None, zip_execs=None):
     try:
         print 'Checking %s' % module
         __import__(module)
@@ -40,36 +40,57 @@ def install_package(module, easy_install=None, package=None, git=None, git_exec=
         try:
             subprocess.check_call(['easy_install', easy_install])
             done = True
-        except subprocess.CalledProcessError:
-            print 'Failed to use easy_install.'
+        except Exception as err:
+            print 'Failed to use easy_install:', err
 
     if sys.platform.startswith('linux'):
         if not done and package is not None:
             try:
                 subprocess.check_call('apt-get install'.split() + [package])
                 done = True
-            except subprocess.CalledProcessError:
-                print 'Failed to use apt-get.'
+            except Exception as err:
+                print 'Failed to use apt-get:', err
 
         if not done and package is not None:
             try:
                 subprocess.check_call('yum install'.split() + [package])
                 done = True
-            except subprocess.CalledProcessError:
-                print 'Failed to use yum.'
+            except Exception as err:
+                print 'Failed to use yum:', err
 
-    if not done and git is not None and git_exec is not None:
+    if not done and git is not None and git_execs is not None:
         try:
             shutil.rmtree('tmp', onerror=del_rw)
             subprocess.check_call(['git', 'clone', git, 'tmp'])
-            subprocess.check_call(git_exec, cwd='tmp')
+            for exc in git_execs:
+                subprocess.check_call(exc, cwd='tmp')
             shutil.rmtree('tmp', onerror=del_rw)
             done = True
-        except Exception:
-            print 'Failed to use git.'
+        except Exception as err:
+            print 'Failed to use git:', err
+
+    if not done and zipfile is not None and zip_cwd is not None and zip_execs is not None:
+        try:
+            del_rw(None, 'tmp.zip', None)
+            shutil.rmtree('tmp', onerror=del_rw)
+            import urllib
+            urllib.urlretrieve(zipfile, 'tmp.zip')
+
+            import zipfile
+            zipfile.ZipFile('tmp.zip').extractall('tmp')
+            del_rw(None, 'tmp.zip', None)
+
+            for exc in zip_execs:
+                subprocess.check_call(exc, cwd=os.path.join('tmp', zip_cwd))
+
+            shutil.rmtree('tmp', onerror=del_rw)
+            done = True
+        except Exception as err:
+            print 'Failed to use zip file:', err
 
     if not done:
         print 'Failed to install %s.' % module
+
 
 def install_service():
     my_dir = os.path.dirname(os.path.abspath(__file__))
@@ -104,6 +125,7 @@ def uninstall_service():
     else:
         print 'Service uninstall is only possible on unix systems.'
 
+
 def check_password():
     from ospy.options import options
     from ospy.helpers import test_password, password_salt, password_hash
@@ -121,12 +143,13 @@ def check_password():
             options.password_salt = password_salt()  # Make a new salt
             options.password_hash = password_hash(pw1, options.password_salt)
 
+
 def start():
     if yes_no('Do you want to start OSPy now?'):
         if sys.platform.startswith('linux'):
             try:
                 subprocess.check_call(['service', 'ospy', 'start'])
-            except subprocess.CalledProcessError:
+            except Exception:
                 subprocess.check_call([sys.executable, 'run.py'])
 
         else:
@@ -142,13 +165,22 @@ if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == 'install':
         # Check if packages are available:
         install_package('web', 'web.py', 'python-webpy',
-                        'https://github.com/webpy/webpy.git', [sys.executable, 'setup.py', 'install'])
+                        'https://github.com/webpy/webpy.git',
+                        [[sys.executable, 'setup.py', 'install']],
+                        'https://github.com/webpy/webpy/archive/master.zip', 'webpy-master',
+                        [[sys.executable, 'setup.py', 'install']])
 
         install_package('gfm', None, None,
-                        'https://github.com/dart-lang/py-gfm.git', [sys.executable, 'setup.py', 'install'])
+                        'https://github.com/dart-lang/py-gfm.git',
+                        [[sys.executable, 'setup.py', 'install']],
+                        'https://github.com/dart-lang/py-gfm/archive/master.zip', 'py-gfm-master',
+                        [[sys.executable, 'setup.py', 'install']])
 
         install_package('pygments', 'pygments', 'python-pygments',
-                        'http://bitbucket.org/birkenfeld/pygments-main', [sys.executable, 'setup.py', 'install'])
+                        'http://bitbucket.org/birkenfeld/pygments-main',
+                        [[sys.executable, 'setup.py', 'install']],
+                        'https://bitbucket.org/birkenfeld/pygments-main/get/0fb2b54a6e10.zip', 'birkenfeld-pygments-main-0fb2b54a6e10',
+                        [[sys.executable, 'setup.py', 'install']])
 
         install_service()
 
