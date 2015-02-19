@@ -112,15 +112,18 @@ def install_service():
 
 def uninstall_service():
     if sys.platform.startswith('linux'):
-        try:
-            subprocess.check_call(['service', 'ospy', 'stop'])
-        except Exception:
-            print 'No OSPy was running.'
+        if os.path.exists(os.path.join('/var', 'run', 'ospy.pid')):
+            try:
+                subprocess.check_call(['service', 'ospy', 'stop'])
+            except Exception:
+                print 'Could not stop service.'
+        else:
+            print 'OSPy was not running.'
 
         try:
             subprocess.check_call(['update-rc.d', '-f', 'ospy', 'remove'])
         except Exception:
-            print 'Could not remove using update-rc.d'
+            print 'Could not remove service using update-rc.d'
 
         import glob
         old_paths = glob.glob(os.path.join('/etc', 'init.d', '*ospy*'))
