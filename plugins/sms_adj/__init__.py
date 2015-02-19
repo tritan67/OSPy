@@ -5,7 +5,6 @@ from threading import Thread, Event
 import json
 import time
 from datetime import datetime
-import sys
 import traceback
 import os
 import subprocess
@@ -42,13 +41,6 @@ sms_options = PluginOptions(
         'txt7': 'foto',
         'txt8': 'help',
         'txt9': 'run'
-    }
-)
-
-email_options = PluginOptions(
-    'Email Notifications',
-    {
-        'emlsubject': ''
     }
 )
 
@@ -242,14 +234,15 @@ def sms_check(self):
                     else:
                         rain = "Inactive"
                     try:
-                        pressure_reader = plugins.get('pressure_monitor')
-                        state_press = pressure_reader.get_check_pressure()
+                        from plugins import pressure_monitor
+                        state_press = pressure_monitor.get_check_pressure()
+
                         if state_press:
                             press = "High"
                         else:
                             press = "Low"
                     except Exception:
-                        press = "None"
+                        press = "N/A"
                     finished = [run for run in log.finished_runs() if not run['blocked']]
                     if finished:
                         last_prog = finished[-1]['start'].strftime('%H:%M: ') + finished[-1]['program_name']
@@ -359,16 +352,15 @@ def sms_check(self):
                     log.info(NAME,
                              'Command: ' + comm7 + ' was processed and confirmation was sent as SMS to: ' + m['Number'])
                     try:
-                        from webcam import get_run_cam, get_image_location
+                        from plugins.webcam import get_run_cam, get_image_location
 
                         get_run_cam() # process save foto to ./data/image.jpg
                         msg = 'SMS plug-in send image file from webcam.'
 
-                        subject = email_options['emlsubject']
-                        send_email(self, msg, subject, get_image_location())
+                        send_email(self, msg, get_image_location())
 
                     except ImportError:
-                        log.info(NAME, 'Received SMS was deleted, but could not send email with foto from webcam')
+                        log.info(NAME, 'Received SMS was deleted, but could not send email with photo from webcam')
                         message = {
                             'Text': 'Error: not send foto from webcam',
                             'SMSC': {'Location': 1},
@@ -432,14 +424,13 @@ def sms_check(self):
             log.info(NAME, 'Received SMS was deleted - SMS was not from admin')
 
 
-def send_email(self, msg, subject, attachments):
+def send_email(self, msg, attachments):
     """Send email"""
-    mesage = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
-        time.time())) + ' ' + str(msg))
+    mesage = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) + ' ' + str(msg))
     try:
         from plugins.email_notifications import email
 
-        email(subject, mesage, attachments)
+        email(None, mesage, attachments)
         log.info(NAME, 'Email was sent: ' + mesage)
     except Exception as err:
         log.info(NAME, 'Email was not sent! ' + str(err))
@@ -467,4 +458,4 @@ class settings_json(ProtectedPage):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
         return json.dumps(sms_options)
-        
+

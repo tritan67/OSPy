@@ -18,7 +18,6 @@ from ospy.inputs import inputs
 from ospy.options import options
 from ospy.log import log
 from plugins import PluginOptions, plugin_url
-import plugins
 from ospy.webpages import ProtectedPage
 
 
@@ -176,9 +175,9 @@ def get_report(index):
         result = "Pressure sensor:"
     elif index == 19:
         try:
-            pressure_reader = plugins.get('pressure_monitor')
+            from plugins import pressure_monitor
 
-            state_press = pressure_reader.get_check_pressure()
+            state_press = pressure_monitor.get_check_pressure()
             if state_press:
                 result = "GPIO is HIGH"
             else:

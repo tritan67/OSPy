@@ -138,7 +138,7 @@ def stop():
 
 
 def email(subject, text, attach=None):
-    """Send email with with attachments"""
+    """Send email with with attachments. If subject is None, the default will be used."""
     if email_options['emlusr'] != '' and email_options['emlpwd'] != '' and email_options['emladr'] != '':
         gmail_user = email_options['emlusr']          # User name
         gmail_name = options.name                     # OSPi name
@@ -147,7 +147,7 @@ def email(subject, text, attach=None):
         msg = MIMEMultipart()
         msg['From'] = gmail_name
         msg['To'] = email_options['emladr']
-        msg['Subject'] = subject
+        msg['Subject'] = subject or email_options['emlsubject']
         msg.attach(MIMEText(text))
         if attach is not None:              # If insert attachments
             part = MIMEBase('application', 'octet-stream')

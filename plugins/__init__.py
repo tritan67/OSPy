@@ -1,10 +1,12 @@
 import pkgutil
 import traceback
 import re
+import sys
 from os import path
+import types
+
 import web
 
-__all__ = [] # No modules should be accessed statically
 __running = {}
 
 
@@ -80,6 +82,7 @@ class PluginOptions(dict):
 def available():
     plugins = []
     for imp, module, is_pkg in pkgutil.iter_modules(['plugins']):
+        _protect(module)
         if plugin_name(module) is not None:
             plugins.append(module)
     return plugins
@@ -196,7 +199,7 @@ def start_enabled_plugins():
                 plugin_urls = _get_urls(import_name, plugin)
                 urls += plugin_urls
 
-            except Exception as e:
+            except Exception:
                 logging.info('Failed to load the {} plug-in:'.format(plugin_n))
                 traceback.print_exc()
                 options.enabled_plugins.remove(module)
@@ -213,7 +216,7 @@ def start_enabled_plugins():
                 plugin.stop()
                 del __running[module]
                 logging.info('Stopped the {} plug-in.'.format(plugin_n))
-            except Exception as e:
+            except Exception:
                 logging.info('Failed to stop the {} plug-in:'.format(plugin_n))
                 traceback.print_exc()
 
@@ -223,4 +226,23 @@ def running():
 
 
 def get(name):
+    if name not in __running:
+        raise Exception('The %s plug-in is not running.' % name)
     return __running[name]
+
+
+# The following (cryptic) functionality ensures disabled plug-ins will not be loaded by other parts of the code.
+# Only enabled plug-ins will be allowed to be imported.
+class _PluginWrapper(types.ModuleType):
+    def __init__(self, wrapped):
+        self._wrapped = wrapped
+
+    def __getattr__(self, name):
+        return getattr(get(self._wrapped), name)
+
+
+def _protect(module):
+    if __name__ not in sys.modules:
+        import_name = __name__ + '.' + module
+        sys.modules[import_name] = _PluginWrapper(module)
+        setattr(sys.modules[__name__], module, _PluginWrapper(module))

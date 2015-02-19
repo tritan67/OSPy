@@ -17,8 +17,6 @@ from plugins import PluginOptions, plugin_url
 import plugins
 from ospy.webpages import ProtectedPage
 
-from email_notifications import email
-
 NAME = 'Pressure Monitor'
 LINK = 'settings_page'
 
@@ -29,13 +27,6 @@ pressure_options = PluginOptions(
         "use_press_monitor": False,
         "normally": False,
         "sendeml": True
-    }
-)
-
-email_options = PluginOptions(
-    'Email Notifications',
-    {
-        'emlsubject': ''
     }
 )
 

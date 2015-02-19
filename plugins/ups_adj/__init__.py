@@ -9,7 +9,6 @@ import traceback
 from threading import Thread, Event
 
 import web
-from email_notifications import email
 from ospy.helpers import poweroff
 from ospy.options import options
 from ospy.log import log
@@ -26,13 +25,6 @@ ups_options = PluginOptions(
         "time": 60, # in minutes
         "ups": False,
         "sendeml": False,
-    }
-)
-
-email_options = PluginOptions(
-    'Email Notifications',
-    {
-        'emlsubject': ''
     }
 )
 
@@ -92,8 +84,6 @@ class UPSSender(Thread):
         once_two = True
         once_three = True
 
-        subject = email_options['emlsubject']
-
         last_time = int(time.time())
 
         while not self._stop.is_set():
@@ -116,7 +106,7 @@ class UPSSender(Thread):
                             msg = 'UPS plugin detected fault on power line.' # send email with info power line fault
                             log.info(NAME, msg)
                             if ups_options['sendeml']:                       # if enabled send email
-                                send_email(self, msg, subject)
+                                send_email(self, msg)
                                 once_three = True
                             once = False
 
@@ -135,7 +125,7 @@ class UPSSender(Thread):
                                 if ups_options['sendeml']:                    # if enabled send email
                                     if once_two:
                                         msg = 'UPS plugin - power line is not restore in time -> shutdown system!' # send email with info shutdown system
-                                        send_email(self, msg, subject)
+                                        send_email(self, msg)
                                         once_two = False
 
                                 GPIO.output(pin_ups_down,
@@ -150,7 +140,7 @@ class UPSSender(Thread):
                                 msg = 'UPS plugin - power line has restored - OK.'
                                 log.clear(NAME)
                                 log.info(NAME, msg)
-                                send_email(self, msg, subject)
+                                send_email(self, msg)
                                 once = True
                                 once_two = True
                                 once_three = False
@@ -184,14 +174,13 @@ def stop():
         ups_sender = None
 
 
-def send_email(self, msg, subject):
+def send_email(self, msg):
     """Send email"""
-    mesage = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
-        time.time())) + ' ' + str(msg))
+    mesage = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) + ' ' + str(msg))
     try:
         from plugins.email_notifications import email
 
-        email(subject, mesage)     # send email without attachments
+        email(None, mesage)     # send email without attachments
         log.info(NAME, 'Email was sent: ' + mesage)
     except Exception as err:
         log.info(NAME, 'Email was not sent! ' + str(err))
@@ -199,9 +188,9 @@ def send_email(self, msg, subject):
 
 def get_check_power_str():
     if GPIO.input(pin_power_ok) == 0:
-        pwr = ('GPIO Pin = 0 Power line is OK.')
+        pwr = 'GPIO Pin = 0 Power line is OK.'
     else:
-        pwr = ('GPIO Pin = 1 Power line ERROR.')
+        pwr = 'GPIO Pin = 1 Power line ERROR.'
     return str(pwr)
 
 
@@ -241,5 +230,5 @@ class settings_json(ProtectedPage):
     def GET(self):
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
-        return json.dumps(lcd_options)
+        return json.dumps(ups_options)
 
