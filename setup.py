@@ -120,11 +120,15 @@ def uninstall_service():
         except subprocess.CalledProcessError:
             print 'Could not remove using update-rc.d'
 
-        if os.path.isfile(path):
-            os.unlink(path)
+        import glob
+        old_paths = glob.glob(os.path.join('/etc', 'init.d', '*ospy*'))
+        for old_path in old_paths:
+            os.unlink(old_path)
+
+        if old_paths:
             print 'Service removed'
         else:
-            print 'Service not installed'
+            print 'Service not found'
     else:
         print 'Service uninstall is only possible on unix systems.'
 
