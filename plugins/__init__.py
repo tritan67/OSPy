@@ -12,17 +12,14 @@ __running = {}
 
 class PluginStaticMiddleware(web.httpserver.StaticMiddleware):
     """WSGI middleware for serving static plugin files.
-    This ensures all URLs starting with /p/static/plugin_name are mapped correctly."""
+    This ensures all URLs starting with /plugins/static/plugin_name are mapped correctly."""
 
     def __call__(self, environ, start_response):
         upath = environ.get('PATH_INFO', '')
         upath = self.normpath(upath)
+        words = upath.split('/')
 
-        if upath.startswith('/p' + self.prefix):
-            parts = upath.split('/')
-            if len(parts) > 3:
-                module = parts[3]
-                environ["PATH_INFO"] = '/'.join(['plugins', module, 'static'] + parts[4:])
+        if len(words) >= 4 and words[1] == 'plugins' and words[3] == 'static':
             return web.httpserver.StaticApp(environ, start_response)
         else:
             return self.app(environ, start_response)
@@ -119,11 +116,11 @@ def plugin_url(cls):
 
         parts = cls.split('.')
         if len(parts) >= 3:
-            result = '/p/' + '/'.join(parts[1:])
+            result = '/plugins/' + '/'.join(parts[1:])
         elif len(parts) >= 2:
-            result = '/p/' + '/'.join(parts)
+            result = '/plugins/' + '/'.join(parts)
         else:
-            result = '/p/' + cls
+            result = '/plugins/' + cls
 
         if result.endswith('_page'):
             result = result[:-5]

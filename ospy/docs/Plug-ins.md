@@ -19,7 +19,7 @@ The basic structure is as follows:
       \ README.md
 
 The static files will be made accessible automatically at the following location:
-/p/static/plugin_name/...
+/plugins/plugin_name/static/...
 
 All *.md files in the docs directory will be visible in the help page.
 The README.md (if available) will be the first entry in the help page
