@@ -98,6 +98,11 @@ class PCFSender(Thread):
                     if pcf_options['enable_log']:
                         update_log(self.status)
 
+                try:
+                    write_DA(pcf_sender.adc, pcf_options['da_value'])
+                except Exception:
+                    pcf_sender.adc = None
+                    
                 self._sleep(max(60, pcf_options['log_interval'] * 60))
 
             except Exception:
@@ -211,7 +216,7 @@ class settings_page(ProtectedPage):
                 write_DA(pcf_sender.adc, pcf_options['da_value'])
             except Exception:
                 pcf_sender.adc = None
-
+                
         raise web.seeother(plugin_url(settings_page))
 
 
