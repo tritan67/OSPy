@@ -97,11 +97,15 @@ def install_service():
     path = os.path.join('/etc', 'init.d', 'ospy')
     if sys.platform.startswith('linux'):
         if yes_no('Do you want to install OSPy as a service?'):
+            print 'Removing (old) service first:'
+            uninstall_service()
+
             with open(os.path.join(my_dir, 'service', 'ospy.sh')) as source:
                 with open(path, 'w') as target:
                     target.write(source.read().replace('{{OSPY_DIR}}', my_dir))
             os.chmod(path, 0755)
             subprocess.check_call(['update-rc.d', 'ospy', 'defaults'])
+            print 'Done installing service.'
     else:
         print 'Service installation is only possible on unix systems.'
 
@@ -111,14 +115,13 @@ def uninstall_service():
         subprocess.check_call(['service', 'ospy', 'stop'])
 
         path = os.path.join('/etc', 'init.d', 'ospy')
+        try:
+            subprocess.check_call(['update-rc.d', '-f', 'ospy', 'remove'])
+        except subprocess.CalledProcessError:
+            print 'Could not remove using update-rc.d'
+
         if os.path.isfile(path):
-            try:
-                subprocess.check_call(['update-rc.d', '-f', 'ospy', 'remove'])
-            except subprocess.CalledProcessError:
-                print 'Could not remove using update-rc.d'
-
             os.unlink(path)
-
             print 'Service removed'
         else:
             print 'Service not installed'
@@ -163,30 +166,47 @@ if __name__ == '__main__':
             sys.exit("This script needs to be run as root.")
 
     if len(sys.argv) == 2 and sys.argv[1] == 'install':
-        # Check if packages are available:
-        install_package('web', 'web.py', 'python-webpy',
-                        'https://github.com/webpy/webpy.git',
-                        [[sys.executable, 'setup.py', 'install']],
-                        'https://github.com/webpy/webpy/archive/master.zip', 'webpy-master',
-                        [[sys.executable, 'setup.py', 'install']])
+        pkg = False
+        try:
+            import setuptools
+            pkg = True
+        except:
+            if yes_no('Could not find setuptools which is needed to install packages, do you want to install it now?'):
+                import urllib
+                urllib.urlretrieve('https://bootstrap.pypa.io/ez_setup.py', 'ez_setup.py')
+                subprocess.check_call([sys.executable, 'ez_setup.py'])
+                os.unlink('ez_setup.py')
+                pkg = True
 
-        install_package('gfm', None, None,
-                        'https://github.com/dart-lang/py-gfm.git',
-                        [[sys.executable, 'setup.py', 'install']],
-                        'https://github.com/dart-lang/py-gfm/archive/master.zip', 'py-gfm-master',
-                        [[sys.executable, 'setup.py', 'install']])
+        if not pkg:
+            print 'Cannot install packages without setuptools.'
+        else:
+            # Check if packages are available:
+            install_package('web', 'web.py', 'python-webpy',
+                            'https://github.com/webpy/webpy.git',
+                            [[sys.executable, 'setup.py', 'install']],
+                            'https://github.com/webpy/webpy/archive/master.zip', 'webpy-master',
+                            [[sys.executable, 'setup.py', 'install']])
 
-        install_package('pygments', 'pygments', 'python-pygments',
-                        'http://bitbucket.org/birkenfeld/pygments-main',
-                        [[sys.executable, 'setup.py', 'install']],
-                        'https://bitbucket.org/birkenfeld/pygments-main/get/0fb2b54a6e10.zip', 'birkenfeld-pygments-main-0fb2b54a6e10',
-                        [[sys.executable, 'setup.py', 'install']])
+            install_package('gfm', None, None,
+                            'https://github.com/dart-lang/py-gfm.git',
+                            [[sys.executable, 'setup.py', 'install']],
+                            'https://github.com/dart-lang/py-gfm/archive/master.zip', 'py-gfm-master',
+                            [[sys.executable, 'setup.py', 'install']])
+
+            install_package('pygments', 'pygments', 'python-pygments',
+                            'http://bitbucket.org/birkenfeld/pygments-main',
+                            [[sys.executable, 'setup.py', 'install']],
+                            'https://bitbucket.org/birkenfeld/pygments-main/get/0fb2b54a6e10.zip', 'birkenfeld-pygments-main-0fb2b54a6e10',
+                            [[sys.executable, 'setup.py', 'install']])
 
         install_service()
 
         check_password()
 
         start()
+
+        print 'Done'
 
     elif len(sys.argv) == 2 and sys.argv[1] == 'uninstall':
         uninstall_service()
