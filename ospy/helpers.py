@@ -286,8 +286,10 @@ def password_salt():
 
 
 def password_hash(password, salt):
-    from web.session import sha1
-    return sha1(password + salt).hexdigest()
+    import hashlib
+    m = hashlib.sha1()
+    m.update(password + salt)
+    return m.hexdigest()
 
 
 def test_password(password):
@@ -395,14 +397,18 @@ def help_files_in_directory(docs_dir):
 def get_help_files():
     result = []
 
-    result.append('OSPy')
-    result.append(('Readme', 'README.md'))
-    result += help_files_in_directory(os.path.join('ospy', 'docs'))
+    result.append((1, 'OSPy'))
+    result.append((2, 'Readme', 'README.md'))
+    for doc in help_files_in_directory(os.path.join('ospy', 'docs')):
+        result.append((2, doc[0], doc[1]))
 
-    result.append('API')
-    result.append(('Readme', os.path.join('api', 'README.md')))
-    result += help_files_in_directory(os.path.join('api', 'docs'))
+    result.append((1, 'API'))
+    result.append((2, 'Readme', os.path.join('api', 'README.md')))
+    for doc in help_files_in_directory(os.path.join('api', 'docs')):
+        result.append((2, doc[0], doc[1]))
 
+    result.append((1, 'Plug-ins'))
+    result.append((2, 'Readme', os.path.join('plugins', 'README.md')))
     from plugins import plugin_names, plugin_dir, plugin_docs_dir
     for module, name in plugin_names().iteritems():
 
@@ -411,12 +417,14 @@ def get_help_files():
 
         docs = help_files_in_directory(plugin_docs_dir(module))
         if readme_exists or docs:
-            result.append(name)
-
             if readme_exists:
-                result.append(('Readme', readme_file))
-            result += docs
+                result.append((2, name, readme_file))
+            else:
+                result.append((2, name))
 
+            for doc in docs:
+                result.append((3, doc[0], doc[1]))
+    print result
     return result
 
 
@@ -428,8 +436,8 @@ def get_help_file(id):
         docs = get_help_files()
         if 0 <= id < len(docs):
             option = docs[id]
-            if isinstance(option, tuple):
-                filename = option[1]
+            if len(option) > 2:
+                filename = option[2]
                 with open(filename) as fh:
                     import markdown
                     converted = markdown.markdown(fh.read(), extensions=['partial_gfm', 'markdown.extensions.codehilite'])

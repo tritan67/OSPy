@@ -97,8 +97,6 @@ def install_service():
     path = os.path.join('/etc', 'init.d', 'ospy')
     if sys.platform.startswith('linux'):
         if yes_no('Do you want to install OSPy as a service?'):
-            print 'Removing (old) service first:'
-            uninstall_service()
 
             with open(os.path.join(my_dir, 'service', 'ospy.sh')) as source:
                 with open(path, 'w') as target:
@@ -114,7 +112,7 @@ def uninstall_service():
     if sys.platform.startswith('linux'):
         if os.path.exists(os.path.join('/var', 'run', 'ospy.pid')):
             try:
-                subprocess.check_call(['service', 'ospy', 'stop'])
+                subprocess.Popen(['service', 'ospy', 'stop'])
             except Exception:
                 print 'Could not stop service.'
         else:
@@ -160,9 +158,9 @@ def start():
     if yes_no('Do you want to start OSPy now?'):
         if sys.platform.startswith('linux'):
             try:
-                subprocess.check_call(['service', 'ospy', 'start'])
+                subprocess.Popen(['service', 'ospy', 'restart'])
             except Exception:
-                subprocess.check_call([sys.executable, 'run.py'])
+                subprocess.Popen([sys.executable, 'run.py'])
 
         else:
             subprocess.check_call(['cmd.exe', '/c', 'start', sys.executable, 'run.py'])

@@ -61,15 +61,15 @@ class PluginStaticMiddleware(web.httpserver.StaticMiddleware):
 def start():
     global server
     global session
-    from ospy.urls import urls
 
     ##############################
     #### web.py setup         ####
     ##############################
     web.config.debug = False  # Improves page load speed', ]
 
+    from ospy.urls import urls
     app = web.application(urls, globals())
-    app.notfound = lambda: web.seeother('/')
+    app.notfound = lambda: web.seeother('/', True)
 
     wsgifunc = app.wsgifunc()
     wsgifunc = web.httpserver.StaticMiddleware(wsgifunc)
@@ -80,6 +80,7 @@ def start():
     sessions = shelve.open(os.path.join('ospy', 'data', 'sessions.db'))
     session = web.session.Session(app, web.session.ShelfStore(sessions),
                                   initializer={'validated': False,
+                                               'login_to': '/',
                                                'last_page': '/'})
 
     scheduler.start()

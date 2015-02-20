@@ -9,7 +9,7 @@ from ospy import helpers
 from ospy.webpages import ProtectedPage
 from ospy.options import options
 import subprocess
-from log import log
+from ospy.log import log
 
 NAME = 'System Information'
 LINK = 'status_page'

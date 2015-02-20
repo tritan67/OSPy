@@ -8,6 +8,9 @@ import types
 __running = {}
 
 
+################################################################################
+# Plugin Options                                                               #
+################################################################################
 class PluginOptions(dict):
     def __init__(self, plugin, defaults):
         super(PluginOptions, self).__init__(defaults.iteritems())
@@ -60,64 +63,27 @@ class PluginOptions(dict):
                 raise web.badrequest('Invalid value for \'%s\': \'%s\'' % (key, qdict.get(key)))
 
 
-def available():
-    plugins = []
-    for imp, module, is_pkg in pkgutil.iter_modules(['plugins']):
-        _protect(module)
-        if plugin_name(module) is not None:
-            plugins.append(module)
-    return plugins
+################################################################################
+# Plugin App                                                                   #
+################################################################################
+def get_app():
+    import web
+    class PluginApp(web.application):
+        def handle(self):
+            mapping = []
+            for module in running():
+                import_name = __name__ + '.' + module
+                plugin = get(module)
+                mapping += _get_urls(import_name, plugin)
+            fn, args = self._match(mapping, web.ctx.path)
+            return self._delegate(fn, self.fvars, args)
+
+    return PluginApp(fvars=locals())
 
 
-def plugin_name(plugin):
-    """Tries to find the name of the given plugin without importing it yet."""
-    filename = path.join(path.dirname(__file__), plugin, '__init__.py')
-    try:
-        with open(filename) as fh:
-            for line in fh:
-                if 'NAME' in line:
-                    match = re.search('NAME\\s=\\s("|\')([^"\']+)("|\')', line)
-                    if match is not None:
-                        return match.group(2)
-    except Exception:
-        pass
-    return None
-
-
-def plugin_names():
-    return {plugin: (plugin_name(plugin)) for plugin in available() if plugin_name(plugin)}
-
-
-def plugin_url(cls):
-    from ospy.webpages import WebPage
-    import inspect
-
-    if cls is None:
-        result = cls
-    else:
-        if inspect.isclass(cls) and issubclass(cls, WebPage):
-            cls = cls.__module__ + '.' + cls.__name__
-
-        parts = cls.split('.')
-        if len(parts) >= 3:
-            result = '/plugins/' + '/'.join(parts[1:])
-        elif len(parts) >= 2:
-            result = '/plugins/' + '/'.join(parts)
-        else:
-            result = '/plugins/' + cls
-
-        if result.endswith('_page'):
-            result = result[:-5]
-
-        if result.endswith('_json'):
-            result = result[:-5] + '.json'
-
-        if result.endswith('_csv'):
-            result = result[:-4] + '.csv'
-
-    return result
-
-
+################################################################################
+# Plugin directories                                                           #
+################################################################################
 def plugin_dir(module=None):
     my_dir = path.dirname(path.abspath(__file__))
 
@@ -144,25 +110,93 @@ def plugin_docs_dir(module=None):
     return path.join(plugin_dir(module), 'docs')
 
 
-def _get_urls(import_name, plugin):
+################################################################################
+# Plugin information + urls                                                    #
+################################################################################
+def available():
+    plugins = []
+    for imp, module, is_pkg in pkgutil.iter_modules(['plugins']):
+        _protect(module)
+        if plugin_name(module) is not None:
+            plugins.append(module)
+    return plugins
+
+
+__name_cache = {}
+def plugin_name(plugin):
+    """Tries to find the name of the given plugin without importing it yet."""
+    if plugin not in __name_cache:
+        __name_cache[plugin] = None
+        filename = path.join(path.dirname(__file__), plugin, '__init__.py')
+        try:
+            with open(filename) as fh:
+                for line in fh:
+                    if 'NAME' in line:
+                        match = re.search('NAME\\s=\\s("|\')([^"\']+)("|\')', line)
+                        if match is not None:
+                            __name_cache[plugin] = match.group(2)
+        except Exception:
+            pass
+    return __name_cache[plugin]
+
+
+def plugin_names():
+    return {plugin: (plugin_name(plugin)) for plugin in available() if plugin_name(plugin)}
+
+
+def plugin_url(cls, prefix='/plugins/'):
     from ospy.webpages import WebPage
     import inspect
 
-    result = []
-    for element in dir(plugin):
-        if inspect.isclass(getattr(plugin, element)) and issubclass(getattr(plugin, element), WebPage):
-            if import_name == getattr(plugin, element).__module__:
-                classname = import_name + '.' + element
-                result.append(plugin_url(classname))
-                result.append(classname)
+    if cls is None:
+        result = cls
+    else:
+        if inspect.isclass(cls) and issubclass(cls, WebPage):
+            cls = cls.__module__ + '.' + cls.__name__
+
+        parts = cls.split('.')
+        if len(parts) >= 3:
+            result = prefix + '/'.join(parts[1:])
+        elif len(parts) >= 2:
+            result = prefix + '/'.join(parts)
+        else:
+            result = prefix + cls
+
+        if result.endswith('_page'):
+            result = result[:-5]
+
+        if result.endswith('_json'):
+            result = result[:-5] + '.json'
+
+        if result.endswith('_csv'):
+            result = result[:-4] + '.csv'
 
     return result
 
 
+__urls_cache = {}
+def _get_urls(import_name, plugin):
+    if plugin not in __urls_cache:
+        from ospy.webpages import WebPage
+        import inspect
+
+        result = []
+        for element in dir(plugin):
+            if inspect.isclass(getattr(plugin, element)) and issubclass(getattr(plugin, element), WebPage):
+                if import_name == getattr(plugin, element).__module__:
+                    classname = import_name + '.' + element
+                    result.append((plugin_url(classname, '/'), classname))
+        __urls_cache[plugin] = result
+
+    return __urls_cache[plugin]
+
+
+################################################################################
+# Plugin start/stop                                                            #
+################################################################################
 def start_enabled_plugins():
     from ospy.options import options
     import logging
-    from ospy.urls import urls
 
     for module in available():
         if module in options.enabled_plugins and module not in __running:
@@ -177,8 +211,6 @@ def start_enabled_plugins():
 
                 if plugin.LINK is not None and not (plugin.LINK.startswith(module) or plugin.LINK.startswith(__name__)):
                     plugin.LINK = module + '.' + plugin.LINK
-                plugin_urls = _get_urls(import_name, plugin)
-                urls += plugin_urls
 
             except Exception:
                 logging.info('Failed to load the {} plug-in:'.format(plugin_n))
@@ -187,13 +219,8 @@ def start_enabled_plugins():
 
     for module, plugin in __running.copy().iteritems():
         if module not in options.enabled_plugins:
-            import_name = __name__ + '.' + module
             plugin_n = plugin.NAME
-            plugin_urls = _get_urls(import_name, plugin)
             try:
-                for url in plugin_urls:
-                    if url in urls:
-                        urls.remove(url)
                 plugin.stop()
                 del __running[module]
                 logging.info('Stopped the {} plug-in.'.format(plugin_n))
@@ -219,6 +246,7 @@ class _PluginWrapper(types.ModuleType):
         self._wrapped = wrapped
 
     def __getattr__(self, name):
+        print 'get', name
         return getattr(get(self._wrapped), name)
 
 

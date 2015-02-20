@@ -22,10 +22,10 @@ jQuery(window).bind('hashchange', load_doc);
     <div class="simpleblock" style="min-height: 350px; display: table; box-sizing: border-box; width: 100%">
         <div style="vertical-align:top; display: table-cell; min-width: 200px; padding:5px; border-right: solid 1px; text-wrap: none;">
             $for index, doc_entry in enumerate(docs):
-                $if isinstance(doc_entry, tuple):
-                    <p><a href="#${index}">${doc_entry[0]}</a></p>
+                $if len(doc_entry) > 2:
+                    </b><p class="help_link_${doc_entry[0]}"><a href="#${index}">${doc_entry[1]}</a></p>
                 $else:
-                    <h3 style="margin-bottom: 0;">${doc_entry}</h3>
+                    <b><p class="help_link_${doc_entry[0]}">${doc_entry[1]}</p></b>
 
         </div>
         <div id="help_contents" style="vertical-align:top; display: table-cell; width: 80%; padding:5px;">

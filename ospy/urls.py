@@ -4,6 +4,7 @@
 # urls is used by web.py. When a GET request is received, the corresponding class is executed.
 
 import api
+import plugins
 
 urls = [
     '/login', 'ospy.webpages.login_page',
@@ -29,5 +30,6 @@ urls = [
     '/status.json', 'ospy.webpages.api_status_json',
     '/log.json', 'ospy.webpages.api_log_json',
 
-    '/api', api.app_OSPyAPI,
+    '/api', api.get_app(),
+    '/plugins', plugins.get_app(),
 ]
