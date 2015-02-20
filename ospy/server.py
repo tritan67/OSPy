@@ -8,7 +8,6 @@ import os
 
 # Local imports
 from ospy.options import options
-from ospy.urls import urls
 from ospy.scheduler import scheduler
 
 import plugins
@@ -44,10 +43,25 @@ class DebugLogMiddleware:
         logging.debug(web.utils.safestr(msg))
 
 
+class PluginStaticMiddleware(web.httpserver.StaticMiddleware):
+    """WSGI middleware for serving static plugin files.
+    This ensures all URLs starting with /plugins/static/plugin_name are mapped correctly."""
+
+    def __call__(self, environ, start_response):
+        upath = environ.get('PATH_INFO', '')
+        upath = self.normpath(upath)
+        words = upath.split('/')
+
+        if len(words) >= 4 and words[1] == 'plugins' and words[3] == 'static':
+            return web.httpserver.StaticApp(environ, start_response)
+        else:
+            return self.app(environ, start_response)
+
+
 def start():
     global server
     global session
-    global urls
+    from ospy.urls import urls
 
     ##############################
     #### web.py setup         ####
@@ -59,14 +73,14 @@ def start():
 
     wsgifunc = app.wsgifunc()
     wsgifunc = web.httpserver.StaticMiddleware(wsgifunc)
-    wsgifunc = plugins.PluginStaticMiddleware(wsgifunc)
+    wsgifunc = PluginStaticMiddleware(wsgifunc)
     wsgifunc = DebugLogMiddleware(wsgifunc)
     server = web.httpserver.WSGIServer(("0.0.0.0", options.web_port), wsgifunc)
 
     sessions = shelve.open(os.path.join('ospy', 'data', 'sessions.db'))
     session = web.session.Session(app, web.session.ShelfStore(sessions),
                                   initializer={'validated': False,
-                                               'login_to': '/'})
+                                               'last_page': '/'})
 
     scheduler.start()
     plugins.start_enabled_plugins()

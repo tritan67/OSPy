@@ -179,12 +179,14 @@ if __name__ == '__main__':
         try:
             import setuptools
             pkg = True
-        except:
+        except ImportError:
             if yes_no('Could not find setuptools which is needed to install packages, do you want to install it now?'):
                 import urllib
-                urllib.urlretrieve('https://bootstrap.pypa.io/ez_setup.py', 'ez_setup.py')
-                subprocess.check_call([sys.executable, 'ez_setup.py'])
-                os.unlink('ez_setup.py')
+                shutil.rmtree('tmp', onerror=del_rw)
+                os.mkdir('tmp')
+                urllib.urlretrieve('https://bootstrap.pypa.io/ez_setup.py', 'tmp/ez_setup.py')
+                subprocess.check_call([sys.executable, 'ez_setup.py'], cwd='tmp')
+                shutil.rmtree('tmp', onerror=del_rw)
                 pkg = True
 
         if not pkg:

@@ -5,24 +5,7 @@ import sys
 from os import path
 import types
 
-import web
-
 __running = {}
-
-
-class PluginStaticMiddleware(web.httpserver.StaticMiddleware):
-    """WSGI middleware for serving static plugin files.
-    This ensures all URLs starting with /plugins/static/plugin_name are mapped correctly."""
-
-    def __call__(self, environ, start_response):
-        upath = environ.get('PATH_INFO', '')
-        upath = self.normpath(upath)
-        words = upath.split('/')
-
-        if len(words) >= 4 and words[1] == 'plugins' and words[3] == 'static':
-            return web.httpserver.StaticApp(environ, start_response)
-        else:
-            return self.app(environ, start_response)
 
 
 class PluginOptions(dict):
@@ -73,6 +56,7 @@ class PluginOptions(dict):
                 elif isinstance(default_value, str) or isinstance(old_value, unicode):
                     self[key] = qdict.get(key, old_value)
             except ValueError:
+                import web
                 raise web.badrequest('Invalid value for \'%s\': \'%s\'' % (key, qdict.get(key)))
 
 

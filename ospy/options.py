@@ -347,7 +347,8 @@ class _Options(object):
     def get_info(self, option):
         return self.OPTIONS[option]
 
-    def cls_name(self, obj, key=""):
+    @staticmethod
+    def cls_name(obj, key=""):
         tpy = (obj if isinstance(obj, type) else type(obj))
         return 'Cls_' + tpy.__module__ + '_' + tpy.__name__ + '_' + str(key).replace(' ', '_')
 
