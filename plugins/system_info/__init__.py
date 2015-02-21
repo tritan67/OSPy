@@ -74,4 +74,4 @@ class status_page(ProtectedPage):
     """Load an html page"""
 
     def GET(self):
-        return self.template_render.system_info(get_overview())
+        return self.plugin_render.system_info(get_overview())

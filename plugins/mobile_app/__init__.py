@@ -237,5 +237,5 @@ class info_page(ProtectedPage):
     """Load an html page"""
 
     def GET(self):
-        return self.template_render.mobile_app()
+        return self.plugin_render.mobile_app()
           

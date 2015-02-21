@@ -442,13 +442,13 @@ class settings_page(ProtectedPage):
     """Load an html page for entering lcd adjustments."""
 
     def GET(self):
-        return self.template_render.sms_adj(sms_options, log.events(NAME))
+        return self.plugin_render.sms_adj(sms_options, log.events(NAME))
 
     def POST(self):
         sms_options.web_update(web.input())
 
         sms_sender.update()
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class settings_json(ProtectedPage):

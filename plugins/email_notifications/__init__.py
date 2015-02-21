@@ -174,14 +174,14 @@ class settings_page(ProtectedPage):
     """Load an html page for entering email adjustments."""
 
     def GET(self):
-        return self.template_render.email_notifications(email_options, log.events(NAME))
+        return self.plugin_render.email_notifications(email_options, log.events(NAME))
 
     def POST(self):
         email_options.web_update(web.input())
 
         if email_sender is not None:
             email_sender.update()
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class settings_json(ProtectedPage):

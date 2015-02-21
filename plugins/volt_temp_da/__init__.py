@@ -205,7 +205,7 @@ class settings_page(ProtectedPage):
     """Load an html page for entering pcf adjustments."""
 
     def GET(self):
-        return self.template_render.volt_temp_da(pcf_options, pcf_sender.status, log.events(NAME))
+        return self.plugin_render.volt_temp_da(pcf_options, pcf_sender.status, log.events(NAME))
 
     def POST(self):
         pcf_options.web_update(web.input())
@@ -217,7 +217,7 @@ class settings_page(ProtectedPage):
             except Exception:
                 pcf_sender.adc = None
                 
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class settings_json(ProtectedPage):
@@ -264,6 +264,6 @@ class delete_log_page(ProtectedPage):  # delete log file from web
     def GET(self):
         write_log([])
         log.info(NAME, 'Deleted log file')
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 

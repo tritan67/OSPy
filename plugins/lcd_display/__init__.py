@@ -256,13 +256,13 @@ class settings_page(ProtectedPage):
     """Load an html page for entering lcd adjustments."""
 
     def GET(self):
-        return self.template_render.lcd_display(lcd_options, log.events(NAME))
+        return self.plugin_render.lcd_display(lcd_options, log.events(NAME))
 
     def POST(self):
         lcd_options.web_update(web.input())
 
         lcd_sender.update()
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class settings_json(ProtectedPage):

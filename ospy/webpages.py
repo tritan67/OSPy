@@ -36,13 +36,10 @@ signin_form = form.Form(
 
 class WebPage(object):
     def __init__(self):
-        if self.__module__.startswith('plugins'):
-            directory = os.path.join(*self.__module__.split('.'))
-        else:
-            directory = self.__module__.split('.')[0]
-
         self.base_render = lambda page: web.template.render('ospy/templates', globals=template_globals()).base(page)
-        self.template_render = web.template.render(os.path.join(directory, 'templates'), globals=template_globals(), base=self.base_render)
+
+        self.core_render = web.template.render(os.path.join('ospy', 'templates'), globals=template_globals(), base=self.base_render)
+        self.plugin_render = web.template.render(os.path.join(os.path.join(*self.__module__.split('.')), 'templates'), globals=template_globals(), base=self.base_render)
 
         # If you want to profile the get requests, uncomment these lines:
         # self.orig_get = self.GET
@@ -71,13 +68,13 @@ class login_page(WebPage):
         if check_login(False):
             raise web.seeother('/')
         else:
-            return self.template_render.login(signin_form())
+            return self.core_render.login(signin_form())
 
     def POST(self):
         my_signin = signin_form()
 
         if not my_signin.validates():
-            return self.template_render.login(my_signin)
+            return self.core_render.login(my_signin)
         else:
             from ospy import server
             server.session.validated = True
@@ -105,7 +102,7 @@ class home_page(ProtectedPage):
             stations.clear()
             raise web.seeother('/')
 
-        return self.template_render.home()
+        return self.core_render.home()
 
     def POST(self):
         qdict = web.input()
@@ -134,7 +131,7 @@ class programs_page(ProtectedPage):
         if 'delete' in qdict and qdict['delete'] == '1':
             while programs.count() > 0:
                 programs.remove_program(programs.count()-1)
-        return self.template_render.programs()
+        return self.core_render.programs()
 
 
 class program_page(ProtectedPage):
@@ -162,7 +159,7 @@ class program_page(ProtectedPage):
             program = programs.create_program()
             program.set_days_simple(6*60, 30, 30, 0, [])
 
-        return self.template_render.program(program)
+        return self.core_render.program(program)
 
     def POST(self, index):
         qdict = web.input()
@@ -222,7 +219,7 @@ class runonce_page(ProtectedPage):
     """Open a page to view and edit a run once program."""
 
     def GET(self):
-        return self.template_render.runonce()
+        return self.core_render.runonce()
 
     def POST(self):
         qdict = web.input()
@@ -242,7 +239,7 @@ class log_page(ProtectedPage):
     """View Log"""
 
     def GET(self):
-        return self.template_render.log()
+        return self.core_render.log()
 
     def POST(self):
         qdict = web.input()
@@ -258,7 +255,7 @@ class options_page(ProtectedPage):
         qdict = web.input()
         errorCode = qdict.get('errorCode', 'none')
 
-        return self.template_render.options(errorCode)
+        return self.core_render.options(errorCode)
 
     def POST(self):
         qdict = web.input()
@@ -296,7 +293,7 @@ class stations_page(ProtectedPage):
     """Stations page"""
 
     def GET(self):
-        return self.template_render.stations()
+        return self.core_render.stations()
 
     def POST(self):
         qdict = web.input()
@@ -322,7 +319,7 @@ class help_page(ProtectedPage):
             return get_help_file(id)
 
         docs = get_help_files()
-        return self.template_render.help(docs)
+        return self.core_render.help(docs)
 
 
 ################################################################################

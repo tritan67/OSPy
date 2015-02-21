@@ -41,7 +41,7 @@ class status_page(ProtectedPage):
     """Load an html page"""
 
     def GET(self):
-        return self.template_render.system_debug(get_overview())
+        return self.plugin_render.system_debug(get_overview())
 
 
 class delete_page(ProtectedPage):
@@ -53,6 +53,6 @@ class delete_page(ProtectedPage):
         except Exception:
             pass
 
-        raise web.seeother(plugin_url(status_page))
+        raise web.seeother(plugin_url(status_page), True)
 
 

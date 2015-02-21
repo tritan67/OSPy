@@ -113,12 +113,12 @@ class settings_page(ProtectedPage):
 
     def GET(self):
         get_run_cam()
-        return self.template_render.webcam(cam_options, log.events(NAME))
+        return self.plugin_render.webcam(cam_options, log.events(NAME))
 
 
     def POST(self):
         cam_options.web_update(web.input())
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class settings_json(ProtectedPage):
@@ -141,5 +141,5 @@ class download_page(ProtectedPage):
                 return f.read()
         except:
             log.info(NAME, 'No image file from downloading. Retry')
-            raise web.seeother(plugin_url(settings_page))
+            raise web.seeother(plugin_url(settings_page), True)
 

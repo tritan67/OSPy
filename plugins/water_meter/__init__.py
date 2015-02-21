@@ -207,7 +207,7 @@ class settings_page(ProtectedPage):
     """Load an html page for entering water meter adjustments."""
 
     def GET(self):
-        return self.template_render.water_meter(options, water_sender.status, log.events(NAME))
+        return self.plugin_render.water_meter(options, water_sender.status, log.events(NAME))
 
     def POST(self):
         options.web_update(web.input())
@@ -215,7 +215,7 @@ class settings_page(ProtectedPage):
         if water_sender is not None:
             water_sender.update()
 
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class reset_page(ProtectedPage):
@@ -231,7 +231,7 @@ class reset_page(ProtectedPage):
         if water_sender is not None:
             water_sender.update()
 
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class settings_json(ProtectedPage):

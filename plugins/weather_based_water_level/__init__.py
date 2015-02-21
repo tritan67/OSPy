@@ -330,13 +330,13 @@ class settings_page(ProtectedPage):
     """Load an html page for entering weather-based irrigation adjustments"""
 
     def GET(self):
-        return self.template_render.weather_based_water_level(plugin_options, log.events(NAME))
+        return self.plugin_render.weather_based_water_level(plugin_options, log.events(NAME))
 
     def POST(self):
         plugin_options.web_update(web.input())
         if checker is not None:
             checker.update()
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class settings_json(ProtectedPage):

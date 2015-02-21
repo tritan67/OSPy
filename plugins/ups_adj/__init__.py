@@ -214,14 +214,14 @@ class settings_page(ProtectedPage):
     """Load an html page for entering USP adjustments."""
 
     def GET(self):
-        return self.template_render.ups_adj(ups_options, ups_sender.status, log.events(NAME))
+        return self.plugin_render.ups_adj(ups_options, ups_sender.status, log.events(NAME))
 
     def POST(self):
         ups_options.web_update(web.input())
 
         if ups_sender is not None:
             ups_sender.update()
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)
 
 
 class settings_json(ProtectedPage):

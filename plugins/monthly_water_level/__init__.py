@@ -81,7 +81,7 @@ class settings_page(ProtectedPage):
     """Load an html page for entering monthly irrigation time adjustments"""
 
     def GET(self):
-        return self.template_render.monthly_water_level(plugin_options)
+        return self.plugin_render.monthly_water_level(plugin_options)
 
     def POST(self):
         qdict = web.input()
@@ -92,4 +92,4 @@ class settings_page(ProtectedPage):
         plugin_options.web_update(vals)
         if checker is not None:
             checker.update()
-        raise web.seeother(plugin_url(settings_page))
+        raise web.seeother(plugin_url(settings_page), True)

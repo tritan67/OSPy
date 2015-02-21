@@ -12,7 +12,7 @@ from ospy.scheduler import scheduler
 
 import plugins
 
-server = None
+__server = None
 session = None
 
 
@@ -59,7 +59,7 @@ class PluginStaticMiddleware(web.httpserver.StaticMiddleware):
 
 
 def start():
-    global server
+    global __server
     global session
 
     ##############################
@@ -75,7 +75,7 @@ def start():
     wsgifunc = web.httpserver.StaticMiddleware(wsgifunc)
     wsgifunc = PluginStaticMiddleware(wsgifunc)
     wsgifunc = DebugLogMiddleware(wsgifunc)
-    server = web.httpserver.WSGIServer(("0.0.0.0", options.web_port), wsgifunc)
+    __server = web.httpserver.WSGIServer(("0.0.0.0", options.web_port), wsgifunc)
 
     sessions = shelve.open(os.path.join('ospy', 'data', 'sessions.db'))
     session = web.session.Session(app, web.session.ShelfStore(sessions),
@@ -83,19 +83,23 @@ def start():
                                                'login_to': '/',
                                                'last_page': '/'})
 
+    import atexit
+    atexit.register(sessions.close)
+
+    def exit_msg():
+        print 'OSPy is closing, saving sessions.'
+    atexit.register(exit_msg)
+
     scheduler.start()
     plugins.start_enabled_plugins()
 
     try:
-        server.start()
+        __server.start()
     except (KeyboardInterrupt, SystemExit):
-        server.stop()
-        sessions.close()
-        session = None
-        server = None
+        stop()
 
 def stop():
-    global server
-    if server is not None:
-        server.stop()
-        server = None
+    global __server
+    if __server is not None:
+        __server.stop()
+        __server = None

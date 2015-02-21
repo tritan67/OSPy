@@ -126,6 +126,9 @@ def perform_update():
     command = "git config core.filemode false"  # http://superuser.com/questions/204757/git-chmod-problem-checkout-screws-exec-bit
     subprocess.check_output(command.split())
 
+    command = "git reset --hard"
+    subprocess.check_output(command.split())
+
     command = "git pull"
     output = subprocess.check_output(command.split())
 
@@ -155,7 +158,7 @@ class status_page(ProtectedPage):
 
     def GET(self):
         checker.started.wait(10)    # Make sure we are initialized
-        return self.template_render.system_update(checker.status, log.events(NAME))
+        return self.plugin_render.system_update(checker.status, log.events(NAME))
 
 
 class refresh_page(ProtectedPage):
@@ -163,7 +166,7 @@ class refresh_page(ProtectedPage):
 
     def GET(self):
         checker.update_wait()
-        raise web.seeother(plugin_url(status_page))
+        raise web.seeother(plugin_url(status_page), True)
 
 
 class update_page(ProtectedPage):
@@ -171,7 +174,7 @@ class update_page(ProtectedPage):
 
     def GET(self):
         perform_update()
-        return self.template_render.restarting(plugin_url(status_page))
+        return self.core_render.restarting(plugin_url(status_page))
 
 
 class restart_page(ProtectedPage):
@@ -179,4 +182,4 @@ class restart_page(ProtectedPage):
 
     def GET(self):
         restart(3)
-        return self.template_render.restarting(plugin_url(status_page))
+        return self.core_render.restarting(plugin_url(status_page))
