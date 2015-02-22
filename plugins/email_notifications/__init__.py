@@ -184,6 +184,27 @@ class settings_page(ProtectedPage):
         raise web.seeother(plugin_url(settings_page), True)
 
 
+class test_page(ProtectedPage):
+    """send test e-mail (check correct user settings in form)."""
+
+    def POST(self):
+        body = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) +
+                ': Test e-mail from e-mail notification plugin :-).')
+        self.try_mail(email_options['emlsubject'], body)
+        raise web.seeother(plugin_url(settings_page), True)
+   
+    def try_mail(self, subject, text, attachment=None):
+        log.clear(NAME)
+        try:
+            email(subject, text, attachment)  # send email with attachment from
+            log.info(NAME, 'Email was sent:\n' + text)
+        except Exception:
+            err_string = ''.join(traceback.format_exc())
+            log.warning(NAME, 'Email was not sent!\n' + err_string)
+
+
+
+
 class settings_json(ProtectedPage):
     """Returns plugin settings in JSON format."""
 

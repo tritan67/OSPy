@@ -13,6 +13,9 @@ $var page: plugins
         jQuery("button#cCancel").click(function(){
             window.location="/";
         });
+        jQuery("#cTest").click(function() {
+            jQuery("#pluginForm2").submit();
+        });
 
     });
 </script>
@@ -42,9 +45,9 @@ $var page: plugins
                 </td>
             </tr>
             <tr>
-                <td style='text-transform: none;'>Your GMail username:</td>
+                <td style='text-transform: none;'>Your GMail username:</td> 
                 <td>
-                    <input name='emlusr' type='text' value='$plugin_options["emlusr"]'>
+                    <input name='emlusr' type='text' value='$plugin_options["emlusr"]'> (name or name@gmail.com)
                 </td>
             </tr>
             <tr>
@@ -73,9 +76,12 @@ $var page: plugins
             </tr>
         </table>
     </form>
+    <form id="pluginForm2" action="$plugins.plugin_url('email_notifications.test_page')" method="post">
+    </form>
 </div>
 <div id="controls">
     <button id="cSubmit" class="submit"><b>Submit</b></button>
+    <button id="cTest" class="submit"><b>Send a test e-mail</b></button>
     <button id="cCancel" class="cancel danger">Cancel</button>
 </div>
                                   
