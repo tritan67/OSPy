@@ -51,5 +51,19 @@ function updateClock() {
 }
 
 jQuery(document).ready(function(){
+
+    jQuery("#bPlugins").click(function(e) {
+        var btn = jQuery("#bPlugins");
+        jQuery("#pluginMenu").css({
+            position: 'absolute',
+            top: btn.offset().top + btn.outerHeight() + 10,
+            left: btn.offset().left
+        }).slideToggle();
+        e.stopPropagation();
+    });
+    jQuery(document).click(function(){
+        jQuery("#pluginMenu").slideUp();
+    });
+
     updateClock();
 });

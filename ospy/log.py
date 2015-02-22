@@ -149,7 +149,7 @@ class _Log(logging.Handler):
                     for tb in reversed(stack):
                         filename = path.basename(tb[0])
                         lineno = tb[1]
-                        if filename != path.basename(__file__):
+                        if path.abspath(tb[0]) != path.abspath(__file__):
                             break
 
                     fmt_dict = {

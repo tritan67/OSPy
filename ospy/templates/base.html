@@ -22,6 +22,12 @@ $def with (content)
 </head>
 <body>
     <div class="content">
+        <div id="pluginMenu">
+            <a class="button" href="/plugins_manage">Manage</a><br/>
+            $for plugin in plugins.running():
+                $if plugins.get(plugin).LINK:
+                    <a class="button execute" href="${plugins.plugin_url(plugins.get(plugin).LINK)}">${plugins.get(plugin).NAME}</a><br/>
+        </div>
 
         <div class="header">
             <div class="title">${options.name if options.name != "OpenSprinkler Py" else ""}</div>
@@ -41,7 +47,7 @@ $def with (content)
                         <a href="/programs" id="bPrograms" class="button programs${' here' if content.page=='programs' else ''}" title="Define Programs">Programs</a>
                         $if not options.manual_mode:
                             <a href="/runonce" id="bRunOnce" class="button start${' here' if content.page=='runonce' else ''}" title="Define Run Once Program">Run Once</a>
-                        <a href="/plugins" id="bPlugins" class="button plugins${' here' if content.page=='plugins' else ''}" title="Access Plugins">Plugins</a>
+                        <a id="bPlugins" class="button plugins${' here' if content.page=='plugins' else ''}" title="Access Plugins">Plugins</a>
                         <a href="/log" id="bLog" class="button log${' here' if content.page=='log' else ''}" title="View Log">Log</a>
                         <a href="/options" id="bOptions" class="button options${' here' if content.page=='options' else ''}" title="Options">Options</a>
                         <a href="/stations" id="bStations" class="button stations${' here' if content.page=='stations' else ''}" title="Configure Stations">Stations</a>

@@ -18,6 +18,19 @@ class PluginOptions(dict):
 
         from ospy.options import options
 
+        my_dir = path.dirname(path.abspath(__file__))
+        plugin = 'plugin_unknown'
+        stack = traceback.extract_stack()
+        for tb in reversed(stack):
+            abspath = path.abspath(tb[0])
+            if abspath.startswith(my_dir) and abspath != path.abspath(__file__):
+                parts = abspath[len(my_dir):].split(path.sep)
+                while parts and not parts[0]:
+                    del parts[0]
+                if parts:
+                    plugin = 'plugin_' + parts[0]
+                    break
+
         if plugin in options:
             for key, value in options[plugin].iteritems():
                 if key in self:
@@ -246,7 +259,6 @@ class _PluginWrapper(types.ModuleType):
         self._wrapped = wrapped
 
     def __getattr__(self, name):
-        print 'get', name
         return getattr(get(self._wrapped), name)
 
 
