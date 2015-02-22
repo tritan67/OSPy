@@ -30,6 +30,8 @@ pressure_options = PluginOptions(
     }
 )
 
+email_options = PluginOptions('Email Notifications',{ "emlsubject":""})
+
 
 ################################################################################
 # GPIO input pullup:                                                           #
@@ -146,6 +148,7 @@ class PressureSender(Thread):
                     TEXT = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(
                         time.time())) + ' System detected error: pressure sensor.')
                     try:
+                        from plugins.email_notifications import email
                         email(subject, TEXT)                                     # send email without attachments
                         log.info(NAME, 'Email was sent: ' + TEXT)
                         send = False
@@ -204,7 +207,6 @@ def get_master_is_on():
                     return True
                 else:
                     return False
-
 
 ################################################################################
 # Web pages:                                                                   #
