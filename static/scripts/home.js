@@ -181,7 +181,7 @@ function countdownTimer(timerId) {
 jQuery(document).ready(function(){
     if (!manual_mode) {
         displayProgram()
-        statusTimer();
+        setTimeout(statusTimer, 1000);
 
         jQuery(".button#pPrev").click(function() {
             displayScheduleDate.setDate(displayScheduleDate.getDate() - 1);

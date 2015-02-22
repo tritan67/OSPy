@@ -41,6 +41,11 @@ def formatTime(t):
         return str(newhour) + t[2:] + (" am" if hour<12 else " pm")
 
 
+def themes():
+    import os
+    return os.listdir(os.path.join('static', 'themes'))
+
+
 def determine_platform():
     import os
     try:

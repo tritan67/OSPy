@@ -255,7 +255,7 @@ div#status {
     font-weight: 400;
     letter-spacing: normal;
     line-height: 14pt;
-    margin: 0 4px;
+    margin: 4px 4px;
     padding: 9px 18px;
     text-align: center;
     text-decoration: none;
@@ -396,6 +396,10 @@ input[type=number] {
     width: 60px;
 }
 /******** Station Table Styles **********/
+
+#programmode {
+    overflow: auto;
+}
 
 table.optionList {
     border:3px solid #2E3959;
@@ -699,19 +703,50 @@ td.stationSchedule {
     display:inline-block;
 }
 
-.help_link_1 {
+#help_container {
+    min-height: 350px;
+    display: table;
+    box-sizing: border-box;
+    width: 100%
+}
+
+#help_menu {
+    vertical-align:top;
+    display: table-cell;
+    padding: 5px;
+    border-right: solid 1px;
+}
+
+#help_contents {
+    vertical-align:top;
+    display: table-cell;
+    width: 80%;
+    padding:5px;
+}
+
+.help_link_1{
     margin-top: 10pt;
     font-size: 16pt;
+    white-space: nowrap;
 }
 .help_link_2 {
     margin-top: 2pt;
     margin-left: 5pt;
     font-size: 12pt;
+    white-space: nowrap;
 }
+
 .help_link_3 {
     margin-left: 10pt;
     font-size: 10pt;
+    white-space: nowrap;
 }
+
+.help_link_1 a,.help_link_2 a, .help_link_3 a {
+    text-decoration: none;
+    color: #2E3959;
+}
+
 
 @media only screen and (max-width: 1024px) {
    body {
@@ -760,17 +795,14 @@ td.stationSchedule {
       padding: 0 5px 5px 5px;
    }
 
-   button {
+   button, .button {
       font-size: 9pt;
    }
 
-   #nav button {
+   #nav .button {
       padding: 4px 12px;
       margin: 4px 0;
       font-size: 9pt;
-   }
-   #nav button.here {
-      height: 40px;
    }
 
    td.stationStatus {

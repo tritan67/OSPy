@@ -7,8 +7,8 @@ $var page: help
 <script src="/static/scripts/help.js"></script>
 <div id="help">
     <div class="title">Help</div>
-    <div class="simpleblock" style="min-height: 350px; display: table; box-sizing: border-box; width: 100%">
-        <div style="vertical-align:top; display: table-cell; min-width: 200px; padding:5px; border-right: solid 1px; text-wrap: none;">
+    <div id="help_container" class="simpleblock">
+        <div id="help_menu">
             $for index, doc_entry in enumerate(docs):
                 $if len(doc_entry) > 2:
                     <p class="help_link_${doc_entry[0]}"><a href="#${index}">${doc_entry[1]}</a></p>
@@ -16,7 +16,7 @@ $var page: help
                     <b><p class="help_link_${doc_entry[0]}">${doc_entry[1]}</p></b>
 
         </div>
-        <div id="help_contents" style="vertical-align:top; display: table-cell; width: 80%; padding:5px;">
+        <div id="help_contents">
 
         </div>
     </div>

@@ -8,6 +8,7 @@ from threading import Timer
 import logging
 import shelve
 
+import helpers
 import plugins
 
 OPTIONS_FILE = './ospy/data/options.db'
@@ -29,7 +30,7 @@ class _Options(object):
             "key": "theme",
             "name": "System theme",
             "default": "basic",
-            "options": ["basic", "original"],
+            "options": helpers.themes,
             "help": "Determines the look of the GUI.",
             "category": "System"
         },
