@@ -76,6 +76,7 @@ def start():
     wsgifunc = PluginStaticMiddleware(wsgifunc)
     wsgifunc = DebugLogMiddleware(wsgifunc)
     __server = web.httpserver.WSGIServer(("0.0.0.0", options.web_port), wsgifunc)
+    __server.timeout = 1  # Speed-up restarting
 
     sessions = shelve.open(os.path.join('ospy', 'data', 'sessions.db'))
     session = web.session.Session(app, web.session.ShelfStore(sessions),
@@ -97,6 +98,7 @@ def start():
         __server.start()
     except (KeyboardInterrupt, SystemExit):
         stop()
+
 
 def stop():
     global __server

@@ -5,24 +5,26 @@ $var page: home
 
 
 <script>
+    var checkTimer;
+
     function checkPage() {
         jQuery.ajax({
             type: 'HEAD',
             url: '${go_to}',
             success: function() {
+                if (checkTimer != null) {
+                    clearTimeout(checkTimer);
+                }
                 window.location.replace('${go_to}');
-            },
-            failure: function() {
-                setTimeout(function() {
-                    checkPage();
-                }, 1000);
             }
         });
     }
 
     jQuery(document).ready(function(){
         setTimeout(function() {
-            checkPage()
+            checkTimer = setInterval(function() {
+                checkPage();
+            }, 1000);
         }, 5000);
     });
 </script>

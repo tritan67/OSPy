@@ -75,14 +75,14 @@ def get_rpi_revision():
 
 def reboot(wait=1, block=False):
     if block:
+        # Stop the web server first:
+        from ospy import server
+        server.stop()
+
         from ospy.stations import stations
         stations.clear()
         time.sleep(wait)
         logging.info("Rebooting...")
-
-        # Stop the web server first:
-        from ospy import server
-        server.stop()
 
         import subprocess
         if determine_platform() == 'nt':
@@ -98,14 +98,14 @@ def reboot(wait=1, block=False):
 
 def poweroff(wait=1, block=False):
     if block:
+        # Stop the web server first:
+        from ospy import server
+        server.stop()
+
         from ospy.stations import stations
         stations.clear()
         time.sleep(wait)
         logging.info("Powering off...")
-
-        # Stop the web server first:
-        from ospy import server
-        server.stop()
 
         import subprocess
         if determine_platform() == 'nt':
@@ -121,22 +121,23 @@ def poweroff(wait=1, block=False):
 
 def restart(wait=1, block=False):
     if block:
-        from ospy.stations import stations
-        stations.clear()
-        time.sleep(wait)
-        logging.info("Restarting...")
-        import subprocess
         # Stop the web server first:
         from ospy import server
         server.stop()
 
+        from ospy.stations import stations
+        stations.clear()
+        time.sleep(wait)
+        logging.info("Restarting...")
+
+        import sys
         if determine_platform() == 'nt':
+            import subprocess
             # Use this weird construction to start a separate process that is not killed when we stop the current one
-            import sys
             subprocess.Popen(['cmd.exe', '/c', 'start', sys.executable] + sys.argv)
         else:
-            # No need to stop web server, the service will do this for us:
-            subprocess.Popen('service ospy restart'.split())
+            import os
+            os.execl(sys.executable, sys.executable, *sys.argv)
     else:
         from threading import Thread
         t = Thread(target=restart, args=(wait, True))
