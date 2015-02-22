@@ -5,10 +5,13 @@ This plugin can send E-mails. For this plugin you need a GMail account as provid
 
 Plugin setup
 -----------
-* Check Send E-mail with log file after power on for send email.
+* Check Send E-mail after power on for send email.    
   If checked sends e-mail into your e-mail address.
   Example send email from system:  
-  On 17.02.2015 at 09:57:40: System was powered on.  
+  On 17.02.2015 at 09:57:40: System was powered on. 
+
+* Check with log file.  
+  If checked with events.log file if exists (your must enabled in options "check Enable debug log").
 
 * Check Send E-mail if rain is detected.
   If checked send e-mail into your e-mail address.  

@@ -4,6 +4,7 @@
 import json
 import time
 import os
+import os.path
 import traceback
 import smtplib
 from threading import Thread, Event
@@ -28,6 +29,7 @@ LINK = 'settings_page'
 email_options = PluginOptions(
     NAME,
     {
+        'emlpwron': False,
         'emllog': False,
         'emlrain': False,
         'emlrun': False,
@@ -76,11 +78,21 @@ class EmailSender(Thread):
         last_rain = False
         finished_count = len([run for run in log.finished_runs() if not run['blocked']])
 
-        if email_options["emllog"]:          # if eml_log send email is enable (on)
+        if email_options["emlpwron"]:      # if eml_power_on send email is enable (on)
             body = ('On ' + time.strftime("%d.%m.%Y at %H:%M:%S", time.localtime(time.time())) +
                     ': System was powered on.')
-            self.try_mail(email_options['emlsubject'], body)  #TODO: add log file?
-
+            if email_options["emllog"]:
+                try:
+                   logfile = 'ospy/data/events.log' 
+                   if os.path.isfile(logfile) and os.access(logfile, os.R_OK):
+                      self.try_mail(email_options['emlsubject'], body, logfile)
+                   else:
+                      self.try_mail(email_options['emlsubject'], body) 
+                except:
+                    pass
+            else:
+                self.try_mail(email_options['emlsubject'], body)
+                
         while not self._stop.is_set():
             try:
                 # Send E-amil if rain is detected
