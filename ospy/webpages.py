@@ -50,12 +50,13 @@ class InstantCacheRender(web.template.render):
 
     def _fill_cache(self):
         import time
-        for name in os.listdir(self._loc):
-            if name.endswith('.html') and \
-                    (self._limit is None or name[:-5] in self._limit) and \
-                    (self._exclude is None or name[:-5] not in self._exclude):
-                self._template(name[:-5])
-                time.sleep(0.1)
+        if os.path.isdir(self._loc):
+            for name in os.listdir(self._loc):
+                if name.endswith('.html') and \
+                        (self._limit is None or name[:-5] in self._limit) and \
+                        (self._exclude is None or name[:-5] not in self._exclude):
+                    self._template(name[:-5])
+                    time.sleep(0.1)
 
 
 class WebPage(object):
@@ -283,6 +284,7 @@ class program_page(ProtectedPage):
 
         raise web.seeother('/programs')
 
+
 class runonce_page(ProtectedPage):
     """Open a page to view and edit a run once program."""
 
@@ -301,6 +303,41 @@ class runonce_page(ProtectedPage):
 
         run_once.set(station_seconds)
         raise web.seeother('/')
+
+
+class plugins_manage_page(ProtectedPage):
+    """Manage plugins page."""
+
+    def GET(self):
+        qdict = web.input()
+        plugin = get_input(qdict, 'plugin', None)
+        delete = get_input(qdict, 'delete', False, lambda x: True)
+        enable = get_input(qdict, 'enable', None, lambda x: x == '1')
+        disable_all = get_input(qdict, 'disable_all', False, lambda x: True)
+
+        if disable_all:
+            options.enabled_plugins = []
+            plugins.start_enabled_plugins()
+
+        if plugin is not None and plugin in plugins.available():
+            if delete:
+                enable = False
+
+            if enable is not None:
+                if not enable and plugin in options.enabled_plugins:
+                    options.enabled_plugins.remove(plugin)
+                elif enable and plugin not in options.enabled_plugins:
+                    options.enabled_plugins.append(plugin)
+                plugins.start_enabled_plugins()
+
+            if delete:
+                from helpers import del_rw
+                import shutil
+                shutil.rmtree(os.path.join('plugins', plugin), onerror=del_rw)
+
+            raise web.seeother('/plugins_manage')
+
+        return self.core_render.plugins_manage()
 
 
 class log_page(ProtectedPage):
@@ -370,8 +407,6 @@ class options_page(ProtectedPage):
                     raise web.seeother('/options?errorCode=pw_wrong')
             except KeyError:
                 pass
-
-        plugins.start_enabled_plugins()
 
         raise web.seeother('/')
 

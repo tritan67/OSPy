@@ -60,11 +60,7 @@ class _Options(object):
         {
             "key": "enabled_plugins",
             "name": "Enabled plug-ins",
-            "default": [],
-            "multi_options": plugins.available,
-            "multi_options_names": plugins.plugin_names,
-            "help": "Only the plug-ins that have been enabled will be loaded.",
-            "category": "System"
+            "default": []
         },
 
         #######################################################################

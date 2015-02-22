@@ -747,6 +747,39 @@ td.stationSchedule {
     color: #2E3959;
 }
 
+.plugin {
+    border-color: #2E3959;
+    background-color: #2E3959;
+    color: white;
+    vertical-align: middle;
+    margin: 4px 0 !important;
+}
+
+.plugin.disabled {
+    border-color: #7D1921;
+    background-color: #7D1921;
+}
+
+.plugin .button.toggle {
+    width:130px;
+    background-color:transparent;
+    margin: 0 !important;
+}
+.plugin .button.toggle span.toggleleft {width: 30px;}
+.plugin .button.toggle span.toggleright {width: 30px;}
+
+.plugin .button.open {
+    border: 1px solid #397F19;
+    margin: 0 !important;
+}
+.plugin .button.danger {
+    border: 1px solid #7D1921;
+    margin: 0 !important;
+}
+.plugin.disabled .danger {
+    border: 1px solid #FFF;
+    margin: 0 !important;
+}
 
 @media only screen and (max-width: 1024px) {
    body {

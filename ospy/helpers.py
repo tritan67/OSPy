@@ -11,6 +11,17 @@ import time
 import errno
 
 
+def del_rw(action, name, exc):
+    import os
+    import stat
+    if os.path.exists(name):
+        os.chmod(name, stat.S_IWRITE)
+    if os.path.isfile(name):
+        os.remove(name)
+    elif os.path.isdir(name):
+        os.rmdir(name)
+
+
 def now():
     return time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
 

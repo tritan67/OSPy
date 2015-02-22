@@ -1,0 +1,38 @@
+$def with ()
+
+$var title: Manage Plugins
+$var page: plugins
+
+
+<div id="controls">
+    <a href="/plugins_install" class="button add">Install new plugin</a>
+    <a href="/plugins_manage?disable_all" class="button danger">Disable All</a>
+    $ running_list = plugins.running()
+    $for plugin in plugins.available():
+        $ running = plugin in running_list
+        <div id="${plugin}" class="controlBlock plugin ${'' if running else 'disabled'}">
+            <div style="display: inline-block; padding: 0; float: right;">
+                <div style="display: inline-block; padding: 0; width: 90px;">
+                $if running and plugins.get(plugin).LINK:
+                    <a class="button open" href="${plugins.plugin_url(plugins.get(plugin).LINK)}">Open</a>
+                </div>
+
+                <div style="display: inline-block; padding: 0; width: 90px;">
+                    <a href="/plugins_manage?plugin=${plugin}&delete" class="button danger">Delete</a>
+                </div>
+            </div>
+
+            <div style="display: inline-block; padding: 0; width: 150px;">
+                <a href="/plugins_manage?plugin=${plugin}&enable=${'0' if running else '1'}" class="button cDisable toggle ${'on' if running else 'off'}">
+                    <span class='toggleleft'>On</span>
+                    <span class='togglesep'>&nbsp;</span>
+                    <span class='toggleright'>Off</span>
+                </a>
+            </div>
+
+            <div style="display: inline-block; padding: 0;">
+                ${plugins.plugin_name(plugin)}
+            </div>
+            <div style="clear:both; padding: 0;"></div>
+        </div>
+</div>

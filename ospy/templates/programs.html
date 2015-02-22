@@ -23,7 +23,7 @@ $var page: programs
 
         <p>
             $if not options.manual_mode and program.type != ProgramType.WEEKLY_ADVANCED and program.type != ProgramType.CUSTOM:
-                <a href="/program/${program.index}?delete" class="button cRunNow">Run Now</a>
+                <a href="/program/${program.index}?runnow" class="button cRunNow">Run Now</a>
             <a href="/program/${program.index}" class="button cModify">Edit</a>
             <a href="/program/${program.index}?delete" class="button cDelete danger">Delete</a>
         </p>

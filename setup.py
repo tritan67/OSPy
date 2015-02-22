@@ -6,7 +6,6 @@ import sys
 import os
 import subprocess
 import shutil
-import stat
 
 
 def yes_no(msg):
@@ -16,16 +15,8 @@ def yes_no(msg):
     return response.lower().strip() in ['y', 'yes']
 
 
-def del_rw(action, name, exc):
-    if os.path.exists(name):
-        os.chmod(name, stat.S_IWRITE)
-    if os.path.isfile(name):
-        os.remove(name)
-    elif os.path.isdir(name):
-        os.rmdir(name)
-
-
 def install_package(module, easy_install=None, package=None, git=None, git_execs=None, zipfile=None, zip_cwd=None, zip_execs=None):
+    from ospy.helpers import del_rw
     try:
         print 'Checking %s' % module
         __import__(module)
