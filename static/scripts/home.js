@@ -2,33 +2,6 @@
 var displayScheduleDate = new Date(device_time); // dk
 var displayScheduleTimeout;
 
-
-function toXSDate(d) {
-    var r = d.getFullYear() + "-" +
-            (d.getMonth() < 9 ? "0" : "") + (d.getMonth()+1) + "-" +
-            (d.getDate() < 10 ? "0" : "") + d.getDate();
-    return r;
-}
-
-function toClock(duration, tf) {
-    var h = Math.floor(duration/60);
-    var m = Math.floor(duration - (h*60));
-    if (tf == 0) {
-        return (h>12 ? h-12 : h) + ":" + (m<10 ? "0" : "") + m + (h<12 ? "am" : "pm");
-    } else {
-        return (h<10 ? "0" : "") + h + ":" + (m<10 ? "0" : "") + m;
-    }
-}
-
-function fromClock(clock) {
-    var components = clock.split(":");
-    var duration = 0;
-    for (var c in components) {
-        duration = duration*60 + parseInt(components[c], 10);
-    }
-    return duration;
-}
-
 function displaySchedule(schedule) {
     if (displayScheduleTimeout != null) {
         clearTimeout(displayScheduleTimeout);
@@ -108,8 +81,6 @@ function displayProgram() {
     })
 }
 
-jQuery(document).ready(displayProgram);
-
 function scheduleMarkerMouseover() {
     var description = jQuery(this).attr("data");
     var markerClass = jQuery(this).attr("class");
@@ -123,4 +94,112 @@ function scheduleMarkerMouseout() {
     jQuery(this).children(".showDetails").remove();
 }
 
+function updateStatus(status) {
+    var display, updateInterval = 30000;
+    for (var s=0; s<status.length; s++) {
+        var station = status[s];
+        var classes = "stationStatus station_" + station.status;
+        switch (station.reason) {
+            case "program" :
+                var minutes = Math.floor(station.remaining/60);
+                var seconds = Math.floor(station.remaining - 60*minutes);
+                if (minutes < 10) {minutes = "0"+minutes;}
+                if (seconds < 10) {seconds = "0"+seconds;}
+                if (station.status == "on") {
+                    display = minutes+":"+seconds;
+                }
+                updateInterval = 1000;
+                break;
+            case "master" :
+                classes += " master";
+                if (station.status == "on") {
+                    display = "Master On";
+                } else {
+                    display = "Master Off";
+                    classes += " strike";
+                }
+                break;
+            case "rain_delay" :
+                display = "Rain Delay";
+                break;
+            case "rain_sensed" :
+                display = "Rain Sensor";
+                break;
+            case "system_off" :
+                display = "Disabled";
+                break;
+            default:
+                display = station.status;
+        }
+        jQuery("td#status" + station.station)
+            .text(display)
+            .removeClass()
+            .addClass(classes);
+    }
+    setTimeout(statusTimer, updateInterval);
+}
 
+function statusTimer() {
+    jQuery.getJSON("/status.json", updateStatus)
+}
+
+function water_level_prompt(current){
+    if (current != 1.0) {
+        var w = 100;
+    } else {
+        var w = prompt("Enter adjustment (%)", current*100);
+    }
+    if (w != null) {
+        window.location="/action?level_adjustment=" + w;
+    }
+}
+
+function rain_delay_prompt(current){
+    if (current != 0) {
+        var h = 0;
+    } else {
+        var h = prompt("Enter hours to delay", "0");
+    }
+    if (h != null) {
+        window.location="/action?rain_block=" + h;
+    }
+}
+
+function countdownTimer(timerId) {
+    var timerElement = jQuery("#" + timerId);
+    var remaining = parseFloat(timerElement.attr("data"));
+    var rHours = Math.floor(remaining/3600);
+    var rMinutes = Math.floor((remaining%3600)/60);
+    if (rHours <=0 && rMinutes <=0) {
+        window.location = "/";
+    } else {
+        timerElement.text((rHours<10 ? "0" : "") + rHours + ":" + (rMinutes<10 ? "0" : "") + rMinutes);
+        setTimeout("countdownTimer('" + timerId + "')", 2000);
+    }
+}
+
+jQuery(document).ready(function(){
+    if (!manual_mode) {
+        displayProgram()
+        statusTimer();
+
+        jQuery(".button#pPrev").click(function() {
+            displayScheduleDate.setDate(displayScheduleDate.getDate() - 1);
+            displayProgram();
+        });
+        jQuery(".button#pToday").click(function() {
+            var day = new Date()//dk
+            displayScheduleDate.setDate(day.getDate());
+            displayScheduleDate.setMonth(day.getMonth()); //dk
+            displayProgram();
+        });
+        jQuery(".button#pNext").click(function() {
+            displayScheduleDate.setDate(displayScheduleDate.getDate() + 1);
+            displayProgram();
+        });
+    }
+
+    jQuery(".countdown").each(function() {
+        countdownTimer(jQuery(this).attr('id'));
+    });
+});

@@ -11,6 +11,7 @@ urls = [
     '/logout', 'ospy.webpages.logout_page',
 
     '/',  'ospy.webpages.home_page',
+    '/action', 'ospy.webpages.action_page',
 
     '/programs', 'ospy.webpages.programs_page',
     '/program/(new|[0-9]+)', 'ospy.webpages.program_page',
@@ -21,11 +22,6 @@ urls = [
     '/options', 'ospy.webpages.options_page',
     '/stations', 'ospy.webpages.stations_page',
     '/help', 'ospy.webpages.help_page',
-
-    '/sn', 'ospy.webpages.get_set_station_page',
-    '/ttu', 'ospy.webpages.toggle_temp_page',
-    '/rev', 'ospy.webpages.show_revision_page',
-    '/wl', 'ospy.webpages.water_log_page',
 
     '/status.json', 'ospy.webpages.api_status_json',
     '/log.json', 'ospy.webpages.api_log_json',

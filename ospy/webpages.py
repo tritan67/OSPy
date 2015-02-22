@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 
 # System imports
+import os
 import datetime
 import json
 import web
 
 # Local imports
-from ospy.helpers import *
+from ospy.helpers import test_password, template_globals, check_login, save_to_options, \
+    password_hash, password_salt, get_input, get_help_files, get_help_file
 from ospy.inputs import inputs
 from ospy.log import log
 from ospy.options import options
@@ -17,11 +19,10 @@ from ospy.programs import ProgramType
 from ospy.runonce import run_once
 from ospy.stations import stations
 from ospy import scheduler
-from ospy import version
 import plugins
 
-
 from web import form
+
 
 signin_form = form.Form(
     form.Password('password', description='Password:'),
@@ -34,30 +35,49 @@ signin_form = form.Form(
 )
 
 
+class InstantCacheRender(web.template.render):
+    '''This class immediately starts caching all templates in the given location.'''
+    def __init__(self, loc='templates', cache=None, base=None, limit=None, exclude=None, **keywords):
+        web.template.render.__init__(self, loc, cache, base, **keywords)
+
+        self._limit = limit
+        self._exclude = exclude
+
+        from threading import Thread
+        t = Thread(target=self._fill_cache)
+        t.daemon = True
+        t.start()
+
+    def _fill_cache(self):
+        import time
+        for name in os.listdir(self._loc):
+            if name.endswith('.html') and \
+                    (self._limit is None or name[:-5] in self._limit) and \
+                    (self._exclude is None or name[:-5] not in self._exclude):
+                self._template(name[:-5])
+                time.sleep(0.1)
+
+
 class WebPage(object):
+    base_render = InstantCacheRender(os.path.join('ospy', 'templates'),
+                                     globals=template_globals(), limit=['base']).base
+    core_render = InstantCacheRender(os.path.join('ospy', 'templates'),
+                                     globals=template_globals(), exclude=['base'], base=base_render)
+
     def __init__(self):
-        self.base_render = lambda page: web.template.render('ospy/templates', globals=template_globals()).base(page)
-
-        self.core_render = web.template.render(os.path.join('ospy', 'templates'), globals=template_globals(), base=self.base_render)
-        self.plugin_render = web.template.render(os.path.join(os.path.join(*self.__module__.split('.')), 'templates'), globals=template_globals(), base=self.base_render)
-
-        # If you want to profile the get requests, uncomment these lines:
-        # self.orig_get = self.GET
-        # self.GET = self.profiled_get
-
-    def profiled_get(self):
-        import cProfile
-        result = {}
-        cProfile.runctx('result[0] = self.orig_get()', globals(), locals(), self.__class__.__name__)
-        import pstats
-        p = pstats.Stats(self.__class__.__name__)
-        p.strip_dirs().sort_stats('cumtime').print_stats()
-        return self.orig_get()
+        cls = self.__class__
+        if self.__module__.startswith('plugins') and 'plugin_render' not in cls.__dict__:
+            cls.plugin_render = InstantCacheRender(os.path.join(os.path.join(*self.__module__.split('.')), 'templates'), globals=template_globals(), base=self.base_render)
 
 
 class ProtectedPage(WebPage):
     def __init__(self):
-        check_login(True)
+        try:
+            check_login(True)
+        except web.seeother:
+            from ospy.server import session
+            session.last_page = web.ctx.fullpath
+            raise
         WebPage.__init__(self)
 
 
@@ -78,7 +98,7 @@ class login_page(WebPage):
         else:
             from ospy import server
             server.session.validated = True
-            raise web.seeother(server.session.login_to)
+            raise web.seeother(server.session.last_page)
 
 
 class logout_page(WebPage):
@@ -92,43 +112,88 @@ class home_page(ProtectedPage):
     """Open Home page."""
 
     def GET(self):
+        return self.core_render.home()
+
+
+class action_page(ProtectedPage):
+    """Page to perform some simple actions (mainly from the homepage)."""
+
+    def GET(self):
+        from ospy import server
         qdict = web.input()
-        if 'stop_all' in qdict and qdict['stop_all'] == '1':
+
+        stop_all = get_input(qdict, 'stop_all', False, lambda x: True)
+        scheduler_enabled = get_input(qdict, 'scheduler_enabled', None, lambda x: x == '1')
+        manual_mode = get_input(qdict, 'manual_mode', None, lambda x: x == '1')
+        rain_block = get_input(qdict, 'rain_block', None, float)
+        level_adjustment = get_input(qdict, 'level_adjustment', None, float)
+        toggle_temp = get_input(qdict, 'toggle_temp', False, lambda x: True)
+
+        if stop_all:
             if not options.manual_mode:
                 options.scheduler_enabled = False
                 programs.run_now_program = None
                 run_once.clear()
             log.finish_run(None)
             stations.clear()
-            raise web.seeother('/')
 
-        return self.core_render.home()
+        if scheduler_enabled is not None:
+            options.scheduler_enabled = scheduler_enabled
 
-    def POST(self):
-        qdict = web.input()
-        if 'scheduler_enabled' in qdict and qdict['scheduler_enabled'] != '':
-            options.scheduler_enabled = True if qdict['scheduler_enabled'] == '1' else False
-        if 'manual_mode' in qdict and qdict['manual_mode'] != '':
-            options.manual_mode = True if qdict['manual_mode'] == '1' else False
+        if manual_mode is not None:
+            options.manual_mode = manual_mode
 
-        if 'rain_block' in qdict:
-            if qdict['rain_block'] != '0' and qdict['rain_block'] != '':
-                options.rain_block = datetime.datetime.now() + datetime.timedelta(hours=float(qdict['rain_block']))
-            elif qdict['rain_block'] == '0':
-                options.rain_block = datetime.datetime.now()
+        if rain_block is not None:
+            options.rain_block = datetime.datetime.now() + datetime.timedelta(hours=rain_block)
 
-        if 'level_adjustment' in qdict and qdict['level_adjustment'] != '':
-            options.level_adjustment = float(qdict['level_adjustment']) / 100
+        if level_adjustment is not None:
+            options.level_adjustment = level_adjustment / 100
 
-        raise web.seeother('/')  # Send browser back to home page
+        if toggle_temp:
+            options.temp_unit = "F" if options.temp_unit == "C" else "C"
 
+        set_to = get_input(qdict, 'set_to', None, int)
+        sid = get_input(qdict, 'sid', 0, int) - 1
+        set_time = get_input(qdict, 'set_time', 0, int)
+
+        if set_to is not None and 0 <= sid < stations.count() and options.manual_mode:
+            if set_to:  # if status is on
+                start = datetime.datetime.now()
+                new_schedule = {
+                    'active': True,
+                    'program': -1,
+                    'station': sid,
+                    'program_name': "Manual",
+                    'manual': True,
+                    'blocked': False,
+                    'start': start,
+                    'original_start': start,
+                    'end': start + datetime.timedelta(days=3650),
+                    'uid': '%s-%s-%d' % (str(start), "Manual", sid),
+                    'usage': stations.get(sid).usage
+                }
+                if set_time > 0:  # if an optional duration time is given
+                    new_schedule['end'] = datetime.datetime.now() + datetime.timedelta(seconds=set_time)
+
+                log.start_run(new_schedule)
+                stations.activate(new_schedule['station'])
+
+            else:  # If status is off
+                stations.deactivate(sid)
+                active = log.active_runs()
+                for interval in active:
+                    if interval['station'] == sid:
+                        log.finish_run(interval)
+
+        raise web.seeother(server.session.last_page)
 
 class programs_page(ProtectedPage):
     """Open programs page."""
 
     def GET(self):
         qdict = web.input()
-        if 'delete' in qdict and qdict['delete'] == '1':
+        delete_all = get_input(qdict, 'delete_all', False, lambda x: True)
+        if delete_all:
             while programs.count() > 0:
                 programs.remove_program(programs.count()-1)
         return self.core_render.programs()
@@ -141,14 +206,17 @@ class program_page(ProtectedPage):
         qdict = web.input()
         try:
             index = int(index)
-            if 'delete' in qdict and qdict['delete'] == '1':
+            delete = get_input(qdict, 'delete', False, lambda x: True)
+            runnow = get_input(qdict, 'runnow', False, lambda x: True)
+            enable = get_input(qdict, 'enable', None, lambda x: x == '1')
+            if delete:
                 programs.remove_program(index)
                 raise web.seeother('/programs')
-            elif 'runnow' in qdict and qdict['runnow'] == '1':
+            elif runnow:
                 programs.run_now(index)
                 raise web.seeother('/programs')
-            elif 'enable' in qdict:
-                programs[index].enabled = (qdict['enable'] == '1')
+            elif enable is not None:
+                programs[index].enabled = enable
                 raise web.seeother('/programs')
         except ValueError:
             pass
@@ -232,20 +300,39 @@ class runonce_page(ProtectedPage):
                 station_seconds[station.index] = seconds
 
         run_once.set(station_seconds)
-        raise web.seeother('/runonce')
+        raise web.seeother('/')
 
 
 class log_page(ProtectedPage):
     """View Log"""
 
     def GET(self):
-        return self.core_render.log()
-
-    def POST(self):
         qdict = web.input()
         if 'clear' in qdict:
             log.clear_runs()
-        raise web.seeother('/log')
+            raise web.seeother('/log')
+
+        if 'csv' in qdict:
+            events = log.finished_runs() + log.active_runs()
+            data = "Date, Start Time, Zone, Duration, Program\n"
+            for interval in events:
+                # return only records that are visible on this day:
+                duration = (interval['end'] - interval['start']).total_seconds()
+                minutes, seconds = divmod(duration, 60)
+
+                data += ', '.join([
+                    interval['start'].strftime("%Y-%m-%d"),
+                    interval['start'].strftime("%H:%M:%S"),
+                    str(interval['station']),
+                    "%02d:%02d" % (minutes, seconds),
+                    interval['program_name']
+                ]) + '\n'
+
+            web.header('Content-Type', 'text/csv')
+            web.header('Content-Disposition', 'attachment; filename="log.csv"')
+            return data
+
+        return self.core_render.log()
 
 
 class options_page(ProtectedPage):
@@ -323,89 +410,8 @@ class help_page(ProtectedPage):
 
 
 ################################################################################
-# Helpers                                                                      #
-################################################################################
-
-class get_set_station_page(ProtectedPage):
-    """Return a page containing a number representing the state of a station or all stations if 0 is entered as station number."""
-
-    def GET(self):
-        qdict = web.input()
-
-        sid = get_input(qdict, 'sid', 0, int) - 1
-        set_to = get_input(qdict, 'set_to', None, int)
-        set_time = get_input(qdict, 'set_time', 0, int)
-
-        if set_to is None:
-            if sid < 0:
-                status = '<!DOCTYPE html>\n'
-                status += ''.join(('1' if s.active else '0') for s in stations)
-                return status
-            elif sid < stations.count():
-                status = '<!DOCTYPE html>\n'
-                status += '1' if stations.get(sid).active else '0'
-                return status
-            else:
-                return 'Station ' + str(sid+1) + ' not found.'
-        elif options.manual_mode:
-            if set_to:  # if status is on
-                start = datetime.datetime.now()
-                new_schedule = {
-                    'active': True,
-                    'program': -1,
-                    'station': sid,
-                    'program_name': "Manual",
-                    'manual': True,
-                    'blocked': False,
-                    'start': start,
-                    'original_start': start,
-                    'end': start + datetime.timedelta(days=3650),
-                    'uid': '%s-%s-%d' % (str(start), "Manual", sid),
-                    'usage': 1.0  # FIXME
-                }
-                if set_time > 0:  # if an optional duration time is given
-                    new_schedule['end'] = datetime.datetime.now() + datetime.timedelta(seconds=set_time)
-
-                log.start_run(new_schedule)
-                stations.activate(new_schedule['station'])
-
-            else:  # If status is off
-                stations.deactivate(sid)
-                active = log.active_runs()
-                for interval in active:
-                    if interval['station'] == sid:
-                        log.finish_run(interval)
-
-            raise web.seeother('/')
-        else:
-            return 'Manual mode not active.'
-
-
-class show_revision_page(ProtectedPage):
-    """Show revision info to the user. Use: [URL of Pi]/rev."""
-
-    def GET(self):
-        revpg = '<!DOCTYPE html>\n'
-        revpg += 'Python Interval Program for OpenSprinkler Pi<br/><br/>\n'
-        revpg += 'Compatable with OpenSprinkler firmware 1.8.3.<br/><br/>\n'
-        revpg += 'Includes plugin architecture\n'
-        revpg += 'ospy.py version: v' + version.ver_str + '<br/><br/>\n'
-        revpg += 'Updated ' + version.ver_date + '\n'
-        return revpg
-
-
-class toggle_temp_page(ProtectedPage):
-    """Change units of Raspi's CPU temperature display on home page."""
-
-    def GET(self):
-        qdict = web.input()
-        options.temp_unit = "F" if qdict['tunit'] == "C" else "C"
-        raise web.seeother(qdict.get('url', '/'))
-
-################################################################################
 # APIs                                                                         #
 ################################################################################
-
 class api_status_json(ProtectedPage):
     """Simple Status API"""
 
@@ -484,26 +490,3 @@ class api_log_json(ProtectedPage):
                 'start': interval['start'].strftime("%H:%M:%S"),
                 'duration': "%02d:%02d" % (minutes, seconds)
             }
-
-class water_log_page(ProtectedPage):
-    """Simple Log API"""
-
-    def GET(self):
-        events = log.finished_runs() + log.active_runs()
-
-        data = "Date, Start Time, Zone, Duration, Program\n"
-        for interval in events:
-            # return only records that are visible on this day:
-            duration = (interval['end'] - interval['start']).total_seconds()
-            minutes, seconds = divmod(duration, 60)
-
-            data += ', '.join([
-                interval['start'].strftime("%Y-%m-%d"),
-                interval['start'].strftime("%H:%M:%S"),
-                str(interval['station']),
-                "%02d:%02d" % (minutes, seconds),
-                interval['program_name']
-            ]) + '\n'
-
-        web.header('Content-Type', 'text/csv')
-        return data

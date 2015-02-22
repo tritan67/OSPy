@@ -20,6 +20,40 @@ div, p {
 
 /******** Overall Layout Styles **********/
 
+/* Ported from base: */
+.bluebg {background-color:lightblue;}
+.opOn, .wlOn, .rsOff {color:green;}
+.opOff, .wlOff, .rsOn {color:red;}
+.rdOff {color:black;}
+.rdOn {color:red;}
+.rsNA, .station_waiting {color:gray;}
+.station_disabled {color:gray;}
+
+#lastRun {color:gray;}
+#stations {width:100%;}
+#pluginMenu{display: none; z-index: 99}
+.program {line-height:22px}
+.strike {text-decoration:line-through;}
+
+.progstation_on {background-color:#9AFA9A; color:black; font-size:10pt}
+.progstation_off {background-color:white; color:lightgray; font-size:10pt}
+
+button#tooltip {height:24px;}
+.tooltip {background-color:#FFF2B8; display:none; font-size:10pt; margin-left:4px;}
+.label {font-weight:bold; float:left; width:160px; text-align:right; padding-right:4px;}
+.option {margin: 6px 0px; clear:both;}
+
+td.stationNumber, td.stationShow, td.stationIgnore, td.activateMaster {text-align:center}
+td.stationName {text-align:left; padding-left:1em;}
+
+table td.shrink {
+    width: 1px;
+    white-space:nowrap
+}
+table td.expand {
+    width: 99%
+}
+
 div.header {
     background-image: url('logo.png');
     background-repeat: no-repeat;
@@ -71,6 +105,7 @@ div.panel {
     margin-left: 240px;
     padding:12px;
     background-color: white;
+    min-height: 200px;
 }
 
 div.panel div.title {
@@ -208,40 +243,49 @@ div#status {
 #nav {
     margin-bottom:16px;
 }
-#nav button {
-    padding:9px 18px;
-    margin-right: 8px;
+#nav .button {
+    background-color: #2E3959;
+    border: 0px;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    display: inline-block;
     font-family: Quicksand, sans-serif;
-    text-transform: uppercase;
     font-size: 16pt;
     font-weight: 400;
-    color:white;
-    background-color:#2E3959;
-    border:0px;
-    border-radius: 8px;
-    cursor: pointer;
+    letter-spacing: normal;
+    line-height: 14pt;
+    margin: 0 4px;
+    padding: 9px 18px;
+    text-align: center;
+    text-decoration: none;
+    text-indent: 0px;
+    text-rendering: auto;
+    text-shadow: none;
+    text-transform: uppercase;
+    vertical-align: middle;
+    word-spacing: normal;
 }
-#nav button.here {
+#nav .button.here {
     background-color: #32A620;
-    height: 54px;
 }
-#nav button.home {
+#nav .button.home {
     background-image: url('home.png');
     background-repeat: no-repeat;
     background-position: center center;
-    text-indent:-99999em;
-    overflow:hidden;
-    width: 40px;
+    width: 0px;
+    height: 18px;
 }
 
 /******** Button Styles **********/
 
-button {
+button, .button {
     padding: 4px 12px;
     font-family: Quicksand, sans-serif;
     font-size: 12pt;
     font-weight: 400;
     text-transform: uppercase;
+    text-decoration: none;
     text-align: center;
     line-height: 14pt;
     color: white;
@@ -250,21 +294,22 @@ button {
     border-radius: 12px;
     cursor: pointer;
     margin: 2px 0;
+    display: inline-block;
 }
-button:hover {
+button:hover, .button:hover {
     color: #F7F1CD;
 }
-button.on {
+button.on, .button.on {
     background-color: #397F19;
 }
-button.off {
+button.off, .button.off {
     background-color: #7D1921;
 }
-button.execute {
+button.execute, .button.execute {
     background-color: #2E3959;
 }
 
-button.toggle {
+button.toggle, .button.toggle {
     background-repeat: no-repeat;
     background-position: center center;
     width: 304px;
@@ -272,72 +317,76 @@ button.toggle {
     text-align: center;
     color: #DDD;
 }
-button.toggle.on {
+button.toggle.on, .button.toggle.on {
     background-color: #397F19;
     background-image: url('on.png');
 }
-button.toggle.on:hover {
+button.toggle.on:hover, .button.toggle.on:hover {
     color: #F7F1CD;
     background-image: url('off.png');
 }
-button.toggle.off {
+button.toggle.off, .button.toggle.off {
     background-color: #7D1921;
     background-image: url('off.png');
 }
-button.toggle.off.choice {
+button.toggle.off.choice, .button.toggle.off.choice {
     background-color: #397F19;
     background-image: url('off.png');
 }
-button.toggle.off:hover {
+button.toggle.off:hover, .button.toggle.off:hover {
     color: #F7F1CD;
     background-image: url('on.png');
 }
-button.toggle span.togglesep {
+button.toggle span.togglesep, .button.toggle span.togglesep {
     display: inline-block;
     width: 50px;
 }
-button.toggle span.toggleleft {
+button.toggle span.toggleleft, .button.toggle span.toggleleft {
     display: inline-block;
     text-align: right;
     width: 120px;
 }
-button.toggle span.toggleright {
+button.toggle span.toggleright, .button.toggle span.toggleright {
     display: inline-block;
     text-align:left;
     width: 120px;
 }
-button.toggle.on span.toggleright, button.toggle.off span.toggleleft {
+button.toggle.on span.toggleright, button.toggle.off span.toggleleft, .button.toggle.on span.toggleright, .button.toggle.off span.toggleleft {
     font-weight: 400;
 }
-button.toggle.off span.toggleright, button.toggle.on span.toggleleft {
+button.toggle.off span.toggleright, button.toggle.on span.toggleleft, .button.toggle.off span.toggleright, .button.toggle.on span.toggleleft {
     font-weight: 700;
     color: white;
 }
 
-#controls button#cSubmit {
+#controls button#cSubmit, #controls .button#cSubmit {
     background-color: #397F19;
 }
-#controls button#cSubmit:disabled {
+#controls button#cSubmit:disabled, #controls .button#cSubmit:disabled {
     background-color: #AAA;
 }
-button.danger {
+button.danger, .button.danger {
     background-color: #7D1921;
 }
 
-button.toggle.narrow {
+button.toggle.narrow, .button.toggle.narrow {
     width: 140px;
 }
-button.toggle.narrow span.toggleright, button.toggle.narrow span.toggleleft {
+button.toggle.narrow span.toggleright, button.toggle.narrow span.toggleleft, .button.toggle.narrow span.toggleright, .button.toggle.narrow span.toggleleft {
     width: 36px;
 }
 
-#options button, #controls button {
+#options button, #controls button, #options .button, #controls .button {
     margin: 4px 0px;
 }
 
-button.pushon.on {
+button.pushon.on, .button.pushon.on {
     font-weight: 700;
 }
+
+.program .button.toggle {float:right; width:130px; margin:0px !important; padding:0px; background-color:transparent}
+.program .button.toggle span.toggleleft {width: 30px;}
+.program .button.toggle span.toggleright {width: 30px;}
 
 input.timeInput {
     font-size:12pt;
@@ -492,6 +541,7 @@ table.adjustmentList th {
     background-position: 3px center;
     padding: 4px 4px 4px 24px;
     margin: 3px;
+    cursor: pointer;
 }
 .collapsible.collapsed h4 {
     background-image:url(collapsed.png)

@@ -3,27 +3,15 @@ $def with (docs)
 $var title: Help
 $var page: help
 
-<script>
-function load_doc(e) {
-    if(window.location.hash) {
-        jQuery("#help_contents").load("/help?id=" + window.location.hash.substring(1));
-    } else {
-        jQuery("#help_contents").load("/help?id=1");
-    }
-}
 
-jQuery(document).ready(load_doc);
-jQuery(window).bind('hashchange', load_doc);
-
-</script>
-
+<script src="/static/scripts/help.js"></script>
 <div id="help">
     <div class="title">Help</div>
     <div class="simpleblock" style="min-height: 350px; display: table; box-sizing: border-box; width: 100%">
         <div style="vertical-align:top; display: table-cell; min-width: 200px; padding:5px; border-right: solid 1px; text-wrap: none;">
             $for index, doc_entry in enumerate(docs):
                 $if len(doc_entry) > 2:
-                    </b><p class="help_link_${doc_entry[0]}"><a href="#${index}">${doc_entry[1]}</a></p>
+                    <p class="help_link_${doc_entry[0]}"><a href="#${index}">${doc_entry[1]}</a></p>
                 $else:
                     <b><p class="help_link_${doc_entry[0]}">${doc_entry[1]}</p></b>
 

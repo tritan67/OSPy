@@ -6,15 +6,43 @@ __author__ = 'Rimco'
 # System imports
 import datetime
 import logging
-import os
 import random
-import subprocess
 import time
 import errno
-from threading import Thread
+
+
+def now():
+    return time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
+
+
+def two_digits(n):
+    return '%02d' % int(n)
+
+
+def program_delay(program):
+    today = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+    result = (program.start - today).total_seconds()
+    while result < 0:
+        result += program.modulo*60
+    return int(result/24/3600)
+
+
+def formatTime(t):
+    from options import options
+    if options.time_format:
+        return t
+    else:
+        hour = int(t[0:2])
+        newhour = hour
+        if hour == 0:
+            newhour = 12
+        if hour > 12:
+            newhour = hour-12
+        return str(newhour) + t[2:] + (" am" if hour<12 else " pm")
 
 
 def determine_platform():
+    import os
     try:
         import RPi.GPIO
         return 'pi'
@@ -51,11 +79,13 @@ def reboot(wait=1, block=False):
         from ospy import server
         server.stop()
 
+        import subprocess
         if determine_platform() == 'nt':
             subprocess.Popen('shutdown /r /t 0'.split())
         else:
             subprocess.Popen(['reboot'])
     else:
+        from threading import Thread
         t = Thread(target=reboot, args=(wait, True))
         t.daemon = False
         t.start()
@@ -72,11 +102,13 @@ def poweroff(wait=1, block=False):
         from ospy import server
         server.stop()
 
+        import subprocess
         if determine_platform() == 'nt':
             subprocess.Popen('shutdown /t 0'.split())
         else:
             subprocess.Popen(['poweroff'])
     else:
+        from threading import Thread
         t = Thread(target=poweroff, args=(wait, True))
         t.daemon = False
         t.start()
@@ -88,7 +120,7 @@ def restart(wait=1, block=False):
         stations.clear()
         time.sleep(wait)
         logging.info("Restarting...")
-
+        import subprocess
         # Stop the web server first:
         from ospy import server
         server.stop()
@@ -101,6 +133,7 @@ def restart(wait=1, block=False):
             # No need to stop web server, the service will do this for us:
             subprocess.Popen('service ospy restart'.split())
     else:
+        from threading import Thread
         t = Thread(target=restart, args=(wait, True))
         t.daemon = False
         t.start()
@@ -121,6 +154,7 @@ def uptime():
 def get_ip():
     """Returns the IP adress if available."""
     try:
+        import subprocess
         arg = 'ip route list'
         p = subprocess.Popen(arg, shell=True, stdout=subprocess.PIPE)
         data = p.communicate()
@@ -172,6 +206,7 @@ def get_netdevs():
 
 def get_cpu_temp(unit=None):
     """Returns the temperature of the CPU if available."""
+    import os
     try:
         platform = determine_platform()
         if platform == 'bo':
@@ -194,6 +229,7 @@ def get_cpu_temp(unit=None):
 
 
 def mkdir_p(path):
+    import os
     try:
         os.makedirs(path)
     except OSError as exc:  # Python >2.5
@@ -323,8 +359,6 @@ def check_login(redirect=False):
         return False
 
     if redirect:
-        if not web.url().endswith('json'):  #TODO: remove when JS is cleaned-up?
-            server.session.login_to = web.url()
         raise web.seeother('/login', True)
     return False
 
@@ -340,52 +374,39 @@ def get_input(qdict, key, default=None, cast=None):
 
 def template_globals():
     import json
-    import time
     import plugins
+    import urllib
+    from web import ctx
 
     from ospy.inputs import inputs
     from ospy.log import log
-    from ospy.options import level_adjustments
-    from ospy.options import options
-    from ospy.options import rain_blocks
-    from ospy.programs import programs
-    from ospy.programs import ProgramType
+    from ospy.options import level_adjustments, options, rain_blocks
+    from ospy.programs import programs, ProgramType
     from ospy.runonce import run_once
     from ospy.stations import stations
     from ospy import version
+    from ospy.server import session
 
     result = {
         'str': str,
         'bool': bool,
         'int': int,
-        'eval': eval,
         'round': round,
-        'datetime': datetime,
-        'json': json,
         'isinstance': isinstance,
         'sorted': sorted,
         'hasattr': hasattr,
 
-        'inputs': inputs,
-        'log': log,
-        'level_adjustments': level_adjustments,
-        'options': options,
-        'plugins': plugins,
-        'rain_blocks': rain_blocks,
-        'stations': stations,
-        'programs': programs,
-        'run_once': run_once,
-        'ProgramType': ProgramType,
-        'version': version,
-        'long_day': long_day,
-
-        'cpu_temp': get_cpu_temp(),
-        'now': time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
+        'now': now
     }
+
+    result.update(globals()) # Everything in the global scope of this file will be available
+    result.update(locals())  # Everything imported in this function will be available
+
     return result
 
 
 def help_files_in_directory(docs_dir):
+    import os
     result = []
     if os.path.isdir(docs_dir):
         for filename in sorted(os.listdir(docs_dir)):
@@ -398,6 +419,7 @@ def help_files_in_directory(docs_dir):
 
 
 def get_help_files():
+    import os
     result = []
 
     result.append((1, 'OSPy'))
@@ -427,7 +449,6 @@ def get_help_files():
 
             for doc in docs:
                 result.append((3, doc[0], doc[1]))
-    print result
     return result
 
 

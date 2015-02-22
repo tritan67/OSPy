@@ -16,7 +16,7 @@ Plugin setup
 * Status:
   Status window from the plugin.  
   Example message on the LCD display:  
-  OpenSprinkler Pi (text on line 1)  
+  OpenSprinkler Py (text on line 1)
   Irrigation system (text on line 2)    
   CPU temperature:  
   42.8 C  

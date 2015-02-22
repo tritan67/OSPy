@@ -2,60 +2,19 @@ $def with ()
 
 $var title: Programs
 $var page: programs
-$code:
-    def two_digits(n):
-        return '%02d' % int(n)
 
-    def formatTime(t):
-        if options.time_format:
-            return t
-        else:
-            hour = int(t[0:2])
-            newhour = hour
-            if hour == 0:
-                newhour = 12
-            if hour > 12:
-                newhour = hour-12
-            return str(newhour)  + t[2:] + (" am" if hour<12 else " pm")
 
-<script>
-    // Initialize behaviors
-    jQuery(document).ready(function(){
-        jQuery("button.add").click(function(){
-            window.location = "/program/new";
-        });
-        jQuery("button.deleteAll").click(function(){
-            window.location = "/programs?delete=1";
-        });
-
-        jQuery("button.cModify").click(function(){
-            window.location = "/program/" + jQuery(this).attr("data");
-        });
-        jQuery("button.cDelete").click(function(){
-            window.location = "/program/" + jQuery(this).attr("data") + "?delete=1";
-        });
-        jQuery("button.cRunNow").click(function(){
-            window.location = "/program/" + jQuery(this).attr("data") + "?runnow=1";
-        });
-        jQuery("button.cDisable").click(function(){
-            var enable = jQuery(this).hasClass("off");
-            window.location = "/program/" + jQuery(this).attr("data") + "?enable=" + (enable ? '1' : '0');
-        });
-        
-    });
-
-</script>
 <div id="controls">
-    <button id="nAdd" class="add">Add a New Program</button>
-    <button id="nDelAll" class="deleteAll danger">Delete All</button>
+    <a href="/program/new" class="button add">Add a New Program</a>
+    <a href="/programs?delete_all" class="button deleteAll danger">Delete All</a>
     $for program in programs.get():
         <div id="p${program.index}" class="controlBlock program ${'' if program.enabled else 'disabled'}">
         <p>
-            <button class="cDisable toggle ${'on' if program.enabled else 'off'}" data="${program.index}">
+            <a href="/program/${program.index}?enable=${'0' if program.enabled else '1'}" class="button cDisable toggle ${'on' if program.enabled else 'off'}">
                 <span class='toggleleft'>On</span>
                 <span class='togglesep'>&nbsp;</span>
                 <span class='toggleright'>Off</span>
-            </button>
+            </a>
         ${program.index+1}. ${program.name}: <span class="val">${program.summary()}</span>
         </p>
         <p class="stationList">Run: <span class="val">${', '.join([stations[s].name for s in program.stations]) or "None"}</span></p>
@@ -64,9 +23,9 @@ $code:
 
         <p>
             $if not options.manual_mode and program.type != ProgramType.WEEKLY_ADVANCED and program.type != ProgramType.CUSTOM:
-                <button class="cRunNow" data="${program.index}">Run Now</button>
-            <button class="cModify" data="${program.index}">Edit</button>
-            <button class="cDelete danger" data="${program.index}">Delete</button>
+                <a href="/program/${program.index}?delete" class="button cRunNow">Run Now</a>
+            <a href="/program/${program.index}" class="button cModify">Edit</a>
+            <a href="/program/${program.index}?delete" class="button cDelete danger">Delete</a>
         </p>
         </div>
 </div>

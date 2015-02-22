@@ -3,30 +3,8 @@ $def with ()
 $var title: Stations
 $var page: stations
 
-<script>
-    // Initialize behaviors
-    jQuery(document).ready(function(){
 
-        jQuery("#cSubmit").click(function() {
-            jQuery("#stationsForm").submit();
-        });
-
-        jQuery("button#cResetNames").click(function(){
-            jQuery("input[type='text']").each(function () {
-                jQuery(this).val("Station " + (parseInt(jQuery(this).attr("name").split('_')[0]) + 1));
-            });
-            jQuery(".stationShow input").each(function () {
-                jQuery(this).prop('checked', true);
-            });
-        });
-
-        jQuery("button#cCancel").click(function(){
-            window.location="/";
-        });
-
-    });
-
-</script>
+<script src="/static/scripts/stations.js"></script>
 <div id="stations">
     <div class="title">Configure Stations</div>
     <form id="stationsForm" name="stationsForm" action="/stations" method="post">
@@ -70,8 +48,6 @@ $var page: stations
     </form>
 </div>
 
-<div id="controls">
-    <button id="cSubmit" class="submit">Submit Changes</button>
-    <button id="cResetNames" class="refresh">Reset Names</button>
-    <button id="cCancel" class="cancel danger">Cancel</button>
-</div>
+<a id="cSubmit" class="button submit"><b>Submit Changes</b></a>
+<a id="cResetNames" class="button refresh">Reset Names</a>
+<a href="/" class="button cancel danger">Cancel</a>
