@@ -26,9 +26,9 @@ $var page: plugins
     <form id="pluginForm" action="$plugins.plugin_url('email_notifications.settings_page')" method="post">
         <table class="optionList">
             <tr>
-                <td style='text-transform: none;'>Send E-mail with log file after power on:</td>
+                <td style='text-transform: none;'>Send E-mail after power on:</td>
                 <td>
-                    <input name='emllog' type='checkbox'${" checked" if plugin_options['emllog'] else ""}>
+                    <input name='emlpwron' type='checkbox'${" checked" if plugin_options['emlpwron'] else ""}> with events.log file <input name='emllog' type='checkbox'${" checked" if plugin_options['emllog'] else ""}> 
                 </td>
             </tr>
             <tr>
