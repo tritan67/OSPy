@@ -221,7 +221,7 @@ def update_lcd(line1, line2=None):
         find_lcd_address()
 
     if lcd_options['address'] != 0:
-        import pylcd2  # Library for LCD 16x2 PCF8574
+        from plugins import pylcd2  # Library for LCD 16x2 PCF8574
 
         lcd = pylcd2.lcd(lcd_options['address'], 0 if helpers.get_rpi_revision() == 1 else 1)
         # DF - alter RPi version test fallback to value that works on BBB
