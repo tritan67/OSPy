@@ -18,6 +18,7 @@ from ospy.log import log
 from plugins import PluginOptions, plugin_url
 import plugins
 from ospy.webpages import ProtectedPage
+from ospy.helpers import get_rpi_revision
 
 NAME = 'Wind Speed Monitor'
 LINK = 'settings_page'
@@ -26,7 +27,7 @@ wind_options = PluginOptions(
     NAME,
     {
         "use_wind_monitor": False,
-        "address": True,             # True = 0x51, False = 0x50 for PCF8583
+        "address": False,            # True = 0x51, False = 0x50 for PCF8583
         "sendeml": True,             # True = send email with error
         "pulses": 2,                 # 2 pulses per rotation
         "metperrot": 1.492,          # 1.492 meter per hour per rotation
@@ -155,7 +156,7 @@ def stop():
 
 def set_counter(i2cbus):
     try:
-        if options['address']:
+        if wind_options['address']:
             pcf_addr = 0x51
         else:
             pcf_addr = 0x50 
@@ -163,16 +164,16 @@ def set_counter(i2cbus):
         i2cbus.write_byte_data(pcf_addr, 0x01, 0x00) # reset LSB
         i2cbus.write_byte_data(pcf_addr, 0x02, 0x00) # reset midle Byte
         i2cbus.write_byte_data(pcf_addr, 0x03, 0x00) # reset MSB
-        log.info(NAME, 'Setup PCF8583 as event counter is OK')
+        log.info(NAME, 'Wind speed monitor plug-in: Setup PCF8583 as event counter - OK')
         return 1  
     except:
-        log.error(NAME, 'Water Meter plug-in:\n' + 'Setup PCF8583 as event counter - FAULT')
+        log.error(NAME, 'Wind speed monitor plug-in:\n' + 'Setup PCF8583 as event counter - FAULT')
         return None
 
 
 def counter(i2cbus): # reset PCF8583, measure pulses and return number pulses per second
     try:
-        if options['address']:
+        if wind_options['address']:
             pcf_addr = 0x51
         else:
             pcf_addr = 0x50 
@@ -195,7 +196,7 @@ def counter(i2cbus): # reset PCF8583, measure pulses and return number pulses pe
         return 0
 
 
-def get_stations_is_on(): # return true if stations is ON
+def get_station_is_on(): # return true if stations is ON
     if not options.manual_mode:                   # if not manual control
         for station in stations.get():
                 if station.active:                # if station is active

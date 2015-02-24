@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# This plugin read data (temp or voltage) from I2C PCF8591 on adress 0x48. For temperature probe use LM35D. Power for PCF8591 or LM35D is 5V dc! no 3.3V dc
+# This plugin read data (temp or voltage) from I2C PCF8591 on adress 0x48. For temperature probe use LM35D (LM35DZ). 
 
 import json
 import time
@@ -22,7 +22,7 @@ pcf_options = PluginOptions(
     NAME,
     {'enabled': False,
      'enable_log': False,
-     'log_interval': 0,
+     'log_interval': 1,
      'log_records': 0,
      'voltage': 5.0,
 
@@ -99,9 +99,9 @@ class PCFSender(Thread):
                         update_log(self.status)
 
                 try:
-                    write_DA(pcf_sender.adc, pcf_options['da_value'])
+                    write_DA(self.adc, pcf_options['da_value'])
                 except Exception:
-                    pcf_sender.adc = None
+                    self.adc = None
                     
                 self._sleep(max(60, pcf_options['log_interval'] * 60))
 
@@ -121,11 +121,7 @@ def start():
     global pcf_sender
     if pcf_sender is None:
         pcf_sender = PCFSender()
-        try:
-            write_DA(pcf_sender.adc, pcf_options['da_value'])
-        except Exception:
-            pcf_sender.adc = None
-
+       
 
 def stop():
     global pcf_sender
@@ -144,7 +140,11 @@ def get_volt(data):
 
 def get_temp(data):
     """Return temperature 0-100C from data"""
-    temp = data / 255.0 * 100
+    """ 255 is 2^8, value where the analog value can be represented by PCD A/D converter. The actual voltage obtained by VOLTAGE_ON_AD_INPUT/ 255."""
+    """ 1000 is used to change the unit from V to mV. """
+    """ 10 is constant. Each 10 mV is directly proportional to 1 Celcius. """
+    """ math: (supply voltage * 1000 / 255) / 10 """
+    temp = data * (((pcf_options['voltage'])*1000.0/255.0) / 10.0) + 10
     temp = round(temp, 1)
     return temp
 
@@ -211,12 +211,7 @@ class settings_page(ProtectedPage):
         pcf_options.web_update(web.input())
 
         if pcf_sender is not None:
-            pcf_sender.update()
-            try:
-                write_DA(pcf_sender.adc, pcf_options['da_value'])
-            except Exception:
-                pcf_sender.adc = None
-                
+            pcf_sender.update()                
         raise web.seeother(plugin_url(settings_page), True)
 
 
