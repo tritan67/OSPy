@@ -22,7 +22,7 @@ class PluginOptions(dict):
         plugin = 'plugin_unknown'
         stack = traceback.extract_stack()
         for tb in reversed(stack):
-            abspath = path.abspath(tb[0])
+            abspath = path.dirname(path.abspath(tb[0]))
             if abspath.startswith(my_dir) and abspath != path.abspath(__file__):
                 parts = abspath[len(my_dir):].split(path.sep)
                 while parts and not parts[0]:
@@ -208,6 +208,7 @@ def _get_urls(import_name, plugin):
 # Plugin start/stop                                                            #
 ################################################################################
 def start_enabled_plugins():
+    from ospy.helpers import mkdir_p
     from ospy.options import options
     import logging
 
@@ -218,6 +219,9 @@ def start_enabled_plugins():
             try:
                 plugin = getattr(__import__(import_name), module)
                 plugin_n = plugin.NAME
+                mkdir_p(plugin_data_dir(module))
+                mkdir_p(plugin_docs_dir(module))
+
                 plugin.start()
                 __running[module] = plugin
                 logging.info('Started the {} plug-in.'.format(plugin_n))
