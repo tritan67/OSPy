@@ -350,7 +350,7 @@ class plugins_install_page(ProtectedPage):
         install = get_input(qdict, 'install', False, lambda x: True)
 
         if install and repo is not None:
-            plugins.install_repo_plugin(options.plugin_repositories[repo], plugin)
+            plugins.install_repo_plugin(plugins.REPOS[repo], plugin)
             raise web.seeother('/plugins_install')
 
         return self.core_render.plugins_install()

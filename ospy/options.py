@@ -62,12 +62,6 @@ class _Options(object):
             "name": "Enabled plug-ins",
             "default": []
         },
-        {
-            "key": "plugin_repositories",
-            "name": "Plug-in repositories",
-            "default": ['https://github.com/Rimco/OSPy-plugins-core/archive/master.zip',
-                        'https://github.com/Rimco/OSPy-plugins-temp/archive/master.zip']
-        },
 
         #######################################################################
         # Security ############################################################

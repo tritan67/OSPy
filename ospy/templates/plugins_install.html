@@ -11,7 +11,7 @@ $var page: plugins
         <input type="file" name="zipfile" />
         <button id="cSubmit" class="submit">Install</button>
     </form>
-    $for repo_index, repo in enumerate(options.plugin_repositories):
+    $for repo_index, repo in enumerate(plugins.REPOS):
         <div style="vertical-align:middle;" class='category collapsible collapsed'>
             <h4>
                 <a style="float:right;" href="/plugins_install?repo=${repo_index}&install" class="minibutton open">Install all</a>

@@ -6,7 +6,8 @@ from os import path
 import types
 
 __running = {}
-
+REPOS = ['https://github.com/Rimco/OSPy-plugins-core/archive/master.zip',
+         'https://github.com/Rimco/OSPy-plugins-temp/archive/master.zip']
 
 ################################################################################
 # Plugin Options                                                               #
