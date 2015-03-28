@@ -77,6 +77,126 @@ class PluginOptions(dict):
 
 
 ################################################################################
+# Plugin Repositories                                                          #
+################################################################################
+def _get_zip(repo):
+    result = None
+    try:
+        import urllib2
+        response = urllib2.urlopen(repo)
+        zip_data = response.read()
+
+        import io
+        result = io.BytesIO(zip_data)
+
+    except Exception:
+        traceback.print_exc()
+    return result
+
+
+def repo_contents(repo, read_me=False):
+    return zip_contents(_get_zip(repo), read_me)
+
+
+def zip_contents(zip_file_data, load_read_me=False):
+    result = {
+        'hash': '',
+        'plugins': {}
+    }
+    try:
+        import zipfile
+        import os
+        zip_file = zipfile.ZipFile(zip_file_data)
+
+        result['hash'] = zip_file.comment
+        result['plugins'] = {}
+        files = zip_file.namelist()
+        inits = [f for f in files if f.endswith('__init__.py')]
+
+        for init in inits:
+            init_dir = os.path.dirname(init)
+            plugin_id = os.path.basename(init_dir)
+            read_me = ''
+
+            if init_dir + '/README.md' in files:
+                if load_read_me:
+                    import web
+                    import markdown
+                    from ospy.helpers import template_globals
+                    converted = markdown.markdown(zip_file.read(init_dir + '/README.md'),
+                                                  extensions=['partial_gfm', 'markdown.extensions.codehilite'])
+                    read_me = web.template.Template(converted, globals=template_globals())()
+
+                result['plugins'][plugin_id] = {
+                    'name': _plugin_name(zip_file.read(init).splitlines()),
+                    'read_me': read_me,
+                    'dir': init_dir
+                }
+
+    except Exception:
+        traceback.print_exc()
+
+    return result
+
+
+def install_repo_plugin(repo, plugin_filter):
+    install_custom_plugin(_get_zip(repo), plugin_filter)
+
+
+def install_custom_plugin(zip_file_data, plugin_filter=None):
+    contents = zip_contents(zip_file_data)
+    for plugin, info in contents['plugins'].iteritems():
+        if plugin_filter is None or plugin == plugin_filter:
+            _install_plugin(zip_file_data, plugin, info['dir'])
+
+
+def _install_plugin(zip_file_data, plugin, p_dir):
+    import os
+    import shutil
+    import zipfile
+    from ospy.helpers import mkdir_p
+    from ospy.helpers import del_rw
+    from ospy.options import options
+
+    # First stop it if it is running:
+    enabled = plugin in options.enabled_plugins
+    if enabled:
+        options.enabled_plugins.remove(plugin)
+        start_enabled_plugins()
+
+    # Clean the target directory and create it if needed:
+    target_dir = plugin_dir(plugin)
+    if os.path.exists(target_dir):
+        old_files = os.listdir(target_dir)
+        for old_file in old_files:
+            if old_file != 'data':
+                shutil.rmtree(os.path.join(target_dir, old_file), onerror=del_rw)
+    else:
+        mkdir_p(target_dir)
+
+    # Load the zip file:
+    zip_file = zipfile.ZipFile(zip_file_data)
+    files = zip_file.namelist()
+
+    # Extract all files:
+    for zip_name in files:
+        if zip_name.startswith(p_dir):
+            relative_name = zip_name[len(p_dir):].lstrip('/')
+            target_name = os.path.join(target_dir, relative_name)
+            if relative_name:
+                if relative_name.endswith('/'):
+                    mkdir_p(target_name)
+                else:
+                    contents = zip_file.read(zip_name)
+                    with open(target_name, 'wb') as fh:
+                        fh.write(contents)
+
+    # Start again if needed:
+    if enabled:
+        options.enabled_plugins.append(plugin)
+        start_enabled_plugins()
+
+################################################################################
 # Plugin App                                                                   #
 ################################################################################
 def get_app():
@@ -135,6 +255,16 @@ def available():
     return plugins
 
 
+def _plugin_name(lines):
+    result = None
+    for line in lines:
+        if 'NAME' in line:
+            match = re.search('NAME\\s=\\s("|\')([^"\']+)("|\')', line)
+            if match is not None:
+                result = match.group(2)
+    return result
+
+
 __name_cache = {}
 def plugin_name(plugin):
     """Tries to find the name of the given plugin without importing it yet."""
@@ -143,11 +273,7 @@ def plugin_name(plugin):
         filename = path.join(path.dirname(__file__), plugin, '__init__.py')
         try:
             with open(filename) as fh:
-                for line in fh:
-                    if 'NAME' in line:
-                        match = re.search('NAME\\s=\\s("|\')([^"\']+)("|\')', line)
-                        if match is not None:
-                            __name_cache[plugin] = match.group(2)
+                __name_cache[plugin] = _plugin_name(fh)
         except Exception:
             pass
     return __name_cache[plugin]
@@ -218,6 +344,7 @@ def start_enabled_plugins():
             import_name = __name__ + '.' + module
             try:
                 plugin = getattr(__import__(import_name), module)
+                plugin = reload(plugin)
                 plugin_n = plugin.NAME
                 mkdir_p(plugin_data_dir(module))
                 mkdir_p(plugin_docs_dir(module))

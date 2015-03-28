@@ -17,6 +17,7 @@ urls = [
     '/program/(new|[0-9]+)', 'ospy.webpages.program_page',
 
     '/plugins_manage', 'ospy.webpages.plugins_manage_page',
+    '/plugins_install', 'ospy.webpages.plugins_install_page',
 
     '/runonce', 'ospy.webpages.runonce_page',
 

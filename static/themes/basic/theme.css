@@ -365,7 +365,7 @@ button.toggle.off span.toggleright, button.toggle.on span.toggleleft, .button.to
 #controls button#cSubmit:disabled, #controls .button#cSubmit:disabled {
     background-color: #AAA;
 }
-button.danger, .button.danger {
+button.danger, .button.danger, .minibutton.danger {
     background-color: #7D1921;
 }
 
@@ -387,6 +387,26 @@ button.pushon.on, .button.pushon.on {
 .program .button.toggle {float:right; width:130px; margin:0px !important; padding:0px; background-color:transparent}
 .program .button.toggle span.toggleleft {width: 30px;}
 .program .button.toggle span.toggleright {width: 30px;}
+
+
+
+.minibutton {
+    padding: 2px 6px;
+    font-family: Quicksand, sans-serif;
+    font-size: 9pt;
+    font-weight: 400;
+    text-transform: uppercase;
+    text-decoration: none;
+    text-align: center;
+    line-height: 10pt;
+    color: white;
+    background-color: #397F19;
+    border: 0px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin: 1px 0;
+    display: inline-block;
+}
 
 input.timeInput {
     font-size:12pt;
@@ -538,7 +558,7 @@ table.adjustmentList th {
 
 
 /******** Collapsible Styles **********/
-.collapsible h4 {
+.collapsible > h4, .collapsible > h5 {
     color:white;
     background-color: #2E3959;
     background-repeat: no-repeat;
@@ -547,10 +567,13 @@ table.adjustmentList th {
     margin: 3px;
     cursor: pointer;
 }
-.collapsible.collapsed h4 {
+.collapsible > h5 {
+    margin-left: 10px;
+}
+.collapsible.collapsed > h4, .collapsible.collapsed > h5 {
     background-image:url(collapsed.png)
 }
-.collapsible.expanded h4 {
+.collapsible.expanded > h4, .collapsible.expanded > h5 {
     background-image:url(expanded.png)
 }
 
@@ -830,6 +853,11 @@ td.stationSchedule {
 
    button, .button {
       font-size: 9pt;
+   }
+
+   .minibutton {
+      padding: 0px 6px;
+      font-size: 6pt;
    }
 
    #nav .button {

@@ -331,13 +331,37 @@ class plugins_manage_page(ProtectedPage):
                 plugins.start_enabled_plugins()
 
             if delete:
-                from helpers import del_rw
+                from ospy.helpers import del_rw
                 import shutil
                 shutil.rmtree(os.path.join('plugins', plugin), onerror=del_rw)
 
             raise web.seeother('/plugins_manage')
 
         return self.core_render.plugins_manage()
+
+
+class plugins_install_page(ProtectedPage):
+    """Manage plugins page."""
+
+    def GET(self):
+        qdict = web.input()
+        repo = get_input(qdict, 'repo', None, int)
+        plugin = get_input(qdict, 'plugin', None)
+        install = get_input(qdict, 'install', False, lambda x: True)
+
+        if install and repo is not None:
+            plugins.install_repo_plugin(options.plugin_repositories[repo], plugin)
+            raise web.seeother('/plugins_install')
+
+        return self.core_render.plugins_install()
+
+    def POST(self):
+        qdict = web.input(zipfile={})
+
+        zip_file_data = qdict['zipfile'].file
+        plugins.install_custom_plugin(zip_file_data)
+
+        raise web.seeother('/plugins_install')
 
 
 class log_page(ProtectedPage):
