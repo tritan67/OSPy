@@ -108,7 +108,7 @@ $else:
                         <td class="scheduleTick">${t.strftime("%I %p").lstrip('0')}</td>
             </tr>
             $for station in [station for station in stations if station.enabled or station.is_master]:
-                <tr class="stationSchedule ${loop.parity}" id='schedule${loop.index}' data="${loop.index0}">
+                <tr class="stationSchedule ${loop.parity}" id='schedule${station.index}' data="${station.index}">
                     <td class='station_name'>${station.name}</td>
                     <td id='status${station.index}' class="stationStatus">loading...</td>
                     $for tick in xrange(0,24):
