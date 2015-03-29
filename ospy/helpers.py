@@ -28,7 +28,10 @@ def now():
 
 def datetime_string(timestamp=None):
     if timestamp:
-        return time.strftime("%Y-%m-%d %H:%M:%S", timestamp)
+        if hasattr(timestamp, 'strftime'):
+            return timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            return time.strftime("%Y-%m-%d %H:%M:%S", timestamp)
     else:
         return time.strftime("%Y-%m-%d %H:%M:%S")
 
