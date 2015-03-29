@@ -328,6 +328,7 @@ class plugins_manage_page(ProtectedPage):
                     options.enabled_plugins.remove(plugin)
                 elif enable and plugin not in options.enabled_plugins:
                     options.enabled_plugins.append(plugin)
+                options.enabled_plugins = options.enabled_plugins  # Explicit write to save to file
                 plugins.start_enabled_plugins()
 
             if delete:

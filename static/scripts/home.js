@@ -179,7 +179,25 @@ function countdownTimer(timerId) {
 }
 
 jQuery(document).ready(function(){
-    if (!manual_mode) {
+    if (manual_mode) {
+        jQuery("button.manual").click(function () {
+            sid = parseInt(jQuery(this).attr("id"));
+            sbit = jQuery(this).hasClass("on");
+            if (sbit) {
+                window.location = "/action?sid="+(sid+1)+"&set_to=0"; // turn off station
+            } else {
+                var strmm = jQuery("#mm"+sid).val();
+                var strss = jQuery("#ss"+sid).val();
+                var mm = (strmm == "" ? 0 : parseInt(strmm));
+                var ss = (strss == "" ? 0 : parseInt(strss));
+                if (!(mm >= 0 && ss >= 0 && ss < 60)) {
+                    alert("Timer values wrong: " + strmm + ":" + strss);
+                    return;
+                }
+                window.location = "/action?sid=" + (sid+1) + "&set_to=1" + "&set_time=" + (mm*60+ss);  // turn it off with timer
+            }
+        });
+    } else {
         displayProgram()
         setTimeout(statusTimer, 1000);
 
