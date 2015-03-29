@@ -520,7 +520,7 @@ table.adjustmentList {
 table.adjustmentList td {
     padding: 2px;
 }
-table.adjustmentList td.adjValue {
+table.adjustmentList td.adjValue, table.adjustmentList th.adjValue {
     text-align: right;
 }
 table.adjustmentList th {
