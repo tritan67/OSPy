@@ -11,7 +11,7 @@ import logging
 ##############################
 
 major_ver = 2
-minor_ver = 3
+minor_ver = 4
 
 try:
     revision = int(subprocess.check_output(['git', 'rev-list', '--count', '--first-parent', 'HEAD']))
