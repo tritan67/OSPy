@@ -26,6 +26,13 @@ def now():
     return time.time() + (datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()
 
 
+def datetime_string(timestamp=None):
+    if timestamp:
+        return time.strftime("%Y-%m-%d %H:%M:%S", timestamp)
+    else:
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def two_digits(n):
     return '%02d' % int(n)
 
