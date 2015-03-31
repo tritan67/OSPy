@@ -68,9 +68,9 @@ class _Options(object):
             "default": {}
         },
         {
-            "key": "plugin_latest",
-            "name": "Plug-in latest",
-            "default": {}
+            "key": "auto_plugin_update",
+            "name": "Automatic plug-in updates",
+            "default": True
         },
 
         #######################################################################

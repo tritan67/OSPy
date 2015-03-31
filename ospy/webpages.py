@@ -364,7 +364,7 @@ class plugins_install_page(ProtectedPage):
         install = get_input(qdict, 'install', False, lambda x: True)
 
         if install and repo is not None:
-            plugins.install_repo_plugin(plugins.REPOS[repo], plugin)
+            plugins.checker.install_repo_plugin(plugins.REPOS[repo], plugin)
             self._redirect_back()
 
         return self.core_render.plugins_install()
@@ -373,7 +373,7 @@ class plugins_install_page(ProtectedPage):
         qdict = web.input(zipfile={})
 
         zip_file_data = qdict['zipfile'].file
-        plugins.install_custom_plugin(zip_file_data)
+        plugins.checker.install_custom_plugin(zip_file_data)
 
         self._redirect_back()
 
