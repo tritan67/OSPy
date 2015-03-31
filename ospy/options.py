@@ -62,6 +62,16 @@ class _Options(object):
             "name": "Enabled plug-ins",
             "default": []
         },
+        {
+            "key": "plugin_status",
+            "name": "Plug-in status",
+            "default": {}
+        },
+        {
+            "key": "plugin_latest",
+            "name": "Plug-in latest",
+            "default": {}
+        },
 
         #######################################################################
         # Security ############################################################

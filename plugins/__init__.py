@@ -96,21 +96,36 @@ def _get_zip(repo):
 
 
 def repo_contents(repo, read_me=False):
-    return zip_contents(_get_zip(repo), read_me)
+    from ospy.options import options
+    result = zip_contents(_get_zip(repo), read_me)
+
+    if repo in REPOS:
+        repo_index = REPOS.index(repo)
+
+        for plugin, info in result.iteritems():
+            options.plugin_latest[plugin] = {
+                'repo_index': repo_index,
+                'hash': info['hash'],
+                'date': info['date']
+            }
+
+        options.plugin_latest = options.plugin_latest
+
+    return result
 
 
-def zip_contents(zip_file_data, load_read_me=False):
+def zip_contents(zip_file_data, load_read_me=False, repo_index=-1):
     result = {
-        'hash': '',
-        'plugins': {}
     }
     try:
         import zipfile
         import os
+        import datetime
+        import hashlib
+
         zip_file = zipfile.ZipFile(zip_file_data)
 
-        result['hash'] = zip_file.comment
-        result['plugins'] = {}
+        infos = zip_file.infolist()
         files = zip_file.namelist()
         inits = [f for f in files if f.endswith('__init__.py')]
 
@@ -119,7 +134,21 @@ def zip_contents(zip_file_data, load_read_me=False):
             plugin_id = os.path.basename(init_dir)
             read_me = ''
 
+            # Version information:
+            plugin_hash = ''
+            plugin_date = datetime.datetime(1970, 1, 1)
+
             if init_dir + '/README.md' in files:
+
+                # Check all files:
+                for zip_info in infos:
+                    zip_name = zip_info.filename
+                    if zip_name.startswith(init_dir):
+                        relative_name = zip_name[len(init_dir):].lstrip('/')
+                        if relative_name and not relative_name.endswith('/'):
+                            plugin_date = max(plugin_date, datetime.datetime(*zip_info.date_time))
+                            plugin_hash += hex(zip_info.CRC)
+
                 if load_read_me:
                     import web
                     import markdown
@@ -128,8 +157,10 @@ def zip_contents(zip_file_data, load_read_me=False):
                                                   extensions=['partial_gfm', 'markdown.extensions.codehilite'])
                     read_me = web.template.Template(converted, globals=template_globals())()
 
-                result['plugins'][plugin_id] = {
+                result[plugin_id] = {
                     'name': _plugin_name(zip_file.read(init).splitlines()),
+                    'hash': hashlib.md5(plugin_hash).hexdigest(),
+                    'date': plugin_date,
                     'read_me': read_me,
                     'dir': init_dir
                 }
@@ -146,7 +177,7 @@ def install_repo_plugin(repo, plugin_filter):
 
 def install_custom_plugin(zip_file_data, plugin_filter=None):
     contents = zip_contents(zip_file_data)
-    for plugin, info in contents['plugins'].iteritems():
+    for plugin, info in contents.iteritems():
         if plugin_filter is None or plugin == plugin_filter:
             _install_plugin(zip_file_data, plugin, info['dir'])
 
@@ -155,6 +186,8 @@ def _install_plugin(zip_file_data, plugin, p_dir):
     import os
     import shutil
     import zipfile
+    import datetime
+    import hashlib
     from ospy.helpers import mkdir_p
     from ospy.helpers import del_rw
     from ospy.options import options
@@ -177,10 +210,15 @@ def _install_plugin(zip_file_data, plugin, p_dir):
 
     # Load the zip file:
     zip_file = zipfile.ZipFile(zip_file_data)
-    files = zip_file.namelist()
+    infos = zip_file.infolist()
+
+    # Version information:
+    plugin_hash = ''
+    plugin_date = datetime.datetime(1970, 1, 1)
 
     # Extract all files:
-    for zip_name in files:
+    for zip_info in infos:
+        zip_name = zip_info.filename
         if zip_name.startswith(p_dir):
             relative_name = zip_name[len(p_dir):].lstrip('/')
             target_name = os.path.join(target_dir, relative_name)
@@ -188,9 +226,17 @@ def _install_plugin(zip_file_data, plugin, p_dir):
                 if relative_name.endswith('/'):
                     mkdir_p(target_name)
                 else:
+                    plugin_date = max(plugin_date, datetime.datetime(*zip_info.date_time))
+                    plugin_hash += hex(zip_info.CRC)
                     contents = zip_file.read(zip_name)
                     with open(target_name, 'wb') as fh:
                         fh.write(contents)
+
+    options.plugin_status[plugin] = {
+        'hash': hashlib.md5(plugin_hash).hexdigest(),
+        'date': plugin_date
+    }
+    options.plugin_status = options.plugin_status
 
     # Start again if needed:
     if enabled:

@@ -18,14 +18,16 @@ $var page: plugins
                 ${repo}
             </h4>
 
-            $for plugin, info in plugins.repo_contents(repo, True)['plugins'].iteritems():
+            $ available_list = plugins.available()
+            $for plugin, info in plugins.repo_contents(repo, True).iteritems():
                 <div class='category collapsible collapsed'>
                     <h5>
-                        $ available_list = plugins.available()
+                        <a style="float:right;" href="/plugins_install?repo=${repo_index}&plugin=${plugin}&install" class="minibutton open">
                         $if plugin in available_list:
-                            <a style="float:right;" href="/plugins_install?repo=${repo_index}&plugin=${plugin}&install" class="minibutton open">Reinstall</a>
+                            Reinstall
                         $else:
-                            <a style="float:right;" href="/plugins_install?repo=${repo_index}&plugin=${plugin}&install" class="minibutton open">Install</a>
+                            Install
+                        </a>
                         ${info['name']}
                     </h5>
                     <div style="margin-left: 10px;">

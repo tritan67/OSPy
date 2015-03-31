@@ -365,7 +365,7 @@ class plugins_install_page(ProtectedPage):
 
         if install and repo is not None:
             plugins.install_repo_plugin(plugins.REPOS[repo], plugin)
-            raise web.seeother('/plugins_install')
+            self._redirect_back()
 
         return self.core_render.plugins_install()
 
@@ -375,7 +375,7 @@ class plugins_install_page(ProtectedPage):
         zip_file_data = qdict['zipfile'].file
         plugins.install_custom_plugin(zip_file_data)
 
-        raise web.seeother('/plugins_install')
+        self._redirect_back()
 
 
 class log_page(ProtectedPage):
