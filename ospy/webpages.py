@@ -67,19 +67,32 @@ class WebPage(object):
 
     def __init__(self):
         cls = self.__class__
+
+        from ospy.server import session
+        if not cls.__name__.endswith('json') and (not session.pages or session.pages[-1] != web.ctx.fullpath):
+            session.pages.append(web.ctx.fullpath)
+        while len(session.pages) > 5:
+            del session.pages[0]
+
         if self.__module__.startswith('plugins') and 'plugin_render' not in cls.__dict__:
             cls.plugin_render = InstantCacheRender(os.path.join(os.path.join(*self.__module__.split('.')), 'templates'), globals=template_globals(), base=self.base_render)
+
+    @staticmethod
+    def _redirect_back():
+        from ospy.server import session
+        for page in reversed(session.pages):
+            if page != web.ctx.fullpath:
+                raise web.seeother(page)
+        raise web.seeother('/')
 
 
 class ProtectedPage(WebPage):
     def __init__(self):
+        WebPage.__init__(self)
         try:
             check_login(True)
         except web.seeother:
-            from ospy.server import session
-            session.last_page = web.ctx.fullpath
             raise
-        WebPage.__init__(self)
 
 
 class login_page(WebPage):
@@ -99,7 +112,7 @@ class login_page(WebPage):
         else:
             from ospy import server
             server.session.validated = True
-            raise web.seeother(server.session.last_page)
+            self._redirect_back()
 
 
 class logout_page(WebPage):
@@ -186,7 +199,7 @@ class action_page(ProtectedPage):
                     if interval['station'] == sid:
                         log.finish_run(interval)
 
-        raise web.seeother(server.session.last_page)
+        self._redirect_back()
 
 class programs_page(ProtectedPage):
     """Open programs page."""

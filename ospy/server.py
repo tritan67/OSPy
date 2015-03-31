@@ -81,8 +81,7 @@ def start():
     sessions = shelve.open(os.path.join('ospy', 'data', 'sessions.db'))
     session = web.session.Session(app, web.session.ShelfStore(sessions),
                                   initializer={'validated': False,
-                                               'login_to': '/',
-                                               'last_page': '/'})
+                                               'pages': []})
 
     import atexit
     atexit.register(sessions.close)
