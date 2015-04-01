@@ -103,16 +103,18 @@ class _PluginChecker(threading.Thread):
             self._sleep_time -= 1
 
     def run(self):
+        from ospy.options import options
         while True:
             try:
                 for repo in REPOS:
                     self._repo_data[repo] = self._download_zip(repo)
                     self._repo_contents[repo] = self.zip_contents(self._get_zip(repo))
 
-                for plugin in available():
-                    update = self.available_version(plugin)
-                    if update is not None:
-                        self.install_repo_plugin(update['repo'], plugin)
+                if options.auto_plugin_update:
+                    for plugin in available():
+                        update = self.available_version(plugin)
+                        if update is not None:
+                            self.install_repo_plugin(update['repo'], plugin)
 
             except Exception:
                 traceback.print_exc()
