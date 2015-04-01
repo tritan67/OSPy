@@ -110,10 +110,11 @@ class _PluginChecker(threading.Thread):
                     self._repo_data[repo] = self._download_zip(repo)
                     self._repo_contents[repo] = self.zip_contents(self._get_zip(repo))
 
+                status = options.plugin_status
                 if options.auto_plugin_update:
                     for plugin in available():
                         update = self.available_version(plugin)
-                        if update is not None:
+                        if update is not None and status[plugin]['hash'] != update['hash']:
                             self.install_repo_plugin(update['repo'], plugin)
 
             except Exception:
