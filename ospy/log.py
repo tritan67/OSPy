@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 __author__ = 'Rimco'
 
 # System imports
@@ -9,6 +11,7 @@ import traceback
 from os import path
 import threading
 import time
+import sys
 
 # Local imports
 from ospy.options import options
@@ -52,9 +55,13 @@ class _Log(logging.Handler):
     def _save_log(msg, level, event_type):
         msg = msg.encode('ascii', 'replace')
 
-        # Print if it we are debugging, if it is general information or if it is important
-        if options.debug_log or (event_type == 'Event' and level >= logging.INFO) or level >= logging.WARNING:
-            print msg
+        # Print if it is important:
+        if level >= logging.WARNING:
+            print(msg, file=sys.stderr)
+
+        # Or print it we are debugging or if it is general information
+        elif options.debug_log or (event_type == 'Event' and level >= logging.INFO):
+            print(msg)
 
         # Save it if we are debugging
         if options.debug_log:
@@ -226,3 +233,7 @@ def hook_logging():
     _logger.setLevel(logging.DEBUG)
     _logger.propagate = False
     _logger.handlers = [log]
+
+    # Don't care about debug and info messages of markdown:
+    _markdown_logger = logging.getLogger('MARKDOWN')
+    _markdown_logger.setLevel(logging.WARNING)
