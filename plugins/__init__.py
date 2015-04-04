@@ -104,6 +104,7 @@ class _PluginChecker(threading.Thread):
 
     def run(self):
         from ospy.options import options
+        import logging
         while True:
             try:
                 for repo in REPOS:
@@ -118,7 +119,7 @@ class _PluginChecker(threading.Thread):
                             self.install_repo_plugin(update['repo'], plugin)
 
             except Exception:
-                traceback.print_exc()
+                logging.error('Failed to update the plug-ins information:\n' + traceback.format_exc())
             finally:
                 self._sleep(3600)
 
@@ -152,13 +153,14 @@ class _PluginChecker(threading.Thread):
 
     @staticmethod
     def zip_contents(zip_file_data, load_read_me=True):
+        import zipfile
+        import os
+        import datetime
+        import hashlib
+        import logging
         result = {}
 
         try:
-            import zipfile
-            import os
-            import datetime
-            import hashlib
 
             zip_file = zipfile.ZipFile(zip_file_data)
 
@@ -203,16 +205,17 @@ class _PluginChecker(threading.Thread):
                     }
 
         except Exception:
-            traceback.print_exc()
+            logging.error('Failed to read a plug-in zip file:\n' + traceback.format_exc())
 
         return result
 
     def get_repo_contents(self, repo):
+        import logging
         try:
             if repo not in self._repo_contents:
                 self._repo_contents[repo] = self.zip_contents(self._get_zip(repo))
         except Exception:
-            traceback.print_exc()
+            logging.error('Failed to get contents of {}:'.format(repo) + '\n' + traceback.format_exc())
             return {}
 
         return self._repo_contents[repo]
@@ -452,8 +455,7 @@ def start_enabled_plugins():
                     plugin.LINK = module + '.' + plugin.LINK
 
             except Exception:
-                logging.info('Failed to load the {} plug-in:'.format(plugin_n))
-                traceback.print_exc()
+                logging.error('Failed to load the {} plug-in:'.format(plugin_n) + '\n' + traceback.format_exc())
                 options.enabled_plugins.remove(module)
 
     for module, plugin in __running.copy().iteritems():
@@ -464,8 +466,7 @@ def start_enabled_plugins():
                 del __running[module]
                 logging.info('Stopped the {} plug-in.'.format(plugin_n))
             except Exception:
-                logging.info('Failed to stop the {} plug-in:'.format(plugin_n))
-                traceback.print_exc()
+                logging.error('Failed to stop the {} plug-in:'.format(plugin_n) + '\n' + traceback.format_exc())
 
 
 def running():
