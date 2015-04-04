@@ -9,7 +9,7 @@ import logging
 import shelve
 
 import helpers
-import plugins
+import traceback
 
 OPTIONS_FILE = './ospy/data/options.db'
 
@@ -293,8 +293,8 @@ class _Options(object):
                     for cb in self._callbacks[key]['functions']:
                         try:
                             cb(key, self._callbacks[key]['last_value'], value)
-                        except Exception as err:
-                            logging.warning(str(err))
+                        except Exception:
+                            logging.error('Callback failed:\n' + traceback.format_exc())
                     self._callbacks[key]['last_value'] = value
 
             # Only write after 1 second without any more changes
