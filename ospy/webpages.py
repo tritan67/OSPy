@@ -327,6 +327,7 @@ class plugins_manage_page(ProtectedPage):
         delete = get_input(qdict, 'delete', False, lambda x: True)
         enable = get_input(qdict, 'enable', None, lambda x: x == '1')
         disable_all = get_input(qdict, 'disable_all', False, lambda x: True)
+        auto_update = get_input(qdict, 'auto', None, lambda x: x == '1')
 
         if disable_all:
             options.enabled_plugins = []
@@ -351,6 +352,10 @@ class plugins_manage_page(ProtectedPage):
 
             raise web.seeother('/plugins_manage')
 
+        if auto_update is not None:
+            options.auto_plugin_update = auto_update
+            raise web.seeother('/plugins_manage')
+
         return self.core_render.plugins_manage()
 
 
@@ -367,6 +372,7 @@ class plugins_install_page(ProtectedPage):
             plugins.checker.install_repo_plugin(plugins.REPOS[repo], plugin)
             self._redirect_back()
 
+        plugins.checker.update()
         return self.core_render.plugins_install()
 
     def POST(self):
