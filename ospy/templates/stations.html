@@ -15,7 +15,7 @@ $var page: stations
                 <th class="stationUsage">Usage</th>
                 <th class="stationShow">Connected?</th>
                 <th class="stationIgnore">Ignore Rain?</th>
-                $if stations.master is not None:
+                $if stations.master is not None or options.master_relay:
                     <th class="stationMaster">Activate Master?</th>
             </tr>
             $for station in stations.get():
@@ -36,7 +36,7 @@ $var page: stations
                         <td class="stationIgnore">
                             <input type="checkbox" ${"checked" if station.ignore_rain else ""} name="${station.index}_ignore_rain">
                         </td>
-                        $if stations.master is not None:
+                        $if stations.master is not None or options.master_relay:
                             <td class="stationMaster">
                                 <input type="checkbox" ${"checked" if station.activate_master else ""} name="${station.index}_activate_master">
                             </td>

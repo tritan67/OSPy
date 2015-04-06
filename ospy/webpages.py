@@ -469,7 +469,7 @@ class stations_page(ProtectedPage):
             stations[s].usage = float(qdict.get("%d_usage" % s, 1.0))
             stations[s].enabled = True if qdict.get("%d_enabled" % s, 'off') == 'on' else False
             stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'off') == 'on' else False
-            if stations.master is not None:
+            if stations.master is not None or options.master_relay:
                 stations[s].activate_master = True if qdict.get("%d_activate_master" % s, 'off') == 'on' else False
 
         raise web.seeother('/')

@@ -124,6 +124,13 @@ class _Options(object):
         #######################################################################
         # Configure Master ####################################################
         {
+            "key": "master_relay",
+            "name": "Activate relay",
+            "default": False,
+            "help": "Also activate the relay as master output.",
+            "category": "Configure Master"
+        },
+        {
             "key": "master_on_delay",
             "name": "Master on delay",
             "default": 0,

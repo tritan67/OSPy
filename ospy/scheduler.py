@@ -17,6 +17,7 @@ from ospy.options import rain_blocks
 from ospy.programs import programs
 from ospy.runonce import run_once
 from ospy.stations import stations
+from ospy.outputs import outputs
 
 
 def predicted_schedule(start_time, end_time):
@@ -281,6 +282,7 @@ class _Scheduler(Thread):
         self.daemon = True
         #options.add_callback('scheduler_enabled', self._option_cb)
         options.add_callback('manual_mode', self._option_cb)
+        options.add_callback('master_relay', self._option_cb)
 
         # If manual mode is active, finish all stale runs:
         if options.manual_mode:
@@ -293,6 +295,10 @@ class _Scheduler(Thread):
             run_once.clear()
             log.finish_run(None)
             stations.clear()
+
+        # Stop relay if not used anymore:
+        if key == 'master_relay' and not new and outputs.relay_output:
+            outputs.relay_output = False
 
     def run(self):
         # Activate outputs upon start if needed:
@@ -335,7 +341,7 @@ class _Scheduler(Thread):
                     if not entry['blocked']:
                         stations.activate(entry['station'])
 
-        if stations.master is not None:
+        if stations.master is not None or options.master_relay:
             master_on = False
 
             # It's easy if we don't have to use delays:
@@ -360,10 +366,15 @@ class _Scheduler(Thread):
                             master_on = True
                             break
 
-            master_station = stations.get(stations.master)
+            if stations.master is not None:
+                master_station = stations.get(stations.master)
 
-            if master_on != master_station.active:
-                master_station.active = master_on
+                if master_on != master_station.active:
+                    master_station.active = master_on
+
+            if options.master_relay:
+                if master_on != outputs.relay_output:
+                    outputs.relay_output = master_on
 
 scheduler = _Scheduler()
 
