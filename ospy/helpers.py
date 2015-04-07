@@ -9,6 +9,9 @@ import logging
 import random
 import time
 import errno
+from threading import Lock
+
+BRUTEFORCE_LOCK = Lock()
 
 
 def del_rw(action, name, exc):
@@ -360,7 +363,21 @@ def password_hash(password, salt):
 
 def test_password(password):
     from ospy.options import options
-    return options.password_hash == password_hash(password, options.password_salt)
+
+    # Brute-force protection:
+    with BRUTEFORCE_LOCK:
+        if options.password_time > 0:
+            time.sleep(options.password_time)
+
+    result = options.password_hash == password_hash(password, options.password_salt)
+
+    if result:
+        options.password_time = 0
+    else:
+        if options.password_time < 30:
+            options.password_time += 1
+
+    return result
 
 
 def check_login(redirect=False):

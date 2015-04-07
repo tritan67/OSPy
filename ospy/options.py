@@ -232,6 +232,11 @@ class _Options(object):
             "default": "",
         },
         {
+            "key": "password_time",
+            "name": "Current password decryption time",
+            "default": 0,
+        },
+        {
             "key": "logged_runs",
             "name": "The runs that have been logged",
             "default": []
