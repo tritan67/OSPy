@@ -41,6 +41,9 @@ class _Program(object):
         self.stations = []
         self.enabled = True
 
+        self.fixed = 0
+        self.cut_off = 0
+
         self._schedule = []
         self._modulo = 24*60
         self._manual = False  # Non-repetitive (run-once) if True

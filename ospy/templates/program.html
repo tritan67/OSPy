@@ -41,6 +41,17 @@ $var page: programs
                             <option value="${value}" ${'selected' if program.type == value else ''}>${ProgramType.FRIENDLY_NAMES[value]}</option>
                     </select>
                 </div>
+                <br>
+
+
+                <div class='option' style="white-space: nowrap" title="Don't apply any adjustments to intervals of this program.">
+                    <span class="program_label">No adjustments:</span>
+                    <input name="fixed" type="checkbox" ${'checked' if program.fixed else ''}>
+                </div>
+                <div class='option' style="white-space: nowrap" title="Skip the program if the total adjustment is lower than this percentage.">
+                    <span class="program_label">Cut-off:</span>
+                    <input name="cut_off" type="number" min="0" max="100" size="3" maxlength="3" value="${program.cut_off}">
+                </div>
 
             </div>
             <div style="display: inline-block; box-sizing: border-box; vertical-align: top;">

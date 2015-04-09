@@ -111,15 +111,6 @@ class _Options(object):
             "min": 0,
             "max": 3600
         },
-        {
-            "key": "adjustment_cutoff",
-            "name": "Adjustment cut-off",
-            "default": 0,
-            "help": "Water-Level percentage under which the outputs are not activated anymore.",
-            "category": "Station Handling",
-            "min": 0,
-            "max": 100
-        },
 
         #######################################################################
         # Configure Master ####################################################

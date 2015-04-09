@@ -178,6 +178,8 @@ class action_page(ProtectedPage):
                     'program': -1,
                     'station': sid,
                     'program_name': "Manual",
+                    'fixed': True,
+                    'cut_off': 0,
                     'manual': True,
                     'blocked': False,
                     'start': start,
@@ -255,12 +257,14 @@ class program_page(ProtectedPage):
 
         program.name = qdict['name']
         program.stations = json.loads(qdict['stations'])
-        program.enabled = True if 'enabled' in qdict and qdict['enabled'] == 'on' else False
+        program.enabled = True if qdict.get('enabled', 'off') == 'on' else False
+        program.cut_off = int(qdict['cut_off'])
+        program.fixed = True if qdict.get('fixed', 'off') == 'on' else False
 
         simple = [int(qdict['simple_hour']) * 60 + int(qdict['simple_minute']),
                   int(qdict['simple_duration']),
                   int(qdict['simple_pause']),
-                  int(qdict['simple_rcount']) if 'simple_repeat' in qdict and qdict['simple_repeat'] == 'on' else 0]
+                  int(qdict['simple_rcount']) if qdict.get('simple_repeat', 'off') else 0]
 
         repeat_start_date = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + \
                             datetime.timedelta(days=int(qdict['interval_delay']))
@@ -563,6 +567,8 @@ class api_log_json(ProtectedPage):
                 'program_name': interval['program_name'],
                 'active': interval['active'],
                 'manual': interval.get('manual', False),
+                'fixed': True,
+                'cut_off': interval['cut_off'],
                 'blocked': interval.get('blocked', False),
                 'station': interval['station'],
                 'date': interval['start'].strftime("%Y-%m-%d"),

@@ -60,6 +60,8 @@ def predicted_schedule(start_time, end_time):
                 'active': None,
                 'program': -1,
                 'program_name': "Run-Once",
+                'fixed': True,
+                'cut_off': 0,
                 'manual': True,
                 'blocked': False,
                 'start': interval['start'],
@@ -88,6 +90,8 @@ def predicted_schedule(start_time, end_time):
                     'active': None,
                     'program': -1,
                     'program_name': program_name,
+                    'fixed': True,
+                    'cut_off': 0,
                     'manual': True,
                     'blocked': False,
                     'start': interval['start'],
@@ -120,6 +124,8 @@ def predicted_schedule(start_time, end_time):
                     'active': None,
                     'program': program.index,
                     'program_name': program.name, # Save it because programs can be reordered
+                    'fixed': program.fixed,
+                    'cut_off': program.cut_off/100.0,
                     'manual': program.manual,
                     'blocked': False,
                     'start': interval['start'],
@@ -141,7 +147,7 @@ def predicted_schedule(start_time, end_time):
     # Adjust for weather and remove overlap:
     for station, schedule in station_schedules.iteritems():
         for interval in schedule:
-            if not interval['manual']:
+            if not interval['fixed']:
                 time_delta = interval['end'] - interval['start']
                 time_delta = datetime.timedelta(seconds=(time_delta.days * 24 * 3600 + time_delta.seconds) * adjustment)
                 interval['end'] = interval['start'] + time_delta
@@ -190,7 +196,7 @@ def predicted_schedule(start_time, end_time):
         elif not interval['manual'] and not stations.get(interval['station']).ignore_rain and inputs.rain_sensed():
             interval['blocked'] = 'rain sensor'
             continue
-        elif not interval['manual'] and interval['adjustment'] < options.adjustment_cutoff/100.0:
+        elif not interval['fixed'] and interval['adjustment'] < interval['cut_off']:
             interval['blocked'] = 'cut-off'
             continue
 
