@@ -264,7 +264,7 @@ class program_page(ProtectedPage):
         simple = [int(qdict['simple_hour']) * 60 + int(qdict['simple_minute']),
                   int(qdict['simple_duration']),
                   int(qdict['simple_pause']),
-                  int(qdict['simple_rcount']) if qdict.get('simple_repeat', 'off') else 0]
+                  int(qdict['simple_rcount']) if qdict.get('simple_repeat', 'off') == 'on' else 0]
 
         repeat_start_date = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + \
                             datetime.timedelta(days=int(qdict['interval_delay']))
