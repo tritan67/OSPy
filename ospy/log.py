@@ -197,7 +197,7 @@ class _Log(logging.Handler):
         first_start = min([datetime.datetime.now()] + [interval['start'] for interval in self.active_runs()])
 
         # Now try to remove as much as we can
-        for index in xrange(len(self._log['Run']) - minimum):
+        for index in reversed(xrange(len(self._log['Run']) - minimum)):
             interval = self._log['Run'][index]['data']
 
             # If this entry cannot have influence on the current state anymore:

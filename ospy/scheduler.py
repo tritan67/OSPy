@@ -31,9 +31,8 @@ def predicted_schedule(start_time, end_time):
     rain_block_start = datetime.datetime.now()
     rain_block_end = rain_blocks.block_end()
 
-    current_active = log.finished_runs() + log.active_runs()
-    skip_uids = [entry['uid'] for entry in current_active]
-    current_active = [interval for interval in log.finished_runs() + log.active_runs() if not interval['blocked']]
+    skip_intervals = log.finished_runs() + log.active_runs()
+    current_active = [interval for interval in skip_intervals if not interval['blocked']]
 
     usage_changes = {}
     for active in current_active:
@@ -174,12 +173,18 @@ def predicted_schedule(start_time, end_time):
     all_intervals.sort(key=lambda inter: inter['start'])
 
     # If we have processed some intervals before, we should skip all that were scheduled before them
-    for i in range(len(skip_uids)):
-        for j in range(len(all_intervals)):
-            if all_intervals[j]['uid'] == skip_uids[i]:
-                for k in range(j+1):
-                    del all_intervals[0]
+    for to_skip in skip_intervals:
+        index = 0
+        while index < len(all_intervals):
+            interval = all_intervals[index]
+
+            if interval['original_start'] < to_skip['original_start']:
+                del all_intervals[index]
+            elif interval['uid'] == to_skip['uid']:
+                del all_intervals[index]
                 break
+            else:
+                index += 1
 
     # And make sure manual programs get priority:
     all_intervals.sort(key=lambda inter: not inter['manual'])
