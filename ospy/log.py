@@ -193,17 +193,17 @@ class _Log(logging.Handler):
         else:
             return  # We should not prune in this case
 
+        # determine the start of the first active run:
+        first_start = min([datetime.datetime.now()] + [interval['start'] for interval in self.active_runs()])
+
         # Now try to remove as much as we can
-        last_start = datetime.datetime.now()
-        for index in reversed(xrange(minimum, len(self._log['Run']))):
+        for index in xrange(len(self._log['Run']) - minimum):
             interval = self._log['Run'][index]['data']
-            if interval['active']:
-                last_start = interval['start']
-            else:
-                # If this entry cannot have influence on the current state anymore:
-                if (last_start - interval['end']).total_seconds() > max(options.station_delay,
-                                                                        options.master_off_delay, 60):
-                    del self._log['Run'][index]
+
+            # If this entry cannot have influence on the current state anymore:
+            if (first_start - interval['end']).total_seconds() > max(options.station_delay,
+                                                                     options.master_off_delay, 60):
+                del self._log['Run'][index]
 
         self._save_logs()
 
