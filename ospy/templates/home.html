@@ -9,7 +9,7 @@ $var page: home
     <br>
     <a href="javascript:rain_delay_prompt(${max(0, (options.rain_block - datetime.datetime.now()).total_seconds())});" class="button toggle ${'off' if rain_blocks.seconds_left() else 'on'}"><span class='toggleleft'>Active</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>Rain Delay</span></a>
     $if rain_blocks.seconds_left():
-        <span class="countdown" data="${str(rain_blocks.seconds_left())}">123</span>
+        <span id="rain_block_time" class="countdown" data="${str(rain_blocks.seconds_left())}"></span>
     $if inputs.rain_sensed():
         <span class="rainsense">Rain sensed</span>
     <br>

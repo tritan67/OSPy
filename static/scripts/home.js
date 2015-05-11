@@ -168,13 +168,15 @@ function rain_delay_prompt(current){
 function countdownTimer(timerId) {
     var timerElement = jQuery("#" + timerId);
     var remaining = parseFloat(timerElement.attr("data"));
+    timerElement.attr("data", remaining - 1)
     var rHours = Math.floor(remaining/3600);
     var rMinutes = Math.floor((remaining%3600)/60);
-    if (rHours <=0 && rMinutes <=0) {
-        window.location = "/";
+    var rSeconds = Math.floor(remaining%60);
+    timerElement.text((rHours<10 ? "0" : "") + rHours + ":" + (rMinutes<10 ? "0" : "") + rMinutes + ":" + (rSeconds<10 ? "0" : "") + rSeconds);
+    if (rHours <=0 && rMinutes <=0 && rSeconds <=0) {
+        setTimeout("location.reload()", 1000);
     } else {
-        timerElement.text((rHours<10 ? "0" : "") + rHours + ":" + (rMinutes<10 ? "0" : "") + rMinutes);
-        setTimeout("countdownTimer('" + timerId + "')", 2000);
+        setTimeout("countdownTimer('" + timerId + "')", 1000);
     }
 }
 
