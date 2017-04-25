@@ -111,6 +111,15 @@ class _Options(object):
             "min": 0,
             "max": 3600
         },
+        {
+            "key": "min_runtime",
+            "name": "Minimum runtime",
+            "default": 0,
+            "help": "Skip the station delay if the run time was less than this value (in seconds), between 0 and 86400.",
+            "category": "Station Handling",
+            "min": 0,
+            "max": 86400
+        },
 
         #######################################################################
         # Configure Master ####################################################
