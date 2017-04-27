@@ -264,7 +264,7 @@ def predicted_schedule(start_time, end_time):
                                     not_running_since = next_option
                                     for temp_index in range(0, start_key_index):
                                         temp_usage_key = usage_keys[temp_index]
-                                        if temp_usage < 0.01 and usage_changes[temp_usage_key] > 0 and temp_usage_key - not_running_since > datetime.timedelta(seconds=1):
+                                        if temp_usage < 0.01 and usage_changes[temp_usage_key] > 0 and temp_usage_key - not_running_since > datetime.timedelta(seconds=3):
                                             running_since = temp_usage_key
                                         temp_usage += usage_changes[temp_usage_key]
                                         if temp_usage < 0.01 and usage_changes[temp_usage_key] < 0:
