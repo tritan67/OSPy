@@ -248,12 +248,12 @@ class _Weather(Thread):
                 datestring = check_date.strftime('%Y%m%d')
                 keep_folders.append(prefix + datestring)
                 check_date -= day_delta
-
-            for folder in os.listdir(root):
-                if folder.startswith(prefix) and folder not in keep_folders:
-                    path = os.path.join(root, folder)
-                    if os.path.isdir(path):
-                        shutil.rmtree(path)
+            if os.path.isdir(root):
+                for folder in os.listdir(root):
+                    if folder.startswith(prefix) and folder not in keep_folders:
+                        path = os.path.join(root, folder)
+                        if os.path.isdir(path):
+                            shutil.rmtree(path)
 
     def _get_history(self, check_date):
         datestring = check_date.strftime('%Y%m%d')

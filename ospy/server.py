@@ -9,8 +9,6 @@ import os
 # Local imports
 from ospy.options import options
 from ospy.scheduler import scheduler
-from ospy.weather import weather
-from ospy.log import log
 
 import plugins
 
