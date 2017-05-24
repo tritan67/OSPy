@@ -74,8 +74,8 @@ def predicted_schedule(start_time, end_time):
     # Get run-now information:
     if programs.run_now_program is not None:
         program = programs.run_now_program
-        run_now_intervals = program.active_intervals(start_time, end_time)
         for station in sorted(program.stations):
+            run_now_intervals = program.active_intervals(start_time, end_time, station)
             for interval in run_now_intervals:
                 if station >= stations.count() or stations.master == station or not stations[station].enabled:
                     continue
@@ -106,9 +106,9 @@ def predicted_schedule(start_time, end_time):
         if not program.enabled:
             continue
 
-        program_intervals = program.active_intervals(start_time, end_time)
-
         for station in sorted(program.stations):
+            program_intervals = program.active_intervals(start_time, end_time, station)
+
             if station >= stations.count() or stations.master == station or not stations[station].enabled:
                 continue
 

@@ -118,6 +118,7 @@ div.controlblock, div.simpleblock, div.simpleinlineblock {
     border:3px solid #2E3959;
     border-radius: 12px;
     margin: 8px 0px;
+    padding: 5px;
 }
 
 div.simpleinlineblock {
@@ -526,6 +527,19 @@ table.adjustmentList td.adjValue, table.adjustmentList th.adjValue {
 table.adjustmentList th {
     padding: 2px;
     border-top: 2px solid #2E3959;
+    text-align: left;
+}
+
+table.pemList {
+    padding: 8px 0px;
+    width: 100%;
+}
+table.pemList td {
+    padding: 2px;
+}
+table.pemList th {
+    padding: 2px;
+    border-bottom: 2px solid #2E3959;
     text-align: left;
 }
 

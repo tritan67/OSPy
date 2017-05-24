@@ -258,8 +258,13 @@ class program_page(ProtectedPage):
         program.name = qdict['name']
         program.stations = json.loads(qdict['stations'])
         program.enabled = True if qdict.get('enabled', 'off') == 'on' else False
-        program.cut_off = int(qdict['cut_off'])
-        program.fixed = True if qdict.get('fixed', 'off') == 'on' else False
+
+        if qdict['schedule_type'] == ProgramType.WEEKLY_WEATHER:
+            program.cut_off = 0
+            program.fixed = True
+        else:
+            program.cut_off = int(qdict['cut_off'])
+            program.fixed = True if qdict.get('fixed', 'off') == 'on' else False
 
         simple = [int(qdict['simple_hour']) * 60 + int(qdict['simple_minute']),
                   int(qdict['simple_duration']),
@@ -289,6 +294,15 @@ class program_page(ProtectedPage):
 
         elif qdict['schedule_type'] == ProgramType.WEEKLY_ADVANCED:
             program.set_weekly_advanced(json.loads(qdict['weekly_schedule_data']))
+
+        elif qdict['schedule_type'] == ProgramType.WEEKLY_WEATHER:
+            print qdict['weather_pems_data']
+            program.set_weekly_weather(int(qdict['weather_irrigation_min']),
+                                       int(qdict['weather_irrigation_max']),
+                                       int(qdict['weather_run_max']),
+                                       int(qdict['weather_pause_ratio'])/100.0,
+                                       json.loads(qdict['weather_pems_data']),
+                                       )
 
         elif qdict['schedule_type'] == ProgramType.CUSTOM:
             program.modulo = int(qdict['interval'])*1440
@@ -471,6 +485,7 @@ class stations_page(ProtectedPage):
         for s in xrange(0, stations.count()):
             stations[s].name = qdict["%d_name" % s]
             stations[s].usage = float(qdict.get("%d_usage" % s, 1.0))
+            stations[s].precipitation = float(qdict.get("%d_precipitation" % s, 10.0))
             stations[s].enabled = True if qdict.get("%d_enabled" % s, 'off') == 'on' else False
             stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'off') == 'on' else False
             if stations.master is not None or options.master_relay:
