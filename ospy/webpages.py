@@ -486,6 +486,7 @@ class stations_page(ProtectedPage):
             stations[s].name = qdict["%d_name" % s]
             stations[s].usage = float(qdict.get("%d_usage" % s, 1.0))
             stations[s].precipitation = float(qdict.get("%d_precipitation" % s, 10.0))
+            stations[s].capacity = float(qdict.get("%d_capacity" % s, 10.0))
             stations[s].enabled = True if qdict.get("%d_enabled" % s, 'off') == 'on' else False
             stations[s].ignore_rain = True if qdict.get("%d_ignore_rain" % s, 'off') == 'on' else False
             if stations.master is not None or options.master_relay:

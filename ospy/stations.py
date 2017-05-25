@@ -22,6 +22,7 @@ class _Station(object):
         self.ignore_rain = False
         self.usage = 1.0
         self.precipitation = 10.0
+        self.capacity = 10.0
         self.last_balance_date = datetime.date.today() - datetime.timedelta(days=21)
         self.last_balance = 0.0
 

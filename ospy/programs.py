@@ -98,7 +98,7 @@ class _Program(object):
                 # Backup plan in case we don't get data:
                 for station in self.stations:
                     self._station_schedule[station] = []
-                    station_duration = int(run_max*60/stations.get(station).precipitation)
+                    station_duration = min(60, int(run_max*60/stations.get(station).precipitation))
                     for pem_min, _ in pem_mins:
                         self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, pem_min, pem_min+station_duration)
                         self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, 7*1440 + pem_min, 7*1440 + pem_min+station_duration)
@@ -138,7 +138,6 @@ class _Program(object):
                     day_eto[day_index] = weather.get_eto(check_date)
                     day_rain[day_index] = weather.get_rain(check_date)
 
-                current_min = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds() / 60
                 to_sprinkle = {}
 
                 for station in self.stations:
@@ -151,6 +150,8 @@ class _Program(object):
                         station_balance[station][day_index] = station_balance[station][day_index-1] \
                                                             + station_irrigation[station][day_index] \
                                                             - day_eto[day_index] + day_rain[day_index]
+                        station_balance[station][day_index] = min(station_balance[station][day_index],
+                                                                  stations.get(station).capacity)
 
                         if day_index == -7:
                             stations.get(station).last_balance_date = now.date() + datetime.timedelta(days=day_index)
