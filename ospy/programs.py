@@ -98,7 +98,7 @@ class _Program(object):
                 # Backup plan in case we don't get data:
                 for station in self.stations:
                     self._station_schedule[station] = []
-                    station_duration = min(60, int(run_max*60/stations.get(station).precipitation))
+                    station_duration = int(irrigation_min*60/stations.get(station).precipitation)
                     for pem_min, _ in pem_mins:
                         self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, pem_min, pem_min+station_duration)
                         self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, 7*1440 + pem_min, 7*1440 + pem_min+station_duration)
@@ -124,7 +124,7 @@ class _Program(object):
                     station_balance[station] = {}
 
                 for run in log.finished_runs():
-                    if run['station'] in station_irrigation:
+                    if not run['blocked'] and not run['manual'] and run['station'] in station_irrigation:
                         day_index = (run['start'].date() - now.date()).days
                         irrigation = (run['end'] - run['start']).total_seconds() / 3600 * stations.get(run['station']).precipitation
                         if day_index not in station_irrigation[run['station']]:

@@ -122,7 +122,7 @@ def predicted_schedule(start_time, end_time):
                 new_schedule = {
                     'active': None,
                     'program': program.index,
-                    'program_name': program.name, # Save it because programs can be reordered
+                    'program_name': program.name, # Save it because programs can be renamed
                     'fixed': program.fixed,
                     'cut_off': program.cut_off/100.0,
                     'manual': program.manual,
