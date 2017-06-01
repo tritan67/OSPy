@@ -282,6 +282,10 @@ class _Options(object):
             self.password_salt = password_salt()
             self.password_hash = password_hash(self.password_hash, self.password_salt)
 
+    def __del__(self):
+        if self._write_timer is not None:
+            self._write_timer.cancel()
+
     def add_callback(self, key, function):
         if key not in self._callbacks:
             self._callbacks[key] = {

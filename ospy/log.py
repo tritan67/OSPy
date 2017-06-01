@@ -40,12 +40,10 @@ class _Log(logging.Handler):
         pass  # Override level using options
 
     def _save_logs(self):
+        from ospy.programs import programs, ProgramType
         result = []
-        if options.run_log:
-            for entry in self._log['Run']:
-                result.append(entry)
-                if 0 < options.run_entries <= len(result):
-                    break
+        if options.run_log or any(program.type == ProgramType.WEEKLY_WEATHER for program in programs.get()):
+            result = self._log['Run']
         options.logged_runs = result
 
     @staticmethod
@@ -194,8 +192,11 @@ class _Log(logging.Handler):
 
         # determine the start of the first active run:
         first_start = min([datetime.datetime.now()] + [interval['start'] for interval in self.active_runs()])
-        check_eto = any(program.type == ProgramType.WEEKLY_WEATHER for program in programs.get())
-        min_eto = min(station.last_balance_date for station in stations.get())
+        min_eto = datetime.date.today() + datetime.timedelta(days=1)
+        for program in programs.get():
+            if program.type == ProgramType.WEEKLY_WEATHER:
+                for station in program.stations:
+                    min_eto = min(min_eto, stations.get(station).last_balance_date)
 
         # Now try to remove as much as we can
         for index in reversed(xrange(len(self._log['Run']) - minimum)):
@@ -207,7 +208,7 @@ class _Log(logging.Handler):
                                                                       options.master_off_delay,
                                                                       60):
                 delete = False
-            elif check_eto and interval['end'].date() >= min_eto:
+            elif interval['end'].date() >= min_eto:
                 delete = False
 
             if delete:
