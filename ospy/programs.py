@@ -124,9 +124,11 @@ class _Program(object):
                     station_balance[station] = {}
 
                 for run in log.finished_runs():
-                    if not run['blocked'] and not run['manual'] and run['station'] in station_irrigation:
+                    if not run['blocked'] and run['station'] in station_irrigation:
                         day_index = (run['start'].date() - now.date()).days
                         irrigation = (run['end'] - run['start']).total_seconds() / 3600 * stations.get(run['station']).precipitation
+                        if run['manual']:
+                            irrigation *= 0.5  # Only count half in case of manual runs
                         if day_index not in station_irrigation[run['station']]:
                             station_irrigation[run['station']][day_index] = 0.0
                         station_irrigation[run['station']][day_index] += irrigation
