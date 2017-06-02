@@ -270,12 +270,15 @@ class _Options(object):
         for info in self.OPTIONS:
             self._values[info["key"]] = info["default"]
 
-        for ext in ['', '.bak', '.tmp']:
+        for ext in ['', '.tmp', '.bak']:
             try:
                 db = shelve.open(OPTIONS_FILE + ext)
-                self._values.update(db)
-                db.close()
-                break
+                if db.keys():
+                    self._values.update(db)
+                    db.close()
+                    break
+                else:
+                    db.close()
             except Exception:
                 pass
 
@@ -369,13 +372,18 @@ class _Options(object):
         db.clear()
         db.update(self._values)
         db.close()
-        if os.path.isfile(OPTIONS_FILE + '.bak') and time.time() - os.path.getmtime(OPTIONS_FILE + '.bak') > 3600:
+
+        if os.path.isfile(OPTIONS_FILE + '.bak') and time.time() - os.path.getmtime(OPTIONS_FILE + '.bak') > 3600\
+                and os.path.isfile(OPTIONS_FILE) and (os.path.getsize(OPTIONS_FILE + '.bak') >= os.path.getsize(OPTIONS_FILE) * 0.9 or
+                                                      time.time() - os.path.getmtime(OPTIONS_FILE + '.bak') > 7*3600):
             os.remove(OPTIONS_FILE + '.bak')
 
-        if not os.path.isfile(OPTIONS_FILE + '.bak'):
-            os.rename(OPTIONS_FILE, OPTIONS_FILE + '.bak')
-        else:
-            os.remove(OPTIONS_FILE)
+        if os.path.isfile(OPTIONS_FILE):
+            if not os.path.isfile(OPTIONS_FILE + '.bak'):
+                os.rename(OPTIONS_FILE, OPTIONS_FILE + '.bak')
+            else:
+                os.remove(OPTIONS_FILE)
+                
         os.rename(OPTIONS_FILE + '.tmp', OPTIONS_FILE)
 
     def get_categories(self):
