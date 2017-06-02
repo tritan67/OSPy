@@ -155,26 +155,35 @@ class _Program(object):
 
                         better_days = [x for x in pems[index+1:] if x[1] > prio]
                         better_or_equal_days = [x for x in pems[index+1:] if x[1] >= prio and x[0] > pem]
+                        any_days = pems[index+1:]
 
-                        target_index = 9
+                        target_index, target_index_pref = 9, 9
+                        if any_days:
+                            target_index = (any_days[0][0].date() - now.date()).days
+
                         if not better_days: # The best day:
                             amount = irrigation_max
                             if better_or_equal_days:
-                                target_index = (better_or_equal_days[0][0].date() - now.date()).days
+                                target_index_pref = (better_or_equal_days[0][0].date() - now.date()).days
                         else: # A better day is possible:
                             amount = 0
-                            target_index = (better_days[0][0].date() - now.date()).days
+                            target_index_pref = (better_days[0][0].date() - now.date()).days
 
                         # Make sure not to overflow the capacity (and aim for 0 for today):
-                        later_sprinkle_max = min([-station_balance[station][day_index]] + [stations.get(station).capacity - station_balance[station][later_day_index] for later_day_index in range(day_index, target_index + 1)])
+                        later_sprinkle_max = min([-station_balance[station][day_index]] + [stations.get(station).capacity - station_balance[station][later_day_index] for later_day_index in range(day_index, 10)])
 
                         # Make sure we sprinkle enough not to go above the maximum in the future:
                         later_sprinkle_min = max(-station_balance[station][later_day_index] - irrigation_max for later_day_index in range(day_index, target_index + 1))
                         if later_sprinkle_min > 0: # We need to do something to prevent going over the maximum, so:
                             later_sprinkle_min = max(irrigation_min, later_sprinkle_min) # Make sure to sprinkle
 
+                        # Try to go towards a better day:
+                        later_sprinkle_min_pref = max(-station_balance[station][later_day_index] - irrigation_max for later_day_index in range(day_index, target_index_pref + 1))
+                        if later_sprinkle_min_pref > 0: # We need to do something to prevent going over the maximum, so:
+                            later_sprinkle_min_pref = max(irrigation_min, later_sprinkle_min) # Make sure to sprinkle
+
                         # Calculate the final value based on the constraints that we have:
-                        amount = min(max(later_sprinkle_min, min(amount, later_sprinkle_max)), irrigation_max)
+                        amount = min(max(later_sprinkle_min, min(max(later_sprinkle_min_pref, amount), later_sprinkle_max)), irrigation_max)
 
                         if amount >= irrigation_min:
                             logging.debug('Weather based schedule for station: %d: PEM: %s, priority: %s, amount: %f.', station, str(pem), prio, amount)

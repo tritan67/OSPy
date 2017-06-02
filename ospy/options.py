@@ -10,6 +10,8 @@ import shelve
 
 import helpers
 import traceback
+import os
+import time
 
 OPTIONS_FILE = './ospy/data/options.db'
 
@@ -268,12 +270,14 @@ class _Options(object):
         for info in self.OPTIONS:
             self._values[info["key"]] = info["default"]
 
-        try:
-            db = shelve.open(OPTIONS_FILE)
-            self._values.update(db)
-            db.close()
-        except Exception:
-            pass
+        for ext in ['', '.bak', '.tmp']:
+            try:
+                db = shelve.open(OPTIONS_FILE + ext)
+                self._values.update(db)
+                db.close()
+                break
+            except Exception:
+                pass
 
         if not self.password_salt:  # Password is not hashed yet
             from ospy.helpers import password_salt
@@ -361,10 +365,18 @@ class _Options(object):
 
     def _write(self):
         """This function saves the current data to disk. Use a timer to limit the call rate."""
-        db = shelve.open(OPTIONS_FILE)
+        db = shelve.open(OPTIONS_FILE + '.tmp')
         db.clear()
         db.update(self._values)
         db.close()
+        if os.path.isfile(OPTIONS_FILE + '.bak') and time.time() - os.path.getmtime(OPTIONS_FILE + '.bak') > 3600:
+            os.remove(OPTIONS_FILE + '.bak')
+
+        if not os.path.isfile(OPTIONS_FILE + '.bak'):
+            os.rename(OPTIONS_FILE, OPTIONS_FILE + '.bak')
+        else:
+            os.remove(OPTIONS_FILE)
+        os.rename(OPTIONS_FILE + '.tmp', OPTIONS_FILE)
 
     def get_categories(self):
         result = []
