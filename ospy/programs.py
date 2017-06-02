@@ -92,18 +92,9 @@ class _Program(object):
                                                    datetime.timedelta(days=now.weekday()),
                                                    datetime.time.min)
             self._start = week_start
+            irrigation_min, irrigation_max, run_max, pause_ratio, pem_mins = self.type_data
+
             try:
-                irrigation_min, irrigation_max, run_max, pause_ratio, pem_mins = self.type_data
-
-                # Backup plan in case we don't get data:
-                for station in self.stations:
-                    self._station_schedule[station] = []
-                    station_duration = int(irrigation_min*60/stations.get(station).precipitation)
-                    for pem_min, _ in pem_mins:
-                        self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, pem_min, pem_min+station_duration)
-                        self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, 7*1440 + pem_min, 7*1440 + pem_min+station_duration)
-                        self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, 14*1440 + pem_min, 14*1440 + pem_min+station_duration)
-
                 pems = [(week_start + datetime.timedelta(minutes=x), y) for x, y in pem_mins]
                 pems += [(week_start + datetime.timedelta(days=7, minutes=x), y) for x, y in pem_mins]
                 pems += [(week_start + datetime.timedelta(days=-7, minutes=x), y) for x, y in pem_mins]
@@ -163,20 +154,29 @@ class _Program(object):
                         day_index = (pem.date() - now.date()).days
 
                         better_days = [x for x in pems[index+1:] if x[1] > prio]
-                        amount = 0
+                        better_or_equal_days = [x for x in pems[index+1:] if x[1] >= prio and x[0] > pem]
 
-                        # The best day:
-                        if not better_days:
-                            if -station_balance[station][day_index] >= irrigation_min:
-                                amount = min(irrigation_max, -station_balance[station][day_index])
-                        else:
+                        target_index = 9
+                        if not better_days: # The best day:
+                            amount = irrigation_max
+                            if better_or_equal_days:
+                                target_index = (better_or_equal_days[0][0].date() - now.date()).days
+                        else: # A better day is possible:
+                            amount = 0
                             target_index = (better_days[0][0].date() - now.date()).days
 
-                            later_deficit_max = min(station_balance[station][later_day_index] for later_day_index in range(day_index, target_index + 1))
-                            if -later_deficit_max > irrigation_max:
-                                amount = min(max(irrigation_min, -later_deficit_max - irrigation_max), irrigation_max)
+                        # Make sure not to overflow the capacity (and aim for 0 for today):
+                        later_sprinkle_max = min([-station_balance[station][day_index]] + [stations.get(station).capacity - station_balance[station][later_day_index] for later_day_index in range(day_index, target_index + 1)])
 
-                        if amount > 0:
+                        # Make sure we sprinkle enough not to go above the maximum in the future:
+                        later_sprinkle_min = max(-station_balance[station][later_day_index] - irrigation_max for later_day_index in range(day_index, target_index + 1))
+                        if later_sprinkle_min > 0: # We need to do something to prevent going over the maximum, so:
+                            later_sprinkle_min = max(irrigation_min, later_sprinkle_min) # Make sure to sprinkle
+
+                        # Calculate the final value based on the constraints that we have:
+                        amount = min(max(later_sprinkle_min, min(amount, later_sprinkle_max)), irrigation_max)
+
+                        if amount >= irrigation_min:
                             logging.debug('Weather based schedule for station: %d: PEM: %s, priority: %s, amount: %f.', station, str(pem), prio, amount)
                             for later_day_index in range(day_index, 10):
                                 station_balance[station][later_day_index] += amount
@@ -196,6 +196,18 @@ class _Program(object):
 
                 self._station_schedule = to_sprinkle
             except Exception:
+                # Backup plan in case we don't get data:
+                for station in self.stations:
+                    if station not in self._station_schedule:
+                        self._station_schedule[station] = []
+
+                    station_duration = int(irrigation_min*60/stations.get(station).precipitation)
+                    for pem_min, _ in pem_mins:
+                        if not self._station_schedule[station]: # If we have nothing at all, fill the first week as well:
+                            self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, pem_min, pem_min+station_duration)
+                        self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, 7*1440 + pem_min, 7*1440 + pem_min+station_duration)
+                        self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, 14*1440 + pem_min, 14*1440 + pem_min+station_duration)
+
                 logging.warning('Could create weather based schedule:\n' + traceback.format_exc())
 
     @property
