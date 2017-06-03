@@ -21,7 +21,31 @@ from ospy.options import options
 from ospy.log import log
 from ospy.helpers import mkdir_p, try_float
 
-__requests = []
+
+def _cache(cache_name):
+    def cache_decorator(func):
+        def func_wrapper(self, check_date):
+            if 'location' not in self._result_cache or self._location != self._result_cache['location'] or \
+                    'elevation' not in self._result_cache or options.elevation != self._result_cache['elevation']:
+                self._result_cache = {
+                    'location': self._location,
+                    'elevation': options.elevation
+                }
+            if cache_name not in self._result_cache:
+                self._result_cache[cache_name] = {}
+
+            if check_date not in self._result_cache[cache_name]:
+                self._result_cache[cache_name][check_date] = func(self, check_date)
+
+                for key in self._result_cache[cache_name]:
+                    if (datetime.date.today() - key).days > 30:
+                        del self._result_cache[cache_name][key]
+
+                options.weather_cache = self._result_cache
+
+            return self._result_cache[cache_name][check_date]
+        return func_wrapper
+    return cache_decorator
 
 
 class _Weather(Thread):
@@ -102,6 +126,7 @@ class _Weather(Thread):
         self._lat = 0
         self._lon = 0
         self._determine_location = True
+        self._result_cache = options.weather_cache
 
         options.add_callback('location', self._option_cb)
         options.add_callback('wunderground_key', self._option_cb)
@@ -135,20 +160,21 @@ class _Weather(Thread):
     def run(self):
         while True:
             try:
-                if self._determine_location:
-                    self._determine_location = False
-                    self._find_location()
+                try:
+                    if self._determine_location:
+                        self._determine_location = False
+                        self._find_location()
+                finally:
+                    for function in self._callbacks:
+                        function()
 
-                for function in self._callbacks:
-                    function()
-
-                self._remove_wunderground_data([
-                    'conditions_',
-                    'forecast10day_',
-                    'history_',
-                    'hourly_',
-                    'hourly10day_'
-                ])
+                    self._remove_wunderground_data([
+                        'conditions_',
+                        'forecast10day_',
+                        'history_',
+                        'hourly_',
+                        'hourly10day_'
+                    ])
 
                 self._sleep(24*3600)
             except Exception:
@@ -440,6 +466,7 @@ class _Weather(Thread):
 
         return eto
 
+    @_cache('eto')
     def get_eto(self, check_date):
         if isinstance(check_date, datetime.datetime):
             check_date = check_date.date()
@@ -607,6 +634,7 @@ class _Weather(Thread):
 
         return self._calc_eto(total_solar_radiation, total_clear_sky_isolation, summary)
 
+    @_cache('rain')
     def get_rain(self, check_date):
         if isinstance(check_date, datetime.datetime):
             check_date = check_date.date()

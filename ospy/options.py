@@ -258,6 +258,11 @@ class _Options(object):
             "key": "logged_runs",
             "name": "The runs that have been logged",
             "default": []
+        },
+        {
+            "key": "weather_cache",
+            "name": "ETo and rain value cache",
+            "default": {}
         }
     ]
 
@@ -383,7 +388,7 @@ class _Options(object):
                 os.rename(OPTIONS_FILE, OPTIONS_FILE + '.bak')
             else:
                 os.remove(OPTIONS_FILE)
-                
+
         os.rename(OPTIONS_FILE + '.tmp', OPTIONS_FILE)
 
     def get_categories(self):

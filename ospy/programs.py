@@ -128,8 +128,12 @@ class _Program(object):
                 day_rain = {}
                 for day_index in range((min_eto_day - now.date()).days, 10):
                     check_date = now.date() + datetime.timedelta(days=day_index)
-                    day_eto[day_index] = weather.get_eto(check_date)
-                    day_rain[day_index] = weather.get_rain(check_date)
+                    day_eto[day_index], day_rain[day_index] = 4.0, 0.0
+                    try:
+                        day_eto[day_index] = weather.get_eto(check_date)
+                        day_rain[day_index] = weather.get_rain(check_date)
+                    except Exception:
+                        logging.warning('Could not get weather information, using fallbacks:\n' + traceback.format_exc())
 
                 to_sprinkle = {}
 
@@ -205,19 +209,7 @@ class _Program(object):
 
                 self._station_schedule = to_sprinkle
             except Exception:
-                # Backup plan in case we don't get data:
-                for station in self.stations:
-                    if station not in self._station_schedule:
-                        self._station_schedule[station] = []
-
-                    station_duration = int(irrigation_min*60/stations.get(station).precipitation)
-                    for pem_min, _ in pem_mins:
-                        if not self._station_schedule[station]: # If we have nothing at all, fill the first week as well:
-                            self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, pem_min, pem_min+station_duration)
-                        self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, 7*1440 + pem_min, 7*1440 + pem_min+station_duration)
-                        self._station_schedule[station] = self._update_schedule(self._station_schedule[station], self.modulo, 14*1440 + pem_min, 14*1440 + pem_min+station_duration)
-
-                logging.warning('Could create weather based schedule:\n' + traceback.format_exc())
+                logging.warning('Could not create weather based schedule:\n' + traceback.format_exc())
 
     @property
     def schedule(self):
@@ -709,7 +701,6 @@ class _Programs(object):
             program.stations = [station for station in program.stations if 0 <= station < new]
 
     def _weather_cb(self):
-        # Remove all stations that do not exist anymore
         for program in self._programs:
             if program.type == ProgramType.WEEKLY_WEATHER:
                 program.update_station_schedule()
