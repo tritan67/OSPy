@@ -34,14 +34,17 @@ def _cache(cache_name):
             if cache_name not in self._result_cache:
                 self._result_cache[cache_name] = {}
 
-            if check_date not in self._result_cache[cache_name]:
-                self._result_cache[cache_name][check_date] = func(self, check_date)
-
+            if check_date not in self._result_cache[cache_name] or (datetime.date.today() - check_date).days < 1:
+                try:
+                    self._result_cache[cache_name][check_date] = func(self, check_date)
+                    options.weather_cache = self._result_cache
+                except Exception:
+                    if check_date not in self._result_cache[cache_name]:
+                        raise
+                    
                 for key in self._result_cache[cache_name]:
                     if (datetime.date.today() - key).days > 30:
                         del self._result_cache[cache_name][key]
-
-                options.weather_cache = self._result_cache
 
             return self._result_cache[cache_name][check_date]
         return func_wrapper
