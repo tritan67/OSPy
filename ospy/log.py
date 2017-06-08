@@ -196,7 +196,7 @@ class _Log(logging.Handler):
         for program in programs.get():
             if program.type == ProgramType.WEEKLY_WEATHER:
                 for station in program.stations:
-                    min_eto = min(min_eto, stations.get(station).last_balance_date)
+                    min_eto = min(min_eto, min([datetime.date.today() - datetime.timedelta(days=7)] + stations.get(station).balance.keys()))
 
         # Now try to remove as much as we can
         for index in reversed(xrange(len(self._log['Run']) - minimum)):

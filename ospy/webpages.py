@@ -591,3 +591,20 @@ class api_log_json(ProtectedPage):
                 'start': interval['start'].strftime("%H:%M:%S"),
                 'duration': "%02d:%02d" % (minutes, seconds)
             }
+
+
+class api_balance_json(ProtectedPage):
+    """Balance API"""
+
+    def GET(self):
+        statuslist = []
+        epoch = datetime.date(1970, 1, 1)
+
+        for station in stations.get():
+            if station.enabled and any(station.index in program.stations for program in programs.get()):
+                statuslist.append({
+                    'station': station.name,
+                    'balances': {int((key - epoch).total_seconds()): value for key, value in station.balance.iteritems()}})
+
+        web.header('Content-Type', 'application/json')
+        return json.dumps(statuslist, indent=2)

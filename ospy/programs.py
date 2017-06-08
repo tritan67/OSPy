@@ -102,57 +102,21 @@ class _Program(object):
                 pems = [x for x in pems if x[0] >= now - datetime.timedelta(hours=12)]
                 pems = [x for x in pems if (x[0].date() - now.date()).days < 10]
 
-                min_eto_day = now.date()
-                station_irrigation = {}
-                station_balance = {}
-                for station in self.stations:
-                    if stations.get(station).last_balance_date < now.date() - datetime.timedelta(days=21):
-                        stations.get(station).last_balance_date = now.date() - datetime.timedelta(days=21)
-                        stations.get(station).last_balance = 0.0
-
-                    min_eto_day = min(min_eto_day, stations.get(station).last_balance_date)
-                    station_irrigation[station] = {}
-                    station_balance[station] = {}
-
-                for run in log.finished_runs():
-                    if not run['blocked'] and run['station'] in station_irrigation:
-                        day_index = (run['start'].date() - now.date()).days
-                        irrigation = (run['end'] - run['start']).total_seconds() / 3600 * stations.get(run['station']).precipitation
-                        if run['manual']:
-                            irrigation *= 0.5  # Only count half in case of manual runs
-                        if day_index not in station_irrigation[run['station']]:
-                            station_irrigation[run['station']][day_index] = 0.0
-                        station_irrigation[run['station']][day_index] += irrigation
-
-                day_eto = {}
-                day_rain = {}
-                for day_index in range((min_eto_day - now.date()).days, 10):
-                    check_date = now.date() + datetime.timedelta(days=day_index)
-                    day_eto[day_index], day_rain[day_index] = 4.0, 0.0
-                    try:
-                        day_eto[day_index] = weather.get_eto(check_date)
-                        day_rain[day_index] = weather.get_rain(check_date)
-                    except Exception:
-                        logging.warning('Could not get weather information, using fallbacks:\n' + traceback.format_exc())
-
                 to_sprinkle = {}
-
                 for station in self.stations:
                     to_sprinkle[station] = []
-                    station_balance[station][(stations.get(station).last_balance_date - now.date()).days] = stations.get(station).last_balance
-                    for day_index in range((stations.get(station).last_balance_date - now.date()).days + 1, 10):
-                        if day_index not in station_irrigation[station]:
-                            station_irrigation[station][day_index] = 0.0
 
-                        station_balance[station][day_index] = station_balance[station][day_index-1] \
-                                                            + station_irrigation[station][day_index] \
-                                                            - day_eto[day_index] + day_rain[day_index]
-                        station_balance[station][day_index] = min(station_balance[station][day_index],
-                                                                  stations.get(station).capacity)
+                    station_balance = {
+                        -1: stations.get(station).balance[now.date() - datetime.timedelta(days=1)]['total']
+                    }
+                    for day_index in range(0, 10):
+                        overall_balance = stations.get(station).balance[now.date() + datetime.timedelta(days=day_index)]
+                        station_balance[day_index] = station_balance[day_index-1] \
+                                                     - overall_balance['eto'] \
+                                                     + overall_balance['rain'] \
+                                                     + sum(interval['irrigation'] for interval in overall_balance['intervals'] if
+                                                           interval['done'] or interval['program'] != self.index)
 
-                        if day_index == -7:
-                            stations.get(station).last_balance_date = now.date() + datetime.timedelta(days=day_index)
-                            stations.get(station).last_balance = station_balance[station][day_index]
 
                     for index, (pem, prio) in enumerate(pems):
                         day_index = (pem.date() - now.date()).days
@@ -174,25 +138,25 @@ class _Program(object):
                             target_index_pref = (better_days[0][0].date() - now.date()).days
 
                         # Make sure not to overflow the capacity (and aim for 0 for today):
-                        later_sprinkle_max = min([-station_balance[station][day_index]] + [stations.get(station).capacity - station_balance[station][later_day_index] for later_day_index in range(day_index, 10)])
+                        later_sprinkle_max = min([-station_balance[day_index]] + [stations.get(station).capacity - station_balance[later_day_index] for later_day_index in range(day_index+1, target_index_pref)])
 
                         # Make sure we sprinkle enough not to go above the maximum in the future:
-                        later_sprinkle_min = max(-station_balance[station][later_day_index] - irrigation_max for later_day_index in range(day_index, target_index + 1))
+                        later_sprinkle_min = max(-station_balance[later_day_index] - irrigation_max for later_day_index in range(day_index, target_index + 1))
                         if later_sprinkle_min > 0: # We need to do something to prevent going over the maximum, so:
                             later_sprinkle_min = max(irrigation_min, later_sprinkle_min) # Make sure to sprinkle
 
                         # Try to go towards a better day:
-                        later_sprinkle_min_pref = max(-station_balance[station][later_day_index] - irrigation_max for later_day_index in range(day_index, target_index_pref + 1))
+                        later_sprinkle_min_pref = max(-station_balance[later_day_index] - irrigation_max for later_day_index in range(day_index, target_index_pref + 1))
                         if later_sprinkle_min_pref > 0: # We need to do something to prevent going over the maximum, so:
                             later_sprinkle_min_pref = max(irrigation_min, later_sprinkle_min) # Make sure to sprinkle
 
                         # Calculate the final value based on the constraints that we have:
+                        # print station, pem, amount, later_sprinkle_min, later_sprinkle_min_pref, later_sprinkle_max, stations.get(station).capacity, [-station_balance[day_index]] + [(stations.get(station).capacity - station_balance[later_day_index]) for later_day_index in range(day_index+1, target_index_pref)]
                         amount = min(max(later_sprinkle_min, min(max(later_sprinkle_min_pref, amount), later_sprinkle_max)), irrigation_max)
-
                         if amount >= irrigation_min:
-                            logging.debug('Weather based schedule for station: %d: PEM: %s, priority: %s, amount: %f.', station, str(pem), prio, amount)
+                            logging.debug('Weather based schedule for %s: PEM: %s, priority: %s, amount: %f.', stations.get(station).name, str(pem), prio, amount)
                             for later_day_index in range(day_index, 10):
-                                station_balance[station][later_day_index] += amount
+                                station_balance[later_day_index] += amount
                             week_min = (pem - week_start).total_seconds() / 60
 
                             intervals = [amount]
@@ -205,7 +169,7 @@ class _Program(object):
                                 to_sprinkle[station] = self._update_schedule(to_sprinkle[station], self.modulo, week_min, week_min+station_duration)
                                 week_min += station_duration + int(station_duration*pause_ratio)
 
-                    logging.debug('Weather based deficit for station: %d: %s', station, str(sorted([((now.date() + datetime.timedelta(days=x)).isoformat(), y) for x, y in station_balance[station].iteritems()])))
+                    logging.debug('Weather based deficit for %s: %s', stations.get(station).name, str(sorted([((now.date() + datetime.timedelta(days=x)).isoformat(), y) for x, y in station_balance.iteritems()])))
 
                 self._station_schedule = to_sprinkle
             except Exception:
@@ -700,10 +664,96 @@ class _Programs(object):
         for program in self._programs:
             program.stations = [station for station in program.stations if 0 <= station < new]
 
+    def _calculate_balances(self):
+        now = datetime.datetime.now()
+        for station in stations.get():
+            station.balance = {key: value for key, value in station.balance.iteritems()
+                               if key >= now.date() - datetime.timedelta(days=21)}
+
+            if not station.balance or (now.date() - datetime.timedelta(days=21)) not in station.balance:
+                station.balance[now.date() - datetime.timedelta(days=21)] = {
+                    'eto': 0.0,
+                    'rain': 0.0,
+                    'intervals': [],
+                    'total': 0.0,
+                    'valid': True
+                }
+
+            runs = log.finished_runs() + log.active_runs()
+            calc_day = now.date() - datetime.timedelta(days=20)
+            while calc_day < now.date() + datetime.timedelta(days=10):
+                if calc_day not in station.balance:
+                    station.balance[calc_day] = {
+                        'eto': 4.0,
+                        'rain': 0.0,
+                        'intervals': [],
+                        'total': 0.0,
+                        'valid': False
+                    }
+                try:
+                    if not station.balance[calc_day]['valid'] or calc_day >= now.date():
+                        station.balance[calc_day]['eto'] = weather.get_eto(calc_day)
+                        station.balance[calc_day]['rain'] = weather.get_rain(calc_day)
+                        station.balance[calc_day]['valid'] = True
+                except Exception:
+                    station.balance[calc_day]['valid'] = False
+                    logging.warning('Could not get weather information, using fallbacks:\n' + traceback.format_exc())
+
+                intervals = []
+                while runs and runs[0]['start'].date() <= calc_day:
+                    run = runs[0]
+                    if runs[0]['start'].date() == calc_day and not run['blocked'] and run['station'] == station.index:
+                        irrigation = (run['end'] - run['start']).total_seconds() / 3600 * station.precipitation
+                        if run['manual']:
+                            irrigation *= 0.5  # Only count half in case of manual runs
+                        intervals.append({
+                            'program': run['program'],
+                            'program_name': run['program_name'],
+                            'done': True,
+                            'irrigation': irrigation
+                        })
+                    del runs[0]
+
+                if calc_day >= now.date():
+                    if calc_day == now.date():
+                        date_time_start = now
+                    else:
+                        date_time_start = datetime.datetime.combine(calc_day, datetime.time.min)
+                    date_time_end = datetime.datetime.combine(calc_day, datetime.time.max)
+                    for program in self._programs:
+                        for run in program.active_intervals(date_time_start, date_time_end, station.index):
+                            irrigation = (run['end'] - run['start']).total_seconds() / 3600 * station.precipitation
+                            intervals.append({
+                                'program': program.index,
+                                'program_name': program.name,
+                                'done': False,
+                                'irrigation': irrigation
+                            })
+
+                if len(intervals) > len(station.balance[calc_day]['intervals']) or calc_day >= now.date():
+                    station.balance[calc_day]['intervals'] = intervals
+
+                station.balance[calc_day]['total'] = station.balance[calc_day - datetime.timedelta(days=1)]['total'] \
+                                                     - station.balance[calc_day]['eto'] \
+                                                     + station.balance[calc_day]['rain'] \
+                                                     + sum(interval['irrigation'] for interval in station.balance[calc_day]['intervals'])
+
+                station.balance[calc_day]['total'] = max(-100, min(station.balance[calc_day]['total'], station.capacity))
+
+                calc_day += datetime.timedelta(days=1)
+
+            station.balance = station.balance # Force saving
+
     def _weather_cb(self):
+        self._calculate_balances()
+        updated = False
         for program in self._programs:
             if program.type == ProgramType.WEEKLY_WEATHER:
+                updated = True
                 program.update_station_schedule()
+
+        if updated:
+            self._calculate_balances()
 
     def add_program(self, program=None):
         if program is None:
