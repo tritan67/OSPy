@@ -165,9 +165,9 @@ class _Program(object):
                                 intervals = [amount / new_len] * new_len
 
                             for interval in intervals:
-                                station_duration = int(interval*60/stations.get(station).precipitation)
+                                station_duration = int(round(interval*60/stations.get(station).precipitation))
                                 to_sprinkle[station] = self._update_schedule(to_sprinkle[station], self.modulo, week_min, week_min+station_duration)
-                                week_min += station_duration + int(station_duration*pause_ratio)
+                                week_min += station_duration + int(round(station_duration*pause_ratio))
 
                     logging.debug('Weather based deficit for %s: %s', stations.get(station).name, str(sorted([((now.date() + datetime.timedelta(days=x)).isoformat(), y) for x, y in station_balance.iteritems()])))
 
