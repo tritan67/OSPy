@@ -129,7 +129,7 @@ $else:
     </div>
 </div>
 
-$if any((station.enabled and any(station.index in program.stations for program in programs.get()) and any(balance['valid'] for balance in station.balance.values())) for station in stations.get()):
+$if not options.manual_mode and any((station.enabled and any(station.index in program.stations for program in programs.get()) and any(balance['valid'] for balance in station.balance.values())) for station in stations.get()):
     <div id="graph-container" class="graph-container">
         <div id="legend-placeholder" style="display:none;"></div>
         <div id="legend-visible" style="float: right; width: auto;"></div>
