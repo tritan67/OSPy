@@ -665,6 +665,7 @@ class _Programs(object):
             program.stations = [station for station in program.stations if 0 <= station < new]
 
     def _calculate_balances(self):
+        from scheduler import predicted_schedule
         now = datetime.datetime.now()
         for station in stations.get():
             station.balance = {key: value for key, value in station.balance.iteritems()
@@ -720,12 +721,12 @@ class _Programs(object):
                     else:
                         date_time_start = datetime.datetime.combine(calc_day, datetime.time.min)
                     date_time_end = datetime.datetime.combine(calc_day, datetime.time.max)
-                    for program in self._programs:
-                        for run in program.active_intervals(date_time_start, date_time_end, station.index):
+                    for run in predicted_schedule(date_time_start, date_time_end):
+                        if not run['blocked'] and run['station'] == station.index:
                             irrigation = (run['end'] - run['start']).total_seconds() / 3600 * station.precipitation
                             intervals.append({
-                                'program': program.index,
-                                'program_name': program.name,
+                                'program': run['program'],
+                                'program_name': run['program_name'],
                                 'done': False,
                                 'irrigation': irrigation
                             })
