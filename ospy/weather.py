@@ -179,10 +179,10 @@ class _Weather(Thread):
                         'hourly10day_'
                     ])
 
-                self._sleep(24*3600)
+                self._sleep(3600)
             except Exception:
                 logging.warning('Weather error:\n' + traceback.format_exc())
-                self._sleep(24*3600)
+                self._sleep(6*3600)
 
     def _find_location(self):
         if self._location and self._wunderground_key:

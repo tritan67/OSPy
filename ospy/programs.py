@@ -664,7 +664,7 @@ class _Programs(object):
         for program in self._programs:
             program.stations = [station for station in program.stations if 0 <= station < new]
 
-    def _calculate_balances(self):
+    def calculate_balances(self):
         from scheduler import predicted_schedule
         now = datetime.datetime.now()
         for station in stations.get():
@@ -722,6 +722,7 @@ class _Programs(object):
                         date_time_start = datetime.datetime.combine(calc_day, datetime.time.min)
                     date_time_end = datetime.datetime.combine(calc_day, datetime.time.max)
                     for run in predicted_schedule(date_time_start, date_time_end):
+                        print run
                         if not run['blocked'] and run['station'] == station.index:
                             irrigation = (run['end'] - run['start']).total_seconds() / 3600 * station.precipitation
                             intervals.append({
@@ -746,7 +747,7 @@ class _Programs(object):
             station.balance = station.balance # Force saving
 
     def _weather_cb(self):
-        self._calculate_balances()
+        self.calculate_balances()
         updated = False
         for program in self._programs:
             if program.type == ProgramType.WEEKLY_WEATHER:
@@ -754,7 +755,7 @@ class _Programs(object):
                 program.update_station_schedule()
 
         if updated:
-            self._calculate_balances()
+            self.calculate_balances()
 
     def add_program(self, program=None):
         if program is None:

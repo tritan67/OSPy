@@ -6,6 +6,7 @@ import os
 import datetime
 import json
 import web
+from threading import Timer
 
 # Local imports
 from ospy.helpers import test_password, template_globals, check_login, save_to_options, \
@@ -296,7 +297,6 @@ class program_page(ProtectedPage):
             program.set_weekly_advanced(json.loads(qdict['weekly_schedule_data']))
 
         elif qdict['schedule_type'] == ProgramType.WEEKLY_WEATHER:
-            print qdict['weather_pems_data']
             program.set_weekly_weather(int(qdict['weather_irrigation_min']),
                                        int(qdict['weather_irrigation_max']),
                                        int(qdict['weather_run_max']),
@@ -313,6 +313,7 @@ class program_page(ProtectedPage):
         if program.index < 0:
             programs.add_program(program)
 
+        Timer(0.1, programs.calculate_balances)
         raise web.seeother('/programs')
 
 
