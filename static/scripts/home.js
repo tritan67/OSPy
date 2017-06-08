@@ -220,7 +220,7 @@ function draw_graph(result) {
         }
     }
 
-    var plot = jQuery.plot("#graph-placeholder", data, {
+    return jQuery.plot("#graph-placeholder", data, {
         series: {
             lines: {
                 show: true
@@ -245,10 +245,9 @@ function draw_graph(result) {
         },
         yaxes: [{
             position: 'left',
-            axisLabel: 'mm',
+            axisLabel: 'Water balance (mm)'
         }]
     });
-    return plot;
 }
 
 function create_graph(result) {
