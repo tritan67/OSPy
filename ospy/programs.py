@@ -109,6 +109,9 @@ class _Program(object):
                     station_balance = {
                         -1: stations.get(station).balance[now.date() - datetime.timedelta(days=1)]['total']
                     }
+                    rain = {
+                        -1: stations.get(station).balance[now.date() - datetime.timedelta(days=1)]['rain']
+                    }
                     for day_index in range(0, 10):
                         overall_balance = stations.get(station).balance[now.date() + datetime.timedelta(days=day_index)]
                         station_balance[day_index] = station_balance[day_index-1] \
@@ -116,10 +119,12 @@ class _Program(object):
                                                      + overall_balance['rain'] \
                                                      + sum(interval['irrigation'] for interval in overall_balance['intervals'] if
                                                            interval['done'] or interval['program'] != self.index)
+                        rain[day_index] = overall_balance['rain']
 
 
                     for index, (pem, prio) in enumerate(pems):
                         day_index = (pem.date() - now.date()).days
+                        rain_today = max(rain[max(-1, day_index-1)], rain[day_index], rain[min(day_index+1, 9)])
 
                         better_days = [x for x in pems[index+1:] if x[1] > prio]
                         better_or_equal_days = [x for x in pems[index+1:] if x[1] >= prio and x[0] > pem]
@@ -151,8 +156,8 @@ class _Program(object):
                             later_sprinkle_min_pref = max(irrigation_min, later_sprinkle_min) # Make sure to sprinkle
 
                         # Calculate the final value based on the constraints that we have:
-                        # print station, pem, amount, later_sprinkle_min, later_sprinkle_min_pref, later_sprinkle_max, stations.get(station).capacity, [-station_balance[day_index]] + [(stations.get(station).capacity - station_balance[later_day_index]) for later_day_index in range(day_index+1, target_index_pref)]
-                        amount = min(max(later_sprinkle_min, min(max(later_sprinkle_min_pref, amount), later_sprinkle_max)), irrigation_max)
+                        # print station, pem, amount, later_sprinkle_min, later_sprinkle_min_pref, later_sprinkle_max, irrigation_max-rain_today, irrigation_max, stations.get(station).capacity, [-station_balance[day_index]] + [(stations.get(station).capacity - station_balance[later_day_index]) for later_day_index in range(day_index+1, target_index_pref)]
+                        amount = min(max(later_sprinkle_min, min(max(later_sprinkle_min_pref, amount), later_sprinkle_max, irrigation_max-rain_today)), irrigation_max)
                         if amount >= irrigation_min:
                             logging.debug('Weather based schedule for %s: PEM: %s, priority: %s, amount: %f.', stations.get(station).name, str(pem), prio, amount)
                             for later_day_index in range(day_index, 10):
@@ -722,7 +727,6 @@ class _Programs(object):
                         date_time_start = datetime.datetime.combine(calc_day, datetime.time.min)
                     date_time_end = datetime.datetime.combine(calc_day, datetime.time.max)
                     for run in predicted_schedule(date_time_start, date_time_end):
-                        print run
                         if not run['blocked'] and run['station'] == station.index:
                             irrigation = (run['end'] - run['start']).total_seconds() / 3600 * station.precipitation
                             intervals.append({
