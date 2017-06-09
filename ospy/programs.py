@@ -119,6 +119,7 @@ class _Program(object):
                                                      + overall_balance['rain'] \
                                                      + sum(interval['irrigation'] for interval in overall_balance['intervals'] if
                                                            interval['done'] or interval['program'] != self.index)
+                        station_balance[day_index] = max(-100, min(station_balance[day_index], stations.get(station).capacity))
                         rain[day_index] = overall_balance['rain']
 
 
