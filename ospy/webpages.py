@@ -313,7 +313,7 @@ class program_page(ProtectedPage):
         if program.index < 0:
             programs.add_program(program)
 
-        Timer(0.1, programs.calculate_balances)
+        Timer(0.1, programs.calculate_balances).start()
         raise web.seeother('/programs')
 
 

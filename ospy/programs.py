@@ -81,9 +81,9 @@ class _Program(object):
         self.update_station_schedule()
 
     def update_station_schedule(self):
-        self._station_schedule = {}
 
         if self.type != ProgramType.WEEKLY_WEATHER:
+            self._station_schedule = {}
             for station in self.stations:
                 self._station_schedule[station] = self._schedule
         else:
@@ -91,7 +91,9 @@ class _Program(object):
             week_start = datetime.datetime.combine(now.date() -
                                                    datetime.timedelta(days=now.weekday()),
                                                    datetime.time.min)
+            last_start = self._start
             self._start = week_start
+            start_difference = int(round((week_start - last_start).total_seconds() / 60))
             irrigation_min, irrigation_max, run_max, pause_ratio, pem_mins = self.type_data
 
             try:
@@ -99,12 +101,15 @@ class _Program(object):
                 pems += [(week_start + datetime.timedelta(days=7, minutes=x), y) for x, y in pem_mins]
                 pems += [(week_start + datetime.timedelta(days=-7, minutes=x), y) for x, y in pem_mins]
                 pems = sorted(pems)
-                pems = [x for x in pems if x[0] >= now - datetime.timedelta(hours=12)]
+                pems = [x for x in pems if x[0] >= now]
                 pems = [x for x in pems if (x[0].date() - now.date()).days < 10]
 
                 to_sprinkle = {}
                 for station in self.stations:
                     to_sprinkle[station] = []
+                    # Make sure to keep whatever we were planning to do
+                    if station in self._station_schedule:
+                        to_sprinkle[station] = [[interval[0] + start_difference, interval[1] + start_difference] for interval in self._station_schedule[station] if now - datetime.timedelta(hours=6) <= last_start + datetime.timedelta(minutes=interval[0]) <= now + datetime.timedelta(hours=6)]
 
                     station_balance = {
                         -1: stations.get(station).balance[now.date() - datetime.timedelta(days=1)]['total']
