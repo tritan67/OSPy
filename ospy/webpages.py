@@ -228,12 +228,15 @@ class program_page(ProtectedPage):
             enable = get_input(qdict, 'enable', None, lambda x: x == '1')
             if delete:
                 programs.remove_program(index)
+                Timer(0.1, programs.calculate_balances).start()
                 raise web.seeother('/programs')
             elif runnow:
                 programs.run_now(index)
+                Timer(0.1, programs.calculate_balances).start()
                 raise web.seeother('/programs')
             elif enable is not None:
                 programs[index].enabled = enable
+                Timer(0.1, programs.calculate_balances).start()
                 raise web.seeother('/programs')
         except ValueError:
             pass
