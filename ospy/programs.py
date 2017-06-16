@@ -101,7 +101,7 @@ class _Program(object):
                 pems += [(week_start + datetime.timedelta(days=7, minutes=x), y) for x, y in pem_mins]
                 pems += [(week_start + datetime.timedelta(days=-7, minutes=x), y) for x, y in pem_mins]
                 pems = sorted(pems)
-                pems = [x for x in pems if x[0] >= now + datetime.timedelta(hours=2)]
+                pems = [x for x in pems if x[0] >= now + datetime.timedelta(hours=6)]
                 pems = [x for x in pems if (x[0].date() - now.date()).days < 10]
 
                 to_sprinkle = {}
@@ -109,7 +109,7 @@ class _Program(object):
                     to_sprinkle[station] = []
                     # Make sure to keep whatever we were planning to do
                     if station in self._station_schedule:
-                        to_sprinkle[station] = [[interval[0] + start_difference, interval[1] + start_difference] for interval in self._station_schedule[station] if now - datetime.timedelta(hours=6) < last_start + datetime.timedelta(minutes=interval[0]) < now + datetime.timedelta(hours=2)]
+                        to_sprinkle[station] = [[interval[0] + start_difference, interval[1] + start_difference] for interval in self._station_schedule[station] if now - datetime.timedelta(hours=6) < last_start + datetime.timedelta(minutes=interval[0]) < now + datetime.timedelta(hours=6)]
 
                     station_balance = {
                         -1: stations.get(station).balance[now.date() - datetime.timedelta(days=1)]['total']
