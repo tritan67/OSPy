@@ -42,7 +42,7 @@ def _cache(cache_name):
                     if check_date not in self._result_cache[cache_name]:
                         raise
                     
-                for key in self._result_cache[cache_name]:
+                for key in self._result_cache[cache_name].keys():
                     if (datetime.date.today() - key).days > 30:
                         del self._result_cache[cache_name][key]
 

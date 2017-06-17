@@ -101,15 +101,22 @@ class _Program(object):
                 pems += [(week_start + datetime.timedelta(days=7, minutes=x), y) for x, y in pem_mins]
                 pems += [(week_start + datetime.timedelta(days=-7, minutes=x), y) for x, y in pem_mins]
                 pems = sorted(pems)
-                pems = [x for x in pems if x[0] >= now + datetime.timedelta(hours=6)]
+                pems = [x for x in pems if x[0] >= now - datetime.timedelta(hours=1)]
                 pems = [x for x in pems if (x[0].date() - now.date()).days < 10]
 
                 to_sprinkle = {}
                 for station in self.stations:
                     to_sprinkle[station] = []
+                    station_pems = pems[:]
                     # Make sure to keep whatever we were planning to do
                     if station in self._station_schedule:
-                        to_sprinkle[station] = [[interval[0] + start_difference, interval[1] + start_difference] for interval in self._station_schedule[station] if now - datetime.timedelta(hours=6) < last_start + datetime.timedelta(minutes=interval[0]) < now + datetime.timedelta(hours=6)]
+                        for interval in self._station_schedule[station]:
+                            if now - datetime.timedelta(hours=1) < last_start + datetime.timedelta(minutes=interval[1]) and last_start + datetime.timedelta(minutes=interval[0]) < now + datetime.timedelta(hours=1):
+                                to_sprinkle[station].append([interval[0] + start_difference, interval[1] + start_difference])
+                            elif to_sprinkle[station] and last_start + datetime.timedelta(minutes=interval[0]) - (week_start + datetime.timedelta(minutes=to_sprinkle[station][-1][1])) < datetime.timedelta(hours=3):
+                                to_sprinkle[station].append([interval[0] + start_difference, interval[1] + start_difference])
+                        if to_sprinkle[station]:
+                            station_pems = [x for x in pems if x[0] > week_start + datetime.timedelta(minutes=to_sprinkle[station][-1][1])]
 
                     station_balance = {
                         -1: stations.get(station).balance[now.date() - datetime.timedelta(days=1)]['total']
@@ -128,13 +135,13 @@ class _Program(object):
                         rain[day_index] = overall_balance['rain']
 
 
-                    for index, (pem, prio) in enumerate(pems):
+                    for index, (pem, prio) in enumerate(station_pems):
                         day_index = (pem.date() - now.date()).days
                         rain_today = max(rain[max(-1, day_index-1)], rain[day_index], rain[min(day_index+1, 9)])
 
-                        better_days = [x for x in pems[index+1:] if x[1] > prio]
-                        better_or_equal_days = [x for x in pems[index+1:] if x[1] >= prio and x[0] > pem]
-                        any_days = pems[index+1:]
+                        better_days = [x for x in station_pems[index+1:] if x[1] > prio]
+                        better_or_equal_days = [x for x in station_pems[index+1:] if x[1] >= prio and x[0] > pem]
+                        any_days = station_pems[index+1:]
 
                         target_index, target_index_pref = 9, 9
                         if any_days:
