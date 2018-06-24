@@ -21,13 +21,14 @@ class _IOOutputs(object):
 
     def __setattr__(self, key, value):
         super(_IOOutputs, self).__setattr__(key, value)
-        if not self._initialized:
-            self._initialized = True
-            for pin in self._mapping.values():
-                self._io.setup(pin, self._io.OUT)
-
         if key in self._mapping:
+            if not self._initialized:
+                self._initialized = True
+                for pin in self._mapping.values():
+                    self._io.setup(pin, self._io.OUT)
+
             self._io.output(self._mapping[key], self._io.HIGH if value else self._io.LOW)
+            logging.debug("Set %s to %s", key, value)
 
 
 class _RPiOutputs(_IOOutputs):
@@ -59,8 +60,10 @@ class _BBBOutputs(_IOOutputs):
 
 try:
     outputs = _RPiOutputs()
-except Exception:
+except Exception as err:
+    logging.debug(err)
     try:
         outputs = _BBBOutputs()
-    except Exception:
+    except Exception as err:
+        logging.debug(err)
         outputs = _DummyOutputs()
