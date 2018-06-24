@@ -21,12 +21,14 @@ class _IOOutputs(object):
 
     def __setattr__(self, key, value):
         super(_IOOutputs, self).__setattr__(key, value)
-        if key in self._mapping:
-            if not self._initialized:
-                self._initialized = True
-                for pin in self._mapping.values():
-                    self._io.setup(pin, self._io.OUT)
 
+        if self._mapping and not self._initialized:
+            self._initialized = True
+            for name, pin in self._mapping.iteritems():
+                self._io.setup(pin, self._io.OUT)
+                self.__setattr__(name, False)
+
+        if key in self._mapping:
             self._io.output(self._mapping[key], self._io.HIGH if value else self._io.LOW)
             logging.debug("Set %s to %s", key, value)
 

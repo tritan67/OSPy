@@ -7,6 +7,7 @@ from threading import Thread
 import datetime
 import time
 import logging
+import traceback
 
 # Local imports
 from ospy.inputs import inputs
@@ -345,7 +346,10 @@ class _Scheduler(Thread):
                 stations.activate(entry['station'])
 
         while True:
-            self._check_schedule()
+            try:
+                self._check_schedule()
+            except Exception:
+                logging.warning('Scheduler error:\n' + traceback.format_exc())
             time.sleep(1)
 
     @staticmethod
