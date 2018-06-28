@@ -12,8 +12,10 @@ import helpers
 import traceback
 import os
 import time
+import glob
 
 OPTIONS_FILE = './ospy/data/options.db'
+OPTIONS_GLOB = './ospy/data/*options.db'
 
 
 class _Options(object):
@@ -376,9 +378,9 @@ class _Options(object):
         try:
             logging.debug('Saving options to disk')
 
-            if os.path.isfile(OPTIONS_FILE + '.tmp'):
-                os.remove(OPTIONS_FILE + '.tmp')
-                
+            for tmp_file in glob.glob(OPTIONS_GLOB + '.tmp'):
+                os.remove(tmp_file)
+
             db = shelve.open(OPTIONS_FILE + '.tmp')
             db.clear()
             db.update(self._values)
