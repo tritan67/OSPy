@@ -161,6 +161,7 @@ class _Weather(Thread):
             self._sleep_time -= 1
 
     def run(self):
+        time.sleep(30)  # Some delay to allow internet to initialize
         while True:
             try:
                 try:
@@ -204,6 +205,7 @@ class _Weather(Thread):
 
     def get_lid(self):
         if self._lid == "":
+            self._determine_location = True  # Let the weather thread try again when it wakes up
             raise Exception('No Location ID found!')
         return self._lid
 
