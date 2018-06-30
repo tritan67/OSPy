@@ -161,7 +161,7 @@ class _Weather(Thread):
             self._sleep_time -= 1
 
     def run(self):
-        time.sleep(30)  # Some delay to allow internet to initialize
+        time.sleep(5)  # Some delay to allow internet to initialize
         while True:
             try:
                 try:
