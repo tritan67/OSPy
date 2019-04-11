@@ -281,6 +281,7 @@ class _Weather(Thread):
 
     get_wunderground_history = _deprecated
     get_wunderground_forecast = _deprecated
+    get_wunderground_conditions = _deprecated
 
 
 weather = _Weather()
