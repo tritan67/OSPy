@@ -102,7 +102,7 @@ class _Program(object):
                 pems += [(week_start + datetime.timedelta(days=-7, minutes=x), y) for x, y in pem_mins]
                 pems = sorted(pems)
                 pems = [x for x in pems if x[0] >= now - datetime.timedelta(hours=3)]
-                pems = [x for x in pems if (x[0].date() - now.date()).days < 10]
+                pems = [x for x in pems if (x[0].date() - now.date()).days < 7]
 
                 to_sprinkle = {}
                 for station in self.stations:
@@ -124,7 +124,7 @@ class _Program(object):
                     rain = {
                         -1: stations.get(station).balance[now.date() - datetime.timedelta(days=1)]['rain']
                     }
-                    for day_index in range(0, 10):
+                    for day_index in range(0, 7):
                         overall_balance = stations.get(station).balance[now.date() + datetime.timedelta(days=day_index)]
                         station_balance[day_index] = station_balance[day_index-1] \
                                                      - overall_balance['eto'] \
@@ -137,13 +137,13 @@ class _Program(object):
 
                     for index, (pem, prio) in enumerate(station_pems):
                         day_index = (pem.date() - now.date()).days
-                        rain_today = max(rain[max(-1, day_index-1)], rain[day_index], rain[min(day_index+1, 9)])
+                        rain_today = max(rain[max(-1, day_index-1)], rain[day_index], rain[min(day_index+1, 6)])
 
                         better_days = [x for x in station_pems[index+1:] if x[1] > prio]
                         better_or_equal_days = [x for x in station_pems[index+1:] if x[1] >= prio and x[0] > pem]
                         any_days = station_pems[index+1:]
 
-                        target_index, target_index_pref = 9, 9
+                        target_index, target_index_pref = 6, 6
                         if any_days:
                             target_index = (any_days[0][0].date() - now.date()).days
 
@@ -173,7 +173,7 @@ class _Program(object):
                         amount = min(max(later_sprinkle_min, min(max(later_sprinkle_min_pref, amount), later_sprinkle_max, irrigation_max-rain_today)), irrigation_max)
                         if amount >= irrigation_min:
                             logging.debug('Weather based schedule for %s: PEM: %s, priority: %s, amount: %f.', stations.get(station).name, str(pem), prio, amount)
-                            for later_day_index in range(day_index, 10):
+                            for later_day_index in range(day_index, 7):
                                 station_balance[later_day_index] += amount
                             week_min = (pem - week_start).total_seconds() / 60
 
@@ -700,7 +700,7 @@ class _Programs(object):
 
             runs = log.finished_runs() + log.active_runs()
             calc_day = now.date() - datetime.timedelta(days=20)
-            while calc_day < now.date() + datetime.timedelta(days=10):
+            while calc_day < now.date() + datetime.timedelta(days=7):
                 if calc_day not in station.balance:
                     station.balance[calc_day] = {
                         'eto': 4.0,

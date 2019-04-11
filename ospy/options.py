@@ -42,7 +42,7 @@ class _Options(object):
             "key": "location",
             "name": "Location",
             "default": "",
-            "help": "City name or zip code. Use comma or + in place of space.",
+            "help": "City name or zip code. Used to determine location via OpenStreetMap for weather information.",
             "category": "System"
         },
         {
@@ -59,6 +59,13 @@ class _Options(object):
             "name": "Wunderground API key",
             "default": "",
             "help": "To make use of local weather conditions, a weather underground API key is needed.",
+            # "category": "System": API no longer available
+        },
+        {
+            "key": "darksky_key",
+            "name": "Dark Sky API key",
+            "default": "",
+            "help": "To make use of local weather conditions, a Dark Sky API key is needed.",
             "category": "System"
         },
         {

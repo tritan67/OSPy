@@ -11,7 +11,7 @@ import logging
 ##############################
 
 major_ver = 2
-minor_ver = 4
+minor_ver = 5
 
 try:
     revision = int(subprocess.check_output(['git', 'rev-list', '--count', '--first-parent', 'HEAD']))
@@ -24,4 +24,4 @@ try:
     ver_date = subprocess.check_output(['git', 'log', '-1', '--format=%cd', '--date=short']).strip()
 except Exception:
     logging.warning("Could not use git to determine date of last commit!")
-    ver_date = '2015-02-17'
+    ver_date = '2019-04-11'

@@ -1,6 +1,12 @@
 OSPy Changelog
 ====
 
+Apr 11 2019
+-----------
+(Rimco)<br/>
+Changes:<br/>
+1. Weather Underground has been replaced with Dark Sky API.<br/>
+
 May 24 2017
 -----------
 (Rimco)<br/>
