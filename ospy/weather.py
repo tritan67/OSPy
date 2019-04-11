@@ -164,7 +164,9 @@ class _Weather(Thread):
         if isinstance(check_date, datetime.datetime):
             check_date = check_date.date()
 
-        return [x for x in self._get_darksky_data(check_date)['daily']['data'] if datetime.datetime.fromtimestamp(x['time']).date() == check_date][0]
+        matching_days_data = [x for x in self._get_darksky_data(check_date)['daily']['data'] if datetime.datetime.fromtimestamp(x['time']).date() == check_date]
+
+        return matching_days_data[0] if matching_days_data else {}
 
     def get_current_data(self):
         return self._get_darksky_data(datetime.date.today())['currently']
