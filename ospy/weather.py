@@ -169,7 +169,7 @@ class _Weather(Thread):
         return matching_days_data[0] if matching_days_data else {}
 
     def get_current_data(self):
-        return self._get_darksky_data(datetime.date.today())['currently']
+        return self._get_darksky_data(datetime.date.today() + datetime.timedelta(days=1))['currently']
 
     def _calc_radiation(self, coverage, fractional_day, local_hour):
         gmt_hour = local_hour + self._tz_offset
