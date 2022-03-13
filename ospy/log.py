@@ -48,7 +48,7 @@ class _Log(logging.Handler):
 
     @staticmethod
     def _save_log(msg, level, event_type):
-        msg = msg.encode('ascii', 'replace')
+        msg = msg.encode('ascii', 'replace').decode('ascii')
 
         # Print if it is important:
         if level >= logging.WARNING:
@@ -196,10 +196,10 @@ class _Log(logging.Handler):
         for program in programs.get():
             if program.type == ProgramType.WEEKLY_WEATHER:
                 for station in program.stations:
-                    min_eto = min(min_eto, min([datetime.date.today() - datetime.timedelta(days=7)] + stations.get(station).balance.keys()))
+                    min_eto = min(min_eto, min([datetime.date.today() - datetime.timedelta(days=7)] + list(stations.get(station).balance.keys())))
 
         # Now try to remove as much as we can
-        for index in reversed(xrange(len(self._log['Run']) - minimum)):
+        for index in reversed(range(len(self._log['Run']) - minimum)):
             interval = self._log['Run'][index]['data']
 
             delete = True
@@ -221,7 +221,7 @@ class _Log(logging.Handler):
             self._log[event_type] = []
 
     def event_types(self):
-        return self._log.keys()
+        return list(self._log.keys())
 
     def events(self, event_type):
         return [evt['data'] for evt in self._log.get(event_type, [])]

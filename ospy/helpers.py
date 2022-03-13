@@ -59,7 +59,7 @@ def program_delay(program):
 
 
 def formatTime(t):
-    from options import options
+    from .options import options
     if options.time_format:
         return t
     else:
@@ -358,13 +358,13 @@ def save_to_options(qdict):
 #### Login Handling ####
 
 def password_salt():
-    return "".join(chr(random.randint(33, 127)) for _ in xrange(64))
+    return "".join(chr(random.randint(33, 127)) for _ in range(64))
 
 
 def password_hash(password, salt):
     import hashlib
     m = hashlib.sha1()
-    m.update(password + salt)
+    m.update((password + salt).encode('utf-8'))
     return m.hexdigest()
 
 
@@ -422,11 +422,21 @@ def get_input(qdict, key, default=None, cast=None):
             result = cast(result)
     return result
 
+def is_python2():
+    import sys
+    return sys.version_info < (3, 0)
+
 
 def template_globals():
     import json
     import plugins
-    import urllib
+    import sys
+    if is_python2():
+        from urllib2 import urlopen
+        from urllib import quote_plus
+    else:
+        from urllib.request import urlopen
+        from urllib.parse import quote_plus
     from web import ctx
 
     from ospy.inputs import inputs
@@ -486,7 +496,7 @@ def get_help_files():
     result.append((1, 'Plug-ins'))
     result.append((2, 'Readme', os.path.join('plugins', 'README.md')))
     from plugins import plugin_names, plugin_dir, plugin_docs_dir
-    for module, name in plugin_names().iteritems():
+    for module, name in plugin_names().items():
 
         readme_file = os.path.join(os.path.relpath(plugin_dir(module)), 'README.md')
         readme_exists = os.path.isfile(readme_file)
@@ -504,7 +514,7 @@ def get_help_files():
 
 
 def get_help_file(id):
-    import web
+    import traceback
 
     try:
         id = int(id)
@@ -514,9 +524,19 @@ def get_help_file(id):
             if len(option) > 2:
                 filename = option[2]
                 with open(filename) as fh:
-                    import markdown
-                    converted = markdown.markdown(fh.read(), extensions=['partial_gfm', 'markdown.extensions.codehilite'])
-                    return web.template.Template(converted, globals=template_globals())()
+                    return gfm_str_to_html(fh.read())
     except Exception:
-        pass
+        logging.warning('Help file error:\n' + traceback.format_exc())
     return ''
+
+
+def gfm_str_to_html(input):
+    if is_python2():
+        import markdown
+        converted = markdown.markdown(input, extensions=['partial_gfm', 'markdown.extensions.codehilite'])
+    else:
+        import cmarkgfm
+        converted = cmarkgfm.markdown_to_html(input)
+
+    import web
+    return web.template.Template(converted, globals=template_globals())()

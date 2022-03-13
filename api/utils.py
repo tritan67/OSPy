@@ -11,7 +11,7 @@ import logging
 
 import web
 
-from errors import badrequest, unauthorized
+from .errors import badrequest, unauthorized
 
 from ospy.helpers import test_password
 from ospy.options import options
@@ -79,16 +79,16 @@ def does_json(func):
             else:
                 return ''
 
-        except IndexError, e:  # No such item
+        except IndexError as e:  # No such item
             logger.exception('IndexError')
             raise badrequest('{"error": "(IndexError) Index out of bounds - ' + e.message + '"}')
 
-        except ValueError, e:  # json errors
+        except ValueError as e:  # json errors
             logger.exception('ValueError JSON')
             raise badrequest('{"error": "(ValueError) Inappropriate argument value - ' + e.message + '"}')
             # raise badrequest(format(e.message))
 
-        except KeyError, e:  # missing attribute names
+        except KeyError as e:  # missing attribute names
             logger.exception('KeyError')
             raise badrequest('{"error": "(KeyError) Missing key - ' + e.message + '"}')
             # raise badrequest(format(e.message))

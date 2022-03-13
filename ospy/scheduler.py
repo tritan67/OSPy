@@ -145,7 +145,7 @@ def predicted_schedule(start_time, end_time):
 
     all_intervals = []
     # Adjust for weather and remove overlap:
-    for station, schedule in station_schedules.iteritems():
+    for station, schedule in station_schedules.items():
         for interval in schedule:
             if not interval['fixed']:
                 time_delta = interval['end'] - interval['start']

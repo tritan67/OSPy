@@ -6,9 +6,16 @@ __author__ = 'Rimco'
 # System imports
 import logging
 import traceback
-import urllib2
+from ospy.helpers import is_python2
+
+if is_python2():
+    from urllib2 import urlopen
+    from urllib import quote_plus
+else:
+    from urllib.request import urlopen
+    from urllib.parse import quote_plus
+
 import json
-import urllib
 import datetime
 import time
 import math
@@ -29,7 +36,7 @@ def _cache(cache_name):
             if cache_name not in self._result_cache:
                 self._result_cache[cache_name] = {}
 
-            for key in self._result_cache[cache_name].keys():
+            for key in list(self._result_cache[cache_name].keys()):
                 if (datetime.date.today() - key).days > 30:
                     del self._result_cache[cache_name][key]
 
@@ -107,8 +114,8 @@ class _Weather(Thread):
 
     def _find_location(self):
         if options.location and options.darksky_key:
-            data = urllib2.urlopen(
-                "https://nominatim.openstreetmap.org/search?q=%s&format=json" % urllib.quote_plus(options.location))
+            data = urlopen(
+                "https://nominatim.openstreetmap.org/search?q=%s&format=json" % quote_plus(options.location))
             data = json.load(data)
             if not data:
                 raise Exception('No location found: ' + options.location + '.')
@@ -137,14 +144,14 @@ class _Weather(Thread):
         if 'darksky_json' not in self._result_cache:
             self._result_cache['darksky_json'] = {}
 
-        for key in self._result_cache['darksky_json'].keys():
+        for key in list(self._result_cache['darksky_json'].keys()):
             if datetime.datetime.now() - self._result_cache['darksky_json'][key]['time'] > datetime.timedelta(minutes=10):
                 del self._result_cache['darksky_json'][key]
 
         if url not in self._result_cache['darksky_json']:
             logging.debug(url)
             self._result_cache['darksky_json'][url] = {'time': datetime.datetime.now(),
-                                                       'data': json.load(urllib2.urlopen(url))}
+                                                       'data': json.load(urlopen(url))}
             options.weather_cache = self._result_cache
 
         if 'offset' in self._result_cache['darksky_json'][url]['data']:

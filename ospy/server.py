@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 __author__ = 'Rimco'
 
 import shelve
 import web
 import os
+import glob
 
 # Local imports
 from ospy.options import options
@@ -78,7 +81,18 @@ def start():
     __server = web.httpserver.WSGIServer(("0.0.0.0", options.web_port), wsgifunc)
     __server.timeout = 1  # Speed-up restarting
 
-    sessions = shelve.open(os.path.join('ospy', 'data', 'sessions.db'))
+    sessions = None
+    try:
+        sessions = shelve.open(os.path.join('ospy', 'data', 'sessions.db'))
+        for s in sessions:
+            str(sessions[s])
+    except Exception:
+        if sessions is not None:
+            sessions.close()
+        for db_file in glob.glob(os.path.join('ospy', 'data', 'sessions.db*')):
+            os.remove(db_file)
+        sessions = shelve.open(os.path.join('ospy', 'data', 'sessions.db'))
+
     session = web.session.Session(app, web.session.ShelfStore(sessions),
                                   initializer={'validated': False,
                                                'pages': []})
@@ -87,7 +101,7 @@ def start():
     atexit.register(sessions.close)
 
     def exit_msg():
-        print 'OSPy is closing, saving sessions.'
+        print('OSPy is closing, saving sessions.')
     atexit.register(exit_msg)
 
     scheduler.start()

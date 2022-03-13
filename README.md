@@ -1,7 +1,7 @@
 OSPy Readme
 ====
 
-An improved Python port of the Arduino based OpenSprinkler firmware.
+An improved **Python 3** port of the Arduino based OpenSprinkler firmware.
 
 Because the web interface is based on the original firmware,
 the basics described in the [user manual](http://rayshobby.net/opensprinkler/svc-use/svc-web) are still applicable.
@@ -38,9 +38,10 @@ Full credit goes to Dan for his generous contributions in porting the microcontr
 
 The program makes use of web.py (http://webpy.org) for the web interface.
 
-The program makes use of gfm (https://github.com/dart-lang/py-gfm) to render the help pages written in GitHub flavored markdown.
+The program makes use of py-gfm (https://github.com/Zopieux/py-gfm) to render the help pages written in GitHub flavored markdown (Python 2)
+The program makes use of pygments (http://pygments.org) to provide syntax highlighting in the help pages. (Python 2)
 
-The program makes use of pygments (http://pygments.org) to provide syntax highlighting in the help pages.
+The program makes use of cmarkgfm (https://github.com/theacodes/cmarkgfm) to render the help pages written in GitHub flavored markdown (Python 3+).
 
 The program makes use of OpenStreetMap (https://www.openstreetmap.org) to convert locations into coordinates.
 

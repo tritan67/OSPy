@@ -1,7 +1,17 @@
 OSPy Changelog
 ====
 
-Apr 11 2019
+March 13 2022 (v3.0)
+-----------
+(Rimco)<br/>
+Changes:<br/>
+1. Switched to Python 3. Python 2 should still be working, but no guarantees.<br/>
+2. Moved options storage to separate folders to improve the handling regardless of storage backend. This update will take care of moving the existing options file.<br/>
+3. Options stored in Python 2 are made forward compatible for Python 3. Make sure to run at least once more using Python 2 if you want to retain existing Python 2 settings.
+
+(The old options.db in /data/ will not be touched after this update, so you can use it to manually recover if needed.)
+
+April 11 2019
 -----------
 (Rimco)<br/>
 Changes:<br/>

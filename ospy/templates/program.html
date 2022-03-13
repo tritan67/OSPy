@@ -4,7 +4,7 @@ $var title: Modify Program
 $var page: programs
 
 <script>
-    $for index, name in ProgramType.NAMES.iteritems():
+    $for index, name in ProgramType.NAMES.items():
         var ${name} = ${index};
     var repeat_days = ${program.repeat_days()}
     var program_delay = ${program_delay(program)}
@@ -97,7 +97,7 @@ $var page: programs
             <div class='option'>
                 <span class="program_label">Days:</span>
                 <div style="display: inline-block;">
-                    $for day in xrange(7):
+                    $for day in range(7):
                         <button id="day${day}" class="weekday pushon ${'on' if day in program.days() else 'off'}">${long_day(day)}</button>
                 </div>
             </div>
@@ -155,7 +155,7 @@ $var page: programs
             <table id="advanced_schedule" class="advancedSchedule">
                 <tr>
                     <td>
-                    $for hour in xrange(0, 24):
+                    $for hour in range(0, 24):
                         $ t = datetime.time(hour=hour, minute=0)
                         $if options.time_format:
                             <td class="scheduleTick">${t.strftime("%H:%M")}</td>
@@ -164,7 +164,7 @@ $var page: programs
                 </tr>
                 <tr class="daySchedule odd" id='advanced_schedule0'>
                     <td class='station_name' style="border-right: solid">Schedule:</td>
-                    $for tick in xrange(0,24):
+                    $for tick in range(0,24):
                         <td class="scheduleTick" data="$tick"></td>
                 </tr>
             </table>
@@ -175,17 +175,17 @@ $var page: programs
             <table id="weekly_schedule" class="advancedSchedule">
                 <tr>
                     <td>
-                    $for hour in xrange(0, 24):
+                    $for hour in range(0, 24):
                         $ t = datetime.time(hour=hour, minute=0)
                         $if options.time_format:
                             <td class="scheduleTick">${t.strftime("%H:%M")}</td>
                         $else:
                             <td class="scheduleTick">${t.strftime("%I %p").lstrip('0')}</td>
                 </tr>
-                $for day in xrange(7):
+                $for day in range(7):
                     <tr class="daySchedule ${loop.parity}" id='weekly_schedule${day}'>
                         <td class='station_name' style="border-right: solid">${long_day(day)}:</td>
-                        $for tick in xrange(0,24):
+                        $for tick in range(0,24):
                             <td class="scheduleTick" data="$tick"></td>
                     </tr>
             </table>
@@ -196,7 +196,7 @@ $var page: programs
             <table id="custom_schedule" class="advancedSchedule">
                 <tr>
                     <td>
-                    $for hour in xrange(0, 24):
+                    $for hour in range(0, 24):
                         $ t = datetime.time(hour=hour, minute=0)
                         $if options.time_format:
                             <td class="scheduleTick">${t.strftime("%H:%M")}</td>
@@ -222,7 +222,7 @@ $var page: programs
                 <tr style="display: none;">
                     <td>
                         <select class="weather_pem_day">
-                            $for day in xrange(7):
+                            $for day in range(7):
                                 <option value="${str(day)}">${long_day(day)}</option>
                         </select>
                     </td>
@@ -232,7 +232,7 @@ $var page: programs
                     </td>
                     <td>
                         <select class="weather_pem_prio">
-                            $for prio_opt in xrange(1, 11):
+                            $for prio_opt in range(1, 11):
                                 <option value="${str(prio_opt)}">${str(prio_opt)}${" (Least preferred)" if prio_opt == 1 else ""}${" (Most preferred)" if prio_opt == 10 else ""}</option>
                         </select>
                     </td>
@@ -244,7 +244,7 @@ $var page: programs
                     <tr class="pemEntry">
                         <td>
                             <select class="weather_pem_day">
-                                $for day in xrange(7):
+                                $for day in range(7):
                                     <option value="${str(day)}" ${"selected" if int(pem)/1440 == day else ""}>${long_day(day)}</option>
                             </select>
                         </td>
@@ -254,7 +254,7 @@ $var page: programs
                         </td>
                         <td>
                             <select class="weather_pem_prio">
-                                $for prio_opt in xrange(1, 11):
+                                $for prio_opt in range(1, 11):
                                     <option value="${str(prio_opt)}" ${"selected" if prio == prio_opt else ""}>${str(prio_opt)}${" (Least preferred)" if prio_opt == 1 else ""}${" (Most preferred)" if prio_opt == 10 else ""}</option>
                             </select>
                         </td>

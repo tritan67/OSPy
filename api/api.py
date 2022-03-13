@@ -1,7 +1,7 @@
 
 __author__ = 'Teodor Yantcheff'
 
-from utils import *
+from .utils import *
 
 from ospy import version
 from ospy.stations import stations
@@ -38,7 +38,7 @@ class Stations(object):
         }
 
     def _dict_to_station(self, sid, data):
-        for k, v in data.iteritems():
+        for k, v in data.items():
             logger.debug('stationid:{} key:\'{}\' value:\'{}\''.format(sid, k, v))
             try:
                 stations[sid].__setattr__(k, v)
@@ -130,7 +130,7 @@ class Programs(object):
             ProgramType.WEEKLY_WEATHER: prog.set_weekly_weather
         }
 
-        for k, v in data.iteritems():
+        for k, v in data.items():
             logger.debug('Setting program property key:\'%s\' to value:\'%s\'', k, v)
             try:
                 if k not in self.EXCLUDED_KEYS:
@@ -257,7 +257,7 @@ class Options(object):
         a = web.input().get('annotated', '').lower()
         if a in ['true', 'yes', 'annotated', '1']:
             opts = {o: {'value': options[o]} for o in self.ANNOTATED_OPTIONS}
-            for k in opts.iterkeys():
+            for k in opts.keys():
                 # "inject" current option value into the dictionary under "value"
                 opts[k].update(self.ANNOTATED_OPTIONS[k])
             return opts
@@ -270,7 +270,7 @@ class Options(object):
         logger.debug('PUT ' + self.__class__.__name__)
         update = json.loads(web.data())
         all_options = options.get_options()
-        for key, val in update.iteritems():
+        for key, val in update.items():
             if key in all_options and key not in self.EXCLUDED_OPTIONS:
                 try:
                     options[key] = val

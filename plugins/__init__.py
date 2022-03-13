@@ -5,6 +5,9 @@ import sys
 from os import path
 import types
 import threading
+import importlib
+
+from ospy.helpers import is_python2
 
 __running = {}
 REPOS = ['https://github.com/Rimco/OSPy-plugins-core/archive/master.zip',
@@ -15,7 +18,7 @@ REPOS = ['https://github.com/Rimco/OSPy-plugins-core/archive/master.zip',
 ################################################################################
 class PluginOptions(dict):
     def __init__(self, plugin, defaults):
-        super(PluginOptions, self).__init__(defaults.iteritems())
+        super(PluginOptions, self).__init__(iter(defaults.items()))
         self._defaults = defaults.copy()
 
         from ospy.options import options
@@ -34,14 +37,10 @@ class PluginOptions(dict):
                     break
 
         if plugin in options:
-            for key, value in options[plugin].iteritems():
+            for key, value in options[plugin].items():
                 if key in self:
                     value_type = type(value)
-                    if value_type == unicode:
-                        value_type = str
                     default_type = type(self[key])
-                    if default_type == unicode:
-                        default_type = str
 
                     if value_type == default_type:
                         self[key] = value
@@ -59,7 +58,7 @@ class PluginOptions(dict):
             pass
 
     def web_update(self, qdict, skipped=None):
-        for key in self.keys():
+        for key in list(self.keys()):
             try:
                 if skipped is not None and key in skipped:
                     continue
@@ -71,7 +70,7 @@ class PluginOptions(dict):
                     self[key] = int(qdict.get(key, old_value))
                 elif isinstance(default_value, float):
                     self[key] = float(qdict.get(key, old_value))
-                elif isinstance(default_value, str) or isinstance(old_value, unicode):
+                elif isinstance(default_value, str):
                     self[key] = qdict.get(key, old_value)
                 elif isinstance(default_value, list):
                     self[key] = [int(x) for x in qdict.get(key, old_value)]
@@ -140,11 +139,16 @@ class _PluginChecker(threading.Thread):
 
     @staticmethod
     def _download_zip(repo):
-        import urllib2
+        if is_python2():
+            from urllib2 import urlopen
+            from urllib import quote_plus
+        else:
+            from urllib.request import urlopen
+            from urllib.parse import quote_plus
         import logging
         import io
 
-        response = urllib2.urlopen(repo)
+        response = urlopen(repo)
         zip_data = response.read()
         logging.debug('Downloaded ' + repo)
 
@@ -193,16 +197,12 @@ class _PluginChecker(threading.Thread):
                                 plugin_hash += hex(zip_info.CRC)
 
                     if load_read_me:
-                        import web
-                        import markdown
-                        from ospy.helpers import template_globals
-                        converted = markdown.markdown(zip_file.read(init_dir + '/README.md'),
-                                                      extensions=['partial_gfm', 'markdown.extensions.codehilite'])
-                        read_me = web.template.Template(converted, globals=template_globals())()
+                        from ospy.helpers import gfm_str_to_html
+                        read_me = gfm_str_to_html(zip_file.read(init_dir + '/README.md').decode('utf-8'))
 
                     result[plugin_id] = {
-                        'name': _plugin_name(zip_file.read(init).splitlines()),
-                        'hash': hashlib.md5(plugin_hash).hexdigest(),
+                        'name': _plugin_name(zip_file.read(init).decode('utf-8').splitlines()),
+                        'hash': hashlib.md5(plugin_hash.encode("utf-8")).hexdigest(),
                         'date': plugin_date,
                         'read_me': read_me,
                         'dir': init_dir
@@ -276,7 +276,7 @@ class _PluginChecker(threading.Thread):
                             fh.write(contents)
 
         options.plugin_status[plugin] = {
-            'hash': hashlib.md5(plugin_hash).hexdigest(),
+            'hash': hashlib.md5(plugin_hash.encode('utf-8')).hexdigest(),
             'date': plugin_date
         }
         options.plugin_status = options.plugin_status
@@ -291,7 +291,7 @@ class _PluginChecker(threading.Thread):
 
     def install_custom_plugin(self, zip_file_data, plugin_filter=None):
         contents = self.zip_contents(zip_file_data, False)
-        for plugin, info in contents.iteritems():
+        for plugin, info in contents.items():
             if plugin_filter is None or plugin == plugin_filter:
                 self._install_plugin(zip_file_data, plugin, info['dir'])
 
@@ -361,7 +361,7 @@ def _plugin_name(lines):
     result = None
     for line in lines:
         if 'NAME' in line:
-            match = re.search('NAME\\s=\\s("|\')([^"\']+)("|\')', line)
+            match = re.search('NAME\\s=\\s(["\'])([^"\']+)(["\'])', line)
             if match is not None:
                 result = match.group(2)
     return result
@@ -446,7 +446,10 @@ def start_enabled_plugins():
             import_name = __name__ + '.' + module
             try:
                 plugin = getattr(__import__(import_name), module)
-                plugin = reload(plugin)
+                if is_python2():
+                    plugin = reload(plugin)
+                else:
+                    plugin = importlib.reload(plugin)
                 plugin_n = plugin.NAME
                 mkdir_p(plugin_data_dir(module))
                 mkdir_p(plugin_docs_dir(module))
@@ -462,7 +465,7 @@ def start_enabled_plugins():
                 logging.error('Failed to load the {} plug-in:'.format(plugin_n) + '\n' + traceback.format_exc())
                 options.enabled_plugins.remove(module)
 
-    for module, plugin in __running.copy().iteritems():
+    for module, plugin in __running.copy().items():
         if module not in options.enabled_plugins:
             plugin_n = plugin.NAME
             try:
@@ -474,7 +477,7 @@ def start_enabled_plugins():
 
 
 def running():
-    return __running.keys()
+    return list(__running.keys())
 
 
 def get(name):

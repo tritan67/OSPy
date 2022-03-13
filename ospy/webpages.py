@@ -487,7 +487,7 @@ class stations_page(ProtectedPage):
         qdict = web.input()
 
         recalc = False
-        for s in xrange(0, stations.count()):
+        for s in range(0, stations.count()):
             stations[s].name = qdict["%d_name" % s]
             stations[s].usage = float(qdict.get("%d_usage" % s, 1.0))
             stations[s].precipitation = float(qdict.get("%d_precipitation" % s, 10.0))
@@ -625,7 +625,7 @@ class api_balance_json(ProtectedPage):
             if station.enabled and any(station.index in program.stations for program in programs.get()):
                 statuslist.append({
                     'station': station.name,
-                    'balances': {int((key - epoch).total_seconds()): value for key, value in station.balance.iteritems()}})
+                    'balances': {int((key - epoch).total_seconds()): value for key, value in station.balance.items()}})
 
         web.header('Content-Type', 'application/json')
         return json.dumps(statuslist, indent=2)

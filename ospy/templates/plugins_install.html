@@ -19,7 +19,7 @@ $var page: plugins
             </h4>
 
             $ available_list = plugins.available()
-            $for plugin, info in plugins.checker.get_repo_contents(repo).iteritems():
+            $for plugin, info in plugins.checker.get_repo_contents(repo).items():
                 <div class='category collapsible collapsed'>
                     <h5>
                         <a style="float:right;" href="/plugins_install?repo=${repo_index}&plugin=${plugin}&install" class="minibutton open">

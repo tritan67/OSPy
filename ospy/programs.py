@@ -187,7 +187,7 @@ class _Program(object):
                                 to_sprinkle[station] = self._update_schedule(to_sprinkle[station], self.modulo, week_min, week_min+station_duration)
                                 week_min += station_duration + int(round(station_duration*pause_ratio))
 
-                    logging.debug('Weather based deficit for %s: %s', stations.get(station).name, str(sorted([((now.date() + datetime.timedelta(days=x)).isoformat(), y) for x, y in station_balance.iteritems()])))
+                    logging.debug('Weather based deficit for %s: %s', stations.get(station).name, str(sorted([((now.date() + datetime.timedelta(days=x)).isoformat(), y) for x, y in station_balance.items()])))
 
                 self._station_schedule = to_sprinkle
             except Exception:
@@ -319,7 +319,7 @@ class _Program(object):
                                                                                     minute_time_str(1440))
                         day_strs[day_end] += "<span class='val'>%s-%s</span> " % (minute_time_str(1440),
                                                                                   minute_time_str(interval[1]))
-                result = '<br>'.join(day_strs.values())
+                result = '<br>'.join(list(day_strs.values()))
 
         elif self.type == ProgramType.DAYS_ADVANCED:
             result = 'Intervals: '
@@ -683,10 +683,10 @@ class _Programs(object):
             program.stations = [station for station in program.stations if 0 <= station < new]
 
     def calculate_balances(self):
-        from scheduler import predicted_schedule
+        from .scheduler import predicted_schedule
         now = datetime.datetime.now()
         for station in stations.get():
-            station.balance = {key: value for key, value in station.balance.iteritems()
+            station.balance = {key: value for key, value in station.balance.items()
                                if key >= now.date() - datetime.timedelta(days=21)}
 
             if not station.balance or (now.date() - datetime.timedelta(days=21)) not in station.balance:

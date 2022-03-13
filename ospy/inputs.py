@@ -22,7 +22,7 @@ class _IOInputs(_RainSensorMixIn):
     def __getattr__(self, item):
         if not self._initialized:
             self._initialized = True
-            for pin in self._mapping.values():
+            for pin in list(self._mapping.values()):
                 self._io.setup(pin, self._io.IN)
 
         if item.startswith('_'):

@@ -3,20 +3,21 @@
 __author__ = 'Rimco'
 
 # System imports
-from datetime import datetime
+from datetime import datetime, date
 from threading import Timer
 import logging
 import shelve
+import shutil
 
-import helpers
+from . import helpers
 import traceback
 import os
 import time
-import glob
+from functools import reduce
 
-OPTIONS_FILE = './ospy/data/options.db'
-OPTIONS_GLOB = './ospy/data/*options.db'
-
+OPTIONS_FILE = './ospy/data/default/options.db'
+OPTIONS_TMP = './ospy/data/tmp/options.db'
+OPTIONS_BACKUP = './ospy/data/backup/options.db'
 
 class _Options(object):
     # Using an array to preserve order
@@ -272,6 +273,11 @@ class _Options(object):
             "key": "weather_cache",
             "name": "ETo and rain value cache",
             "default": {}
+        },
+        {
+            "key": "last_save",
+            "name": "Timestamp of the last database save",
+            "default": time.time()
         }
     ]
 
@@ -284,24 +290,30 @@ class _Options(object):
         for info in self.OPTIONS:
             self._values[info["key"]] = info["default"]
 
-        for ext in ['', '.tmp', '.bak']:
-            try:
-                db = shelve.open(OPTIONS_FILE + ext)
-                if db.keys():
-                    self._values.update(db)
-                    db.close()
+        # UPGRADE from v2 (does not delete old files):
+        if not os.path.isdir(os.path.dirname(OPTIONS_FILE)):
+            helpers.mkdir_p(os.path.dirname(OPTIONS_FILE))
+            for old_options in ['./ospy/data/options.db', './ospy/data/options.db.dat', './ospy/data/options.db.bak', './ospy/data/options.db.tmp']:
+                if os.path.isfile(old_options):
+                    shutil.copy(old_options, OPTIONS_FILE)
                     break
-                else:
-                    db.close()
-            except Exception:
-                pass
+
+        for options_file in [OPTIONS_FILE, OPTIONS_TMP, OPTIONS_BACKUP]:
+            try:
+                if os.path.isdir(os.path.dirname(options_file)):
+                    db = shelve.open(options_file)
+                    if list(db.keys()):
+                        self._values.update(self._convert_str_to_datetime(db))
+                        db.close()
+                        break
+                    else:
+                        db.close()
+            except Exception as err:
+                raise
 
         if not self.password_salt:  # Password is not hashed yet
-            from ospy.helpers import password_salt
-            from ospy.helpers import password_hash
-
-            self.password_salt = password_salt()
-            self.password_hash = password_hash(self.password_hash, self.password_salt)
+            self.password_salt = helpers.password_salt()
+            self.password_hash = helpers.password_hash(self.password_hash, self.password_salt)
 
     def __del__(self):
         if self._write_timer is not None:
@@ -331,6 +343,8 @@ class _Options(object):
     def __getattr__(self, item):
         if item.startswith('_'):
             result = super(_Options, self).__getattribute__(item)
+        elif item not in self._values:
+            raise AttributeError
         else:
             result = self._values[item]
         return result
@@ -380,31 +394,111 @@ class _Options(object):
     def __contains__(self, item):
         return item in self._values
 
+    def _convert_datetime_to_str(self, inp):
+        if isinstance(inp, dict):
+            result = {}
+            for k in inp:
+                result[self._convert_datetime_to_str(k)] = self._convert_datetime_to_str(inp[k])
+        elif isinstance(inp, list):
+            result = []
+            for v in inp:
+                result.append(self._convert_datetime_to_str(v))
+        elif isinstance(inp, datetime):
+            result = 'DATETIME:' + inp.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(inp, date):
+            result = 'DATE:' + inp.strftime('%Y-%m-%d')
+        else:
+            result = inp
+        return result
+
+    def _convert_str_to_datetime(self, inp):
+        if isinstance(inp, dict) or isinstance(inp, shelve.Shelf):
+            result = {}
+            for k in inp:
+                result[self._convert_str_to_datetime(k)] = self._convert_str_to_datetime(inp[k])
+        elif isinstance(inp, list):
+            result = []
+            for v in inp:
+                result.append(self._convert_str_to_datetime(v))
+        elif isinstance(inp, str) and inp.startswith('DATETIME:'):
+            result = datetime.strptime(inp[9:], '%Y-%m-%d %H:%M:%S')
+        elif isinstance(inp, str) and inp.startswith('DATE:'):
+            result = datetime.strptime(inp[5:15], '%Y-%m-%d').date()
+        else:
+            result = inp
+        return result
+
     def _write(self):
         """This function saves the current data to disk. Use a timer to limit the call rate."""
         try:
             logging.debug('Saving options to disk')
 
-            for tmp_file in glob.glob(OPTIONS_GLOB + '.tmp'):
-                os.remove(tmp_file)
+            options_dir = os.path.dirname(OPTIONS_FILE)
+            tmp_dir = os.path.dirname(OPTIONS_TMP)
+            backup_dir = os.path.dirname(OPTIONS_BACKUP)
 
-            db = shelve.open(OPTIONS_FILE + '.tmp')
+            if os.path.isdir(tmp_dir):
+                shutil.rmtree(tmp_dir)
+            helpers.mkdir_p(tmp_dir)
+
+            if helpers.is_python2():
+                from dumbdbm import open as dumb_open
+            else:
+                from dbm.dumb import open as dumb_open
+
+            db = shelve.Shelf(dumb_open(OPTIONS_TMP))
             db.clear()
-            db.update(self._values)
+            if helpers.is_python2():
+                # We need to make sure that datetime objects are readable in Python 3
+                # This conversion takes care of that as long as we run at least once in Python 2
+                db.update(self._convert_datetime_to_str(self._values))
+            else:
+                db.update(self._values)
+
             db.close()
 
-            if os.path.isfile(OPTIONS_FILE + '.bak') and time.time() - os.path.getmtime(OPTIONS_FILE + '.bak') > 3600\
-                    and os.path.isfile(OPTIONS_FILE) and (os.path.getsize(OPTIONS_FILE + '.bak') >= os.path.getsize(OPTIONS_FILE) * 0.9 or
-                                                          time.time() - os.path.getmtime(OPTIONS_FILE + '.bak') > 7*3600):
-                os.remove(OPTIONS_FILE + '.bak')
+            remove_backup = True
+            try:
+                db = shelve.open(OPTIONS_BACKUP)
+                if db['last_save'] - time.time() < 3600:
+                    remove_backup = False
+                db.close()
+            except Exception:
+                pass
+            del db
 
-            if os.path.isfile(OPTIONS_FILE):
-                if not os.path.isfile(OPTIONS_FILE + '.bak'):
-                    os.rename(OPTIONS_FILE, OPTIONS_FILE + '.bak')
+            if os.path.isdir(backup_dir) and remove_backup:
+                for i in range(10):
+                    try:
+                        shutil.rmtree(backup_dir)
+                        break
+                    except Exception:
+                        time.sleep(0.2)
                 else:
-                    os.remove(OPTIONS_FILE)
+                    shutil.rmtree(backup_dir)
 
-            os.rename(OPTIONS_FILE + '.tmp', OPTIONS_FILE)
+            if os.path.isdir(options_dir):
+                if not os.path.isdir(backup_dir):
+                    os.rename(options_dir, backup_dir)
+                else:
+                    for i in range(10):
+                        try:
+                            shutil.rmtree(options_dir)
+                            break
+                        except Exception:
+                            time.sleep(0.2)
+                    else:
+                        shutil.rmtree(options_dir)
+
+            time.sleep(1)
+            os.rename(tmp_dir, options_dir)
+
+            if helpers.is_python2():
+                from whichdb import whichdb
+            else:
+                from dbm import whichdb
+
+            logging.debug('Saved db as %s', whichdb(OPTIONS_FILE))
         except Exception:
             logging.warning('Saving error:\n' + traceback.format_exc())
 
@@ -438,9 +532,9 @@ class _Options(object):
         self._block.append(cls)
         try:
             values = getattr(self, cls)
-            for name, value in values.iteritems():
+            for name, value in values.items():
                 setattr(obj, name, value)
-        except KeyError:
+        except AttributeError:
             pass
         self._block.remove(cls)
 
@@ -472,7 +566,7 @@ class _LevelAdjustments(dict):
         super(_LevelAdjustments, self).__init__()
 
     def total_adjustment(self):
-        return max(0.0, min(5.0, reduce(lambda x, y: x * y, self.values(), options.level_adjustment)))
+        return max(0.0, min(5.0, reduce(lambda x, y: x * y, list(self.values()), options.level_adjustment)))
 
 level_adjustments = _LevelAdjustments()
 
@@ -482,7 +576,7 @@ class _RainBlocks(dict):
         super(_RainBlocks, self).__init__()
 
     def block_end(self):
-        return max(self.values() + [options.rain_block])
+        return max(list(self.values()) + [options.rain_block])
 
     def seconds_left(self):
         return max(0, (self.block_end() - datetime.now()).total_seconds())

@@ -8,5 +8,5 @@ __author__ = [
 
 __version__ = '0.9 beta'
 
-from api import get_app
-from errors import unauthorized, badrequest, notacceptable
+from .api import get_app
+from .errors import unauthorized, badrequest, notacceptable

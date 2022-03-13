@@ -24,7 +24,7 @@ class _IOOutputs(object):
 
         if self._mapping and not self._initialized:
             self._initialized = True
-            for name, pin in self._mapping.iteritems():
+            for name, pin in self._mapping.items():
                 self._io.setup(pin, self._io.OUT)
                 self.__setattr__(name, False)
 
