@@ -8,6 +8,7 @@ from threading import Timer
 import logging
 import shelve
 import shutil
+import threading
 
 from . import helpers
 import traceback
@@ -286,6 +287,7 @@ class _Options(object):
         self._write_timer = None
         self._callbacks = {}
         self._block = []
+        self._lock = threading.Lock()
 
         for info in self.OPTIONS:
             self._values[info["key"]] = info["default"]
@@ -431,74 +433,74 @@ class _Options(object):
     def _write(self):
         """This function saves the current data to disk. Use a timer to limit the call rate."""
         try:
-            logging.debug('Saving options to disk')
+            with self._lock:
+                logging.debug('Saving options to disk')
 
-            options_dir = os.path.dirname(OPTIONS_FILE)
-            tmp_dir = os.path.dirname(OPTIONS_TMP)
-            backup_dir = os.path.dirname(OPTIONS_BACKUP)
+                options_dir = os.path.dirname(OPTIONS_FILE)
+                tmp_dir = os.path.dirname(OPTIONS_TMP)
+                backup_dir = os.path.dirname(OPTIONS_BACKUP)
 
-            if os.path.isdir(tmp_dir):
-                shutil.rmtree(tmp_dir)
-            helpers.mkdir_p(tmp_dir)
+                if os.path.isdir(tmp_dir):
+                    shutil.rmtree(tmp_dir)
+                helpers.mkdir_p(tmp_dir)
 
-            if helpers.is_python2():
-                from dumbdbm import open as dumb_open
-            else:
-                from dbm.dumb import open as dumb_open
+                if helpers.is_python2():
+                    from dumbdbm import open as dumb_open
+                else:
+                    from dbm.dumb import open as dumb_open
 
-            db = shelve.Shelf(dumb_open(OPTIONS_TMP))
-            db.clear()
-            if helpers.is_python2():
-                # We need to make sure that datetime objects are readable in Python 3
-                # This conversion takes care of that as long as we run at least once in Python 2
-                db.update(self._convert_datetime_to_str(self._values))
-            else:
-                db.update(self._values)
+                db = shelve.Shelf(dumb_open(OPTIONS_TMP))
+                db.clear()
+                if helpers.is_python2():
+                    # We need to make sure that datetime objects are readable in Python 3
+                    # This conversion takes care of that as long as we run at least once in Python 2
+                    db.update(self._convert_datetime_to_str(self._values))
+                else:
+                    db.update(self._values)
 
-            db.close()
-
-            remove_backup = True
-            try:
-                db = shelve.open(OPTIONS_BACKUP)
-                if db['last_save'] - time.time() < 3600:
-                    remove_backup = False
                 db.close()
-            except Exception:
-                pass
-            del db
 
-            if os.path.isdir(backup_dir) and remove_backup:
-                for i in range(10):
-                    try:
-                        shutil.rmtree(backup_dir)
-                        break
-                    except Exception:
-                        time.sleep(0.2)
-                else:
-                    shutil.rmtree(backup_dir)
+                remove_backup = True
+                try:
+                    db = shelve.open(OPTIONS_BACKUP)
+                    if db['last_save'] - time.time() < 3600:
+                        remove_backup = False
+                    db.close()
+                except Exception:
+                    pass
+                del db
 
-            if os.path.isdir(options_dir):
-                if not os.path.isdir(backup_dir):
-                    os.rename(options_dir, backup_dir)
-                else:
+                if os.path.isdir(backup_dir) and remove_backup:
                     for i in range(10):
                         try:
-                            shutil.rmtree(options_dir)
+                            shutil.rmtree(backup_dir)
                             break
                         except Exception:
                             time.sleep(0.2)
                     else:
-                        shutil.rmtree(options_dir)
+                        shutil.rmtree(backup_dir)
 
-            time.sleep(1)
-            os.rename(tmp_dir, options_dir)
+                if os.path.isdir(options_dir):
+                    if not os.path.isdir(backup_dir):
+                        os.rename(options_dir, backup_dir)
+                    else:
+                        for i in range(10):
+                            try:
+                                shutil.rmtree(options_dir)
+                                break
+                            except Exception:
+                                time.sleep(0.2)
+                        else:
+                            shutil.rmtree(options_dir)
 
-            if helpers.is_python2():
-                from whichdb import whichdb
-            else:
-                from dbm import whichdb
+                os.rename(tmp_dir, options_dir)
 
-            logging.debug('Saved db as %s', whichdb(OPTIONS_FILE))
+                if helpers.is_python2():
+                    from whichdb import whichdb
+                else:
+                    from dbm import whichdb
+
+                logging.debug('Saved db as %s', whichdb(OPTIONS_FILE))
         except Exception:
             logging.warning('Saving error:\n' + traceback.format_exc())
 
