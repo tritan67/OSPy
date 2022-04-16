@@ -311,7 +311,7 @@ class _Options(object):
                     else:
                         db.close()
             except Exception as err:
-                raise
+                pass
 
         if not self.password_salt:  # Password is not hashed yet
             self.password_salt = helpers.password_salt()
