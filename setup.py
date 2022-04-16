@@ -202,7 +202,7 @@ if __name__ == '__main__':
             print('Cannot install packages without setuptools.')
         else:
             # Check if packages are available:
-            install_package('web', 'web.py==0.51', 'python-webpy', 'web.py==0.51',
+            install_package('web', 'web.py[cheroot]==0.51', 'python-webpy', 'web.py[cheroot]==0.51',
                             'https://github.com/webpy/webpy.git',
                             [[sys.executable, 'setup.py', 'install']],
                             'https://github.com/webpy/webpy/archive/master.zip', 'webpy-master',
