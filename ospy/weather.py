@@ -116,7 +116,7 @@ class _Weather(Thread):
         if options.location and options.darksky_key:
             data = urlopen(
                 "https://nominatim.openstreetmap.org/search?q=%s&format=json" % quote_plus(options.location))
-            data = json.load(data)
+            data = json.loads(data.read().decode(data.info().get_content_charset('utf-8')))
             if not data:
                 raise Exception('No location found: ' + options.location + '.')
             else:
@@ -150,8 +150,9 @@ class _Weather(Thread):
 
         if url not in self._result_cache['darksky_json']:
             logging.debug(url)
+            data = urlopen(url)
             self._result_cache['darksky_json'][url] = {'time': datetime.datetime.now(),
-                                                       'data': json.load(urlopen(url))}
+                                                       'data': json.loads(data.read().decode(data.info().get_content_charset('utf-8')))}
             options.weather_cache = self._result_cache
 
         if 'offset' in self._result_cache['darksky_json'][url]['data']:
