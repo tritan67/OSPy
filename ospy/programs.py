@@ -205,8 +205,11 @@ class _Program(object):
 
         self._schedule = new_schedule
         self.update_station_schedule()
-        self.type = ProgramType.CUSTOM
-        self.type_data = [value]
+
+        # We expect type and type_data to be loaded independently during start-up:
+        if not self._loading:
+            self.type = ProgramType.CUSTOM
+            self.type_data = [value]
 
     @property
     def modulo(self):

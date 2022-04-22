@@ -463,7 +463,7 @@ class _Options(object):
                 remove_backup = True
                 try:
                     db = shelve.open(OPTIONS_BACKUP)
-                    if db['last_save'] - time.time() < 3600:
+                    if time.time() - db['last_save'] < 3600:
                         remove_backup = False
                     db.close()
                 except Exception:
