@@ -482,7 +482,7 @@ class _Options(object):
 
                 if os.path.isdir(options_dir):
                     if not os.path.isdir(backup_dir):
-                        os.rename(options_dir, backup_dir)
+                        shutil.move(options_dir, backup_dir)
                     else:
                         for i in range(10):
                             try:
@@ -493,7 +493,7 @@ class _Options(object):
                         else:
                             shutil.rmtree(options_dir)
 
-                os.rename(tmp_dir, options_dir)
+                shutil.move(tmp_dir, options_dir)
 
                 if helpers.is_python2():
                     from whichdb import whichdb
