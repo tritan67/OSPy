@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__author__ = 'Rimco'
+__author__ = 'Rimco and Tyler Dow'
 
 # System imports
 import logging
@@ -98,6 +98,11 @@ class _Weather(Thread):
     def run(self):
         time.sleep(5)  # Some delay to allow internet to initialize
         while True:
+            if( not options.darksky_key):
+                #print("no api key")
+                time.sleep(1)
+                continue# if we do not have dark sky API entered. just stop
+        
             try:
                 try:
                     if self._determine_location:
@@ -113,7 +118,7 @@ class _Weather(Thread):
                 self._sleep(6*3600)
 
     def _find_location(self):
-        if options.location and options.darksky_key:
+        if options.location: # we should grab location data and weather api should not matter.
             data = urlopen(
                 "https://nominatim.openstreetmap.org/search?q=%s&format=json" % quote_plus(options.location))
             data = json.loads(data.read().decode(data.info().get_content_charset('utf-8')))
@@ -132,26 +137,28 @@ class _Weather(Thread):
 
     @_cache('darksky_data')
     def _get_darksky_data(self, check_date):
+        #logging.debug("getting weather")
         if isinstance(check_date, datetime.datetime):
             check_date = check_date.date()
 
         date_str = ''
         if check_date <= datetime.date.today():
             date_str = ',' + check_date.strftime('%Y-%m-%dT00:00:00')
-        url = "https://api.darksky.net/forecast/%s/%s,%s%s?exclude=minutely,alerts,flags&extend=hourly&units=si" % ((options.darksky_key,) + self.get_lat_lon() + (date_str,))
-
+        #old dark sky URL #url = "https://api.darksky.net/forecast/%s/%s,%s%s?exclude=minutely,alerts,flags&extend=hourly&units=si" % ((options.darksky_key,) + self.get_lat_lon() + (date_str,))
+        url = "https://api.openweathermap.org/data/2.5/onecall?lat=%s&lon=%s&exclude=minutely,alerts&appid=%s" % (  self.get_lat_lon()  + (options.darksky_key,))
+        #print("we did it")
         # We cache results for previous days, but we also want to have a short term cache for predictions:
         if 'darksky_json' not in self._result_cache:
             self._result_cache['darksky_json'] = {}
 
         for key in list(self._result_cache['darksky_json'].keys()):
-            if datetime.datetime.now() - self._result_cache['darksky_json'][key]['time'] > datetime.timedelta(minutes=10):
+            if datetime.datetime.now() - self._result_cache['darksky_json'][key]['dt'] > datetime.timedelta(minutes=10):
                 del self._result_cache['darksky_json'][key]
 
         if url not in self._result_cache['darksky_json']:
             logging.debug(url)
             data = urlopen(url)
-            self._result_cache['darksky_json'][url] = {'time': datetime.datetime.now(),
+            self._result_cache['darksky_json'][url] = {'dt': datetime.datetime.now(),
                                                        'data': json.loads(data.read().decode(data.info().get_content_charset('utf-8')))}
             options.weather_cache = self._result_cache
 
@@ -165,14 +172,14 @@ class _Weather(Thread):
     def get_hourly_data(self, check_date):
         if isinstance(check_date, datetime.datetime):
             check_date = check_date.date()
-
-        return [x for x in self._get_darksky_data(check_date)['hourly']['data'] if datetime.datetime.fromtimestamp(x['time']).date() == check_date]
+        #print(self._get_darksky_data(check_date))
+        return [x for x in self._get_darksky_data(check_date)['hourly'] if datetime.datetime.fromtimestamp(x['dt']).date() == check_date]
 
     def get_daily_data(self, check_date):
         if isinstance(check_date, datetime.datetime):
             check_date = check_date.date()
 
-        matching_days_data = [x for x in self._get_darksky_data(check_date)['daily']['data'] if datetime.datetime.fromtimestamp(x['time']).date() == check_date]
+        matching_days_data = [x for x in self._get_darksky_data(check_date)['daily'] if datetime.datetime.fromtimestamp(x['dt']).date() == check_date]
 
         return matching_days_data[0] if matching_days_data else {}
 
@@ -215,7 +222,7 @@ class _Weather(Thread):
         humid_min = 100
         humid_max = 0
         for data in hourly_data:
-            hour_datetime = datetime.datetime.fromtimestamp(data['time'])
+            hour_datetime = datetime.datetime.fromtimestamp(data['dt'])
             year_datetime = datetime.datetime(hour_datetime.year, 1, 1)
             fractional_day = (360/365.25)*(hour_datetime - year_datetime).total_seconds() / 3600 / 24
             if 'cloudCover' in data:

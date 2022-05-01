@@ -42,7 +42,7 @@ class _Options(object):
         },
         {
             "key": "location",
-            "name": "Location",
+            "name": "Location Name",
             "default": "",
             "help": "City name or zip code. Used to determine location via OpenStreetMap for weather information.",
             "category": "System"
@@ -65,11 +65,19 @@ class _Options(object):
         },
         {
             "key": "darksky_key",
-            "name": "Dark Sky API key",
+            "name": "OpenWeather API key",
             "default": "",
             "help": "To make use of local weather conditions, a Dark Sky API key is needed.",
             "category": "System"
         },
+        {
+            "key": "openweather_key",
+            "name": "OpenWeather API",
+            "default": "",
+            "help": "To make use of local weather conditions, a Dark Sky API key is needed.",
+            #"category": "System"
+        },
+        
         {
             "key": "time_format",
             "name": "24-hour clock",
